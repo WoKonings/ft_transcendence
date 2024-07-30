@@ -21,8 +21,28 @@ export class UserService {
     }
   }
 
+  //not in use yet
+  async getUserByUsernameOrEmail(usernameOrEmail: string): Promise<User | null> {
+    return this.prisma.user.findFirst({
+      where: {
+        OR: [
+          { username: usernameOrEmail },
+          { email: usernameOrEmail },
+        ],
+      },
+    });
+  }
+
+
   async getUserById(id: number): Promise<User | null> {
     return this.prisma.user.findUnique({
+      where: { id },
+    });
+  }
+
+  //not in use
+  async deleteUser(id: number): Promise<User> {
+    return this.prisma.user.delete({
       where: { id },
     });
   }
