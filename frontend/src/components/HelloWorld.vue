@@ -1,33 +1,19 @@
 <template>
-  <div class="hello">
+  <div>
     <h1>{{ message }}</h1>
-    <p>
-      For a guide and recipes on how to configure / customize this project,<br>
-      check out the
-      <a href="https://cli.vuejs.org" target="_blank" rel="noopener">vue-cli documentation</a>.
-    </p>
-    <h3>Installed CLI Plugins</h3>
-    <ul>
-      <li><a href="https://github.com/vuejs/vue-cli/tree/dev/packages/%40vue/cli-plugin-babel" target="_blank" rel="noopener">babel</a></li>
-      <li><a href="https://github.com/vuejs/vue-cli/tree/dev/packages/%40vue/cli-plugin-vuex" target="_blank" rel="noopener">vuex</a></li>
-      <li><a href="https://github.com/vuejs/vue-cli/tree/dev/packages/%40vue/cli-plugin-eslint" target="_blank" rel="noopener">eslint</a></li>
-    </ul>
-    <h3>Essential Links</h3>
-    <ul>
-      <li><a href="https://vuejs.org" target="_blank" rel="noopener">Core Docs</a></li>
-      <li><a href="https://forum.vuejs.org" target="_blank" rel="noopener">Forum</a></li>
-      <li><a href="https://chat.vuejs.org" target="_blank" rel="noopener">Community Chat</a></li>
-      <li><a href="https://twitter.com/vuejs" target="_blank" rel="noopener">Twitter</a></li>
-      <li><a href="https://news.vuejs.org" target="_blank" rel="noopener">News</a></li>
-    </ul>
-    <h3>Ecosystem</h3>
-    <ul>
-      <li><a href="https://router.vuejs.org" target="_blank" rel="noopener">vue-router</a></li>
-      <li><a href="https://vuex.vuejs.org" target="_blank" rel="noopener">vuex</a></li>
-      <li><a href="https://github.com/vuejs/vue-devtools#vue-devtools" target="_blank" rel="noopener">vue-devtools</a></li>
-      <li><a href="https://vue-loader.vuejs.org" target="_blank" rel="noopener">vue-loader</a></li>
-      <li><a href="https://github.com/vuejs/awesome-vue" target="_blank" rel="noopener">awesome-vue</a></li>
-    </ul>
+    <form @submit.prevent="createUser">
+      <input v-model="newUser.username" placeholder="Username" required>
+      <input v-model="newUser.email" placeholder="Email" required>
+      <input v-model="newUser.password" type="password" placeholder="Password" required>
+      <button type="submit">Create User</button>
+    </form>
+    <div v-if="createdUser">
+      <h2>Created User</h2>
+      <p>ID: {{ createdUser.id }}</p>
+      <p>Username: {{ createdUser.username }}</p>
+      <p>Email: {{ createdUser.email }}</p>
+    </div>
+    <p v-if="error" style="color: red">{{ error }}</p>
   </div>
 </template>
 
@@ -35,37 +21,40 @@
 export default {
   data() {
     return {
-      message: ''
+      message: 'Create a new user',
+      newUser: {
+        username: '',
+        email: '',
+        password: ''
+      },
+      createdUser: null,
+      error: ''
     }
   },
-  mounted() {
-    fetch('http://localhost:3000/hello')
-      .then(response => response.text())
+  methods: {
+    createUser() {
+      this.error = '';
+      fetch('http://localhost:3000/user', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(this.newUser)
+      })
+      .then(response => {
+        if (!response.ok) {
+          return response.json().then(err => { throw new Error(err.error); });
+        }
+        return response.json();
+      })
       .then(data => {
-        this.message = data;
+        this.createdUser = data;
       })
       .catch(error => {
-        console.error('Error fetching data:', error);
-        this.error = 'Failed to fetch data';
+        console.error('Error creating user:', error);
+        this.error = error.message;
       });
+    }
   }
 }
 </script>
-
-<!-- Add "scoped" attribute to limit CSS to this component only -->
-<style scoped>
-h3 {
-  margin: 40px 0 0;
-}
-ul {
-  list-style-type: none;
-  padding: 0;
-}
-li {
-  display: inline-block;
-  margin: 0 10px;
-}
-a {
-  color: #42b983;
-}
-</style>
