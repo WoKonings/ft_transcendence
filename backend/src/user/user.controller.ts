@@ -34,6 +34,7 @@ export class UserController {
     return this.userService.getUserById(Number(id));
   }
 
+  //todo: check if logged into this account so not EVERYONE can delete with a simple CURL?
   @Delete(':id')
   async deleteUser(@Param('id') id: string) {
     return this.userService.deleteUser(Number(id));

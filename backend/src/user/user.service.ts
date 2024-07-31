@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { Prisma, User } from '@prisma/client';
 
@@ -33,15 +33,33 @@ export class UserService {
     });
   }
 
+  async getUserSafely(usernameOrEmail: string): Promise<User | null> {
+    return this.prisma.user.findFirst({
+      where: {
+        OR: [
+          { username: usernameOrEmail },
+          { email: usernameOrEmail },
+        ],
+      },
+    });
+  }
 
+  //todo: error catching if no user?
   async getUserById(id: number): Promise<User | null> {
     return this.prisma.user.findUnique({
       where: { id },
     });
   }
 
-  //not in use
+  //todo: maybe check permissions to delete here?
+  // @UseGuards(AuthGuard)
   async deleteUser(id: number): Promise<User> {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+    });
+    if (!user) {
+      throw new NotFoundException('User with ID ${id} not found.');
+    }
     return this.prisma.user.delete({
       where: { id },
     });

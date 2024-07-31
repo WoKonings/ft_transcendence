@@ -1,3 +1,4 @@
+<!-- todo: rename this file to something like login.vue -->
 <template>
 	<div>
 		<h1>{{ message }}</h1>
@@ -11,14 +12,14 @@
 
 		<form v-if="!isLoggedIn" @submit.prevent="loginUser">
 			<h2>Login</h2>
-			<input v-model="loginDetails.email" placeholder="Email" required />
+			<input v-model="loginDetails.username" type="username" placeholder="username" required />
 			<input v-model="loginDetails.password" type="password" placeholder="Password" required />
 			<button type="submit">Login</button>
 		</form>
 
-		<div v-if="isLoggedIn">
+		<div v-if="isLoggedIn && currentUser">
 			<h2>Welcome, {{ currentUser.username }}</h2>
-			<p>Email: {{ currentUser.email }}</p>
+			<!-- <p>Email: {{ currentUser.email }}</p> -->
 			<button @click="logoutUser">Logout</button>
 			<button @click="deleteAccount">Delete Account</button>
 		</div>
@@ -38,7 +39,7 @@ export default {
 				password: ''
 			},
 			loginDetails: {
-				email: '',
+				username: '',
 				password: ''
 			},
 			currentUser: null,
@@ -91,8 +92,13 @@ export default {
 					return response.json();
 				})
 				.then(data => {
-					this.currentUser = data.user;
-					this.isLoggedIn = true;
+          localStorage.setItem('access_token', data.access_token);
+					console.log(`Received access token: ${data.access_token}`)
+          // this.currentUser = fetch('http://localhost:3000/auth/profile');
+          // this.currentUser = data.user; //implement fetch user data thing?
+					// this.currentUser = fetchUserData();
+          // this.currentUser = 
+          this.isLoggedIn = true;
 				})
 				.catch(error => {
 					console.error('Error logging in:', error);
@@ -100,6 +106,7 @@ export default {
 				});
 		},
 		logoutUser() {
+      localStorage.setItem('access_token', null); //maybe not needed
 			this.currentUser = null;
 			this.isLoggedIn = false;
 		},
