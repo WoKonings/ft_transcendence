@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, HttpException, HttpStatus } from '@nestjs/common';
+import { Controller, Delete, Get, Post, Body, Param, HttpException, HttpStatus } from '@nestjs/common';
 import { UserService } from './user.service';
 import { Prisma } from '@prisma/client';
 
@@ -23,9 +23,20 @@ export class UserController {
       }, HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
+  
+  @Get('search/:username')
+  async getUserByUsernameOrEmail(@Param('username') username: string) {
+    return this.userService.getUserByUsernameOrEmail(String(username));
+  }
 
   @Get(':id')
   async getUserById(@Param('id') id: string) {
     return this.userService.getUserById(Number(id));
   }
+
+  @Delete(':id')
+  async deleteUser(@Param('id') id: string) {
+    return this.userService.deleteUser(Number(id));
+  }
+
 }

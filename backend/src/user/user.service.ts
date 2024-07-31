@@ -21,7 +21,7 @@ export class UserService {
     }
   }
 
-  //not in use yet
+  //todo: delete the email part?
   async getUserByUsernameOrEmail(usernameOrEmail: string): Promise<User | null> {
     return this.prisma.user.findFirst({
       where: {

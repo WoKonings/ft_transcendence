@@ -13,6 +13,7 @@ services:
       - postgres
     environment:
       DATABASE_URL: postgres://dbuser:dbpassword@postgres:5432/db
+    restart: on-failure
 
   postgres:
     image: postgres:15
