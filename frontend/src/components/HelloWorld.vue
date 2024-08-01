@@ -1,4 +1,3 @@
-<!-- todo: rename this file to something like login.vue -->
 <template>
 	<div>
 		<h1>{{ message }}</h1>
@@ -22,14 +21,26 @@
 			<!-- <p>Email: {{ currentUser.email }}</p> -->
 			<button @click="logoutUser">Logout</button>
 			<button @click="deleteAccount">Delete Account</button>
+			<button @click="showGame = !showGame">
+				{{ showGame ? 'Stop playing Pong' : 'Play Pong' }}
+			</button>
 		</div>
+
+		<PongGame v-if="isLoggedIn && showGame" />
 
 		<p v-if="error" style="color: red">{{ error }}</p>
 	</div>
 </template>
 
 <script>
+import { mapState, mapActions } from 'vuex';
+import PongGame from './PongGame.vue'; // Ensure the path is correct
+
 export default {
+	name: 'HelloWorld',
+	components: {
+		PongGame
+	},
 	data() {
 		return {
 			message: 'User Authentication',
@@ -44,10 +55,15 @@ export default {
 			},
 			currentUser: null,
 			isLoggedIn: false,
-			error: ''
+			error: '',
+			showGame: false,
 		};
 	},
+	computed: {
+		...mapState(['isLoggedIn', 'currentUser'])
+	},
 	methods: {
+		...mapActions(['logIn', 'logOut']),
 		createUser() {
 			this.error = '';
 			fetch('http://localhost:3000/user', {
@@ -96,7 +112,7 @@ export default {
 					console.log(`Received access token: ${data.access_token}`)
 					this.currentUser = data.user; //todo: think about whether this is safe or not
 					this.isLoggedIn = true;
-					console.log(`password?: ${this.currentUser.password}`);
+					// console.log(`password?: ${this.currentUser.password}`);
 				})
 				.catch(error => {
 					console.error('Error logging in:', error);
