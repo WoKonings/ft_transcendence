@@ -1,5 +1,5 @@
-//todo: create .env secret for this!
+// Use environment variables for sensitive data
 export const jwtConstants = {
-	secret: 'DO NOT USE THIS VALUE. INSTEAD, CREATE A COMPLEX SECRET AND KEEP IT SAFE OUTSIDE OF THE SOURCE CODE.',
+	secret: process.env.JWT_SECRET || 'default_secret', // Replace 'default_secret' with your actual secret
   };
   

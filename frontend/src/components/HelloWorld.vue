@@ -92,13 +92,11 @@ export default {
 					return response.json();
 				})
 				.then(data => {
-          localStorage.setItem('access_token', data.access_token);
+					localStorage.setItem('access_token', data.access_token);
 					console.log(`Received access token: ${data.access_token}`)
-          // this.currentUser = fetch('http://localhost:3000/auth/profile');
-          // this.currentUser = data.user; //implement fetch user data thing?
-					// this.currentUser = fetchUserData();
-          // this.currentUser = 
-          this.isLoggedIn = true;
+					this.currentUser = data.user; //todo: think about whether this is safe or not
+					this.isLoggedIn = true;
+					console.log(`password?: ${this.currentUser.password}`);
 				})
 				.catch(error => {
 					console.error('Error logging in:', error);
@@ -106,14 +104,18 @@ export default {
 				});
 		},
 		logoutUser() {
-      localStorage.setItem('access_token', null); //maybe not needed
+			localStorage.setItem('access_token', null); //maybe not needed
 			this.currentUser = null;
 			this.isLoggedIn = false;
 		},
 		deleteAccount() {
 			this.error = '';
 			fetch(`http://localhost:3000/user/${this.currentUser.id}`, {
-				method: 'DELETE'
+				method: 'DELETE',
+				headers: {
+					'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+					'Content-Type': 'application/json'
+				}
 			})
 				.then(response => {
 					if (!response.ok) {

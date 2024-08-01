@@ -1,6 +1,9 @@
-import { Controller, Delete, Get, Post, Body, Param, HttpException, HttpStatus } from '@nestjs/common';
+import { Controller, UseGuards, Delete, Get, Post, Body, Param, HttpException, HttpStatus } from '@nestjs/common';
 import { UserService } from './user.service';
 import { Prisma } from '@prisma/client';
+import { AuthGuard } from '../auth/auth.guard';
+
+
 
 @Controller('user')
 export class UserController {
@@ -35,6 +38,7 @@ export class UserController {
   }
 
   //todo: check if logged into this account so not EVERYONE can delete with a simple CURL?
+  @UseGuards(AuthGuard)
   @Delete(':id')
   async deleteUser(@Param('id') id: string) {
     return this.userService.deleteUser(Number(id));

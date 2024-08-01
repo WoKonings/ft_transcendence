@@ -16,7 +16,7 @@ generator client {
 model User {
   id          Int       @id @default(autoincrement())
   username    String    @unique
-  email       String    @unique
+  email       String    @unique //maybe no email needed?
   password    String
   gamesPlayed Int       @default(0)
   gamesWon    Int       @default(0)

@@ -45,14 +45,12 @@ export class UserService {
   }
 
   //todo: error catching if no user?
-  async getUserById(id: number): Promise<User | null> {
+  async getUserById(userId: number): Promise<User | null> {
     return this.prisma.user.findUnique({
-      where: { id },
+      where: { id: userId },
     });
   }
 
-  //todo: maybe check permissions to delete here?
-  // @UseGuards(AuthGuard)
   async deleteUser(id: number): Promise<User> {
     const user = await this.prisma.user.findUnique({
       where: { id },

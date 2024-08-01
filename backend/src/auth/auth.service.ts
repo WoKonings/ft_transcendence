@@ -14,15 +14,19 @@ export class AuthService {
   async signIn(
     username: string,
     pass: string,
-  ): Promise<{ access_token: string; }> {
-    const user = await this.userService.getUserByUsernameOrEmail(username) //need to secure this
-    if (user?.password !== pass) {
+  ): Promise<{ access_token: string; user: any | null }> {
+    const user = await this.userService.getUserByUsernameOrEmail(username);
+    if (!user || user.password !== pass) {
       throw new UnauthorizedException();
     }
-    console.log(`Found user! ${username} and password is correct!`);
     const payload = { sub: user.id, username: user.username };
     return {
       access_token: await this.jwtService.signAsync(payload),
+      user: { //todo: maybe not return the actual user info?
+        id: user.id,
+        username: user.username,
+        email: user.email
+      }
     };
   }
 }
