@@ -7,10 +7,17 @@ import { UserModule } from './user/user.module';
 import { PrismaModule } from './prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { PassportModule } from '@nestjs/passport';
+import { GameGateway } from './game/game.gateway';
+import { GameModule } from './game/game.module';
 
 @Module({
-  imports: [UserModule, AuthModule, PrismaModule, PassportModule.register({ defaultStrategy: 'jwt'})],
+  imports: [UserModule,
+      AuthModule, 
+      PrismaModule, 
+      PassportModule.register({ defaultStrategy: 'jwt'}), 
+      GameModule,
+    ],
   controllers: [AppController, HelloController],
-  providers: [AppService, HelloService],
+  providers: [AppService, HelloService, GameGateway],
 })
 export class AppModule {}

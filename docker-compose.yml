@@ -22,6 +22,7 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+    #todo: add .env for the postgres variables
     environment:
       POSTGRES_USER: dbuser
       POSTGRES_PASSWORD: dbpassword

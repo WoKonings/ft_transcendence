@@ -8,21 +8,21 @@ const store = createStore({
     };
   },
   mutations: {
-    setIsLoggedIn(state, isLoggedIn) {
-      state.isLoggedIn = isLoggedIn;
-    },
-    setCurrentUser(state, user) {
+    SET_USER(state, user) {
+      state.isLoggedIn = true;
       state.currentUser = user;
+    },
+    LOGOUT_USER(state) {
+      state.currentUser = null;
+      state.isLoggedIn = false;
     },
   },
   actions: {
     logIn({ commit }, user) {
-      commit('setIsLoggedIn', true);
-      commit('setCurrentUser', user);
+      commit('SET_USER', user);
     },
     logOut({ commit }) {
-      commit('setIsLoggedIn', false);
-      commit('setCurrentUser', null);
+      commit('LOGOUT_USER');
     },
   },
 });

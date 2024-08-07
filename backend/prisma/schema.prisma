@@ -13,11 +13,24 @@ generator client {
   provider = "prisma-client-js"
 }
 
+//  todo: 2fa, friends(pending, blocked), rooms
+//
 model User {
+  //account info
   id          Int       @id @default(autoincrement())
-  username    String    @unique
+  // intraId     Int       @unique //should replace username/email?
+  username    String    @unique 
   email       String    @unique //maybe no email needed?
-  password    String
+  password    String            //also no password needed
+
+  //relation
+  isInGame    Boolean   @default(false)
+  isInQueue   Boolean   @default(false)
+  isBad       Boolean   @default(false)
+  elo         Int       @default(600)
+
+
+  //stats
   gamesPlayed Int       @default(0)
   gamesWon    Int       @default(0)
   createdAt   DateTime  @default(now())

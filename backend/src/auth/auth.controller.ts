@@ -12,11 +12,12 @@ import { AuthGuard } from './auth.guard';
 import { AuthService } from './auth.service';
 import { UserService } from '../user/user.service';
 
+//added readonly
 @Controller('auth')
 export class AuthController {
   constructor(
-    private authService: AuthService,
-    private userService: UserService,
+    private readonly authService: AuthService,
+    private readonly userService: UserService,
   ) {}
 
   @HttpCode(HttpStatus.OK)

@@ -51,6 +51,23 @@ export class UserService {
     });
   }
 
+  async getIsInGame(userId: number): Promise<Boolean> {
+    const user = await this.getUserById(userId); // Use await to get the actual user object
+    if (!user) {
+      throw new Error('User not found');
+    }
+    return user.isInGame;
+  }
+  
+  async setIsInGame(userId: number, bool: boolean): Promise<void> {
+    const user = await this.prisma.user.update({
+      where: { id: userId },
+      data: { isInGame: bool },
+    });
+  
+    console.log(`${user.username} is ingame?: ${user.isInGame}`);
+  }
+
   async deleteUser(id: number): Promise<User> {
     const user = await this.prisma.user.findUnique({
       where: { id },
