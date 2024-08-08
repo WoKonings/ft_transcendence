@@ -66,7 +66,7 @@ export default {
 		}
 	},
 	updateGame(gameState) {
-	    // Ensure context is initialized
+		// Ensure context is initialized
 		if (!this.context) {
 			this.context = this.$refs.gameCanvas.getContext('2d');
 		}

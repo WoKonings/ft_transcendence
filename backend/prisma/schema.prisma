@@ -29,6 +29,10 @@ model User {
   isBad       Boolean   @default(false)
   elo         Int       @default(600)
 
+  //Social
+  friends     Int[]
+  blocked     Int[]
+  pending     Int[]
 
   //stats
   gamesPlayed Int       @default(0)

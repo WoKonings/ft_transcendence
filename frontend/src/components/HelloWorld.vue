@@ -25,20 +25,32 @@
 		</button>
 	</div>
 
-	<PongGame v-if="isLoggedIn && showGame" />
+    <div class="game-and-chat">
+      <div class="chat-box-container">
+        <ChatBox v-if="isLoggedIn && currentUser" />
+      </div>
+      <div class="pong-game-container">
+        <PongGame v-if="isLoggedIn && showGame" />
+      </div>
+    </div>
+	</div>
 
 	<p v-if="error" style="color: red">{{ error }}</p>
-	</div>
+
 </template>
 
 <script>
 import { mapState, mapActions } from 'vuex';
 import PongGame from './PongGame.vue';
+import ChatBox from './Chat-Box.vue';
+
+
 
 export default {
 	name: 'HelloWorld',
 	components: {
-	PongGame
+	PongGame,
+	ChatBox
 	},
 	data() {
 	return {
@@ -154,3 +166,31 @@ export default {
 	}
 };
 </script>
+
+<style scoped>
+
+.game-and-chat {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  margin-top: 20px;
+}
+
+.chat-box-container {
+  margin-right: 20px;
+}
+
+.pong-game-container {
+  flex: 1;
+}
+/* .game-and-chat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+} */
+
+/* .game-and-chat > * {
+  margin-bottom: 20px;
+} */
+</style>
