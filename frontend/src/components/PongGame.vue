@@ -33,8 +33,14 @@ export default {
 	startGame() {
 		if (this.socket) return; // Prevent duplicate connections
 
+		const token = localStorage.getItem('access_token');
+		if (!token) {
+			console.error("No token: cant enter game");
+			return;
+		}
+
 		this.socket = io('http://localhost:3000', {
-			query: { userId: this.currentUser.id },
+			query: { userId: this.currentUser.id, token },
 		});
 		console.log('Starting game and connecting socket with userId:', this.currentUser.id);
 

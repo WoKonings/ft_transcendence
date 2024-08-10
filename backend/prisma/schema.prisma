@@ -22,6 +22,7 @@ model User {
   username    String    @unique 
   email       String    @unique //maybe no email needed?
   password    String            //also no password needed
+  socket      String?    
 
   //relation
   isInGame    Boolean   @default(false)

@@ -1,8 +1,11 @@
 import { SubscribeMessage, WebSocketGateway, WebSocketServer, OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { Inject, Injectable, forwardRef } from '@nestjs/common';
+import { Inject, Injectable, forwardRef, UseGuards } from '@nestjs/common';
 import { GameState } from './game.state';
 import { UserService } from '../user/user.service';
+import { PrismaService } from '../prisma.service';
+import { AuthGuard } from '../auth/auth.guard';
+// import { JwtService } from '@nestjs/jwt';
 
 @WebSocketGateway({ cors: true })
 @Injectable()
@@ -16,6 +19,8 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
   constructor(
     @Inject(forwardRef(() => UserService)) private readonly userService: UserService,
     private readonly gameState: GameState,
+    private readonly prisma: PrismaService,
+    // private readonly jwtService: JwtService,
   ) {
     this.gameState.setUserService(this.userService); // Set UserService in GameState
   }
@@ -25,7 +30,19 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
     this.startGameLoop();
   }
 
-  handleConnection(client: Socket, ...args: any[]) {
+  //note: possibly delete userId being passed here?
+  //      not much use now that we have tokens.
+  @UseGuards(AuthGuard)
+  async handleConnection(client: Socket, ...args: any[]) {
+
+    const token = client.handshake.query.token as string;
+    // const decoded = this.jwtService.verify(token);
+    if (!token) {
+      console.log('No token provided, disconnecting client');
+      client.disconnect();
+      return;
+    }
+    
     const userId = client.handshake.query.userId as string;
     if (!userId) {
       console.log('No userId provided, disconnecting client');
@@ -33,9 +50,15 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
       return;
     }
 
-    console.log(`Client connected: ${userId}`);
+    await this.prisma.user.update({
+      where: { id: Number(userId) },
+      data: { socket: client.id },
+    });
+
+
+    console.log(`Client connected: ${userId}, and socket updated to: ${client.id}`);
     this.activeUsers.set(userId, client);
-	client.emit('connected', { message: 'welcome to transcendence'});
+    client.emit('connected', { message: 'welcome to transcendence'});
     this.gameState.addPlayer(userId);
   }
 
