@@ -39,3 +39,16 @@ model User {
   gamesWon    Int       @default(0)
   createdAt   DateTime  @default(now())
 }
+
+model Channel {
+
+	id		  Int		@id @default(autoincrement())
+
+	//users
+	users	  Int[]
+	// kicked	  Int[]
+	// invited	  Int[]
+
+	messages  String[]
+
+}

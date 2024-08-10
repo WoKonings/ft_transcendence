@@ -18,6 +18,6 @@ import { GameModule } from './game/game.module';
       GameModule,
     ],
   controllers: [AppController, HelloController],
-  providers: [AppService, HelloService, GameGateway],
+  providers: [AppService, HelloService],
 })
 export class AppModule {}

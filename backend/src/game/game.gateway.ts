@@ -10,6 +10,8 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
   @WebSocketServer() server: Server;
   private intervalId: NodeJS.Timeout;
   private activeUsers: Map<string, Socket> = new Map();
+  private gameSessions: Map<string, GameState> = new Map();
+
 
   constructor(
     @Inject(forwardRef(() => UserService)) private readonly userService: UserService,
@@ -24,7 +26,7 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
   }
 
   handleConnection(client: Socket, ...args: any[]) {
-    const userId = Array.isArray(client.handshake.query.userId) ? client.handshake.query.userId[0] : client.handshake.query.userId;
+    const userId = client.handshake.query.userId as string;
     if (!userId) {
       console.log('No userId provided, disconnecting client');
       client.disconnect();
@@ -33,13 +35,15 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
 
     console.log(`Client connected: ${userId}`);
     this.activeUsers.set(userId, client);
+	client.emit('connected', { message: 'welcome to transcendence'});
     this.gameState.addPlayer(userId);
   }
 
   handleDisconnect(client: Socket) {
-    const userId = Array.isArray(client.handshake.query.userId) ? client.handshake.query.userId[0] : client.handshake.query.userId;
+	const userId = client.handshake.query.userId as string;
+    // const userId = Array.isArray(client.handshake.query.userId) ? client.handshake.query.userId[0] : client.handshake.query.userId;
     if (!userId) {
-      console.log('No userId provided, disconnecting client');
+      console.log('No userId provided, cant disconnect?');
       return;
     }
 
@@ -50,7 +54,7 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
 
   @SubscribeMessage('playerMove')
   handlePlayerMove(client: Socket, data: { y: number }): void {
-    const userId = Array.isArray(client.handshake.query.userId) ? client.handshake.query.userId[0] : client.handshake.query.userId;
+	const userId = client.handshake.query.userId as string;
     if (!userId) {
       console.log('No userId provided for playerMove');
       return;

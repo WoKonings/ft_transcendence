@@ -14,5 +14,6 @@ COPY . .
 # Expose port 8080 to the host
 EXPOSE 8080
 
+# todo: make it do npm run build for final product
 # Run the command to start the application
 CMD ["npm", "run", "serve"]

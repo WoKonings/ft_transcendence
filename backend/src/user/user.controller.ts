@@ -27,11 +27,17 @@ export class UserController {
     }
   }
   
+  async getUserForAuth(@Param('username') username: string) {
+    return this.userService.getUserForAuth(String(username));
+  }
+
+  @UseGuards(AuthGuard)
   @Get('search/:username')
   async getUserByUsernameOrEmail(@Param('username') username: string) {
     return this.userService.getUserByUsernameOrEmail(String(username));
   }
 
+  @UseGuards(AuthGuard)
   @Get(':id')
   async getUserById(@Param('id') id: string) {
     return this.userService.getUserById(Number(id));
