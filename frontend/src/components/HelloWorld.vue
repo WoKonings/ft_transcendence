@@ -43,6 +43,7 @@
 import { mapState, mapActions } from 'vuex';
 import PongGame from './PongGame.vue';
 import ChatBox from './Chat-Box.vue';
+import io from 'socket.io-client'
 
 
 
@@ -68,6 +69,7 @@ export default {
 		isLoggedIn: false,
 		error: '',
 		showGame: false,
+		socket: null
 	};
 	},
 	computed: {
@@ -126,6 +128,7 @@ export default {
 			// console.log(`reference user: ${data.user.id}, ${data.user.username}`);
 			// console.log(`Logged in as user: ${this.currentUser.id}, ${this.currentUser.username}`);
 			this.isLoggedIn = true;
+			this.initializeSocket();
 			// console.log(`password?: ${this.currentUser.password}`);
 		})
 		.catch(error => {
@@ -160,6 +163,20 @@ export default {
 			this.error = error.message;
 		});
 	},
+	initializeSocket() {
+      const token = localStorage.getItem('access_token');
+      if (!token) return;
+
+      this.socket = io('http://localhost:3000', {
+        query: { token },
+      });
+
+      this.socket.on('connected', (message) => {
+        console.log(message);
+      });
+
+      this.$store.commit('SET_SOCKET', this.socket); // Store the socket in Vuex
+    },
 	toggleGame() {
 		this.showGame = !this.showGame;
 	}

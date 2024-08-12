@@ -6,7 +6,7 @@ import { UserService } from '../user/user.service';
 
 @WebSocketGateway({ cors: true })
 @Injectable()
-export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
+export class GameGateway {
   @WebSocketServer() server: Server;
   private intervalId: NodeJS.Timeout;
   private activeUsers: Map<string, Socket> = new Map();
@@ -25,36 +25,10 @@ export class GameGateway implements OnGatewayInit, OnGatewayConnection, OnGatewa
     this.startGameLoop();
   }
 
-  handleConnection(client: Socket, ...args: any[]) {
-    const userId = client.handshake.query.userId as string;
-    if (!userId) {
-      console.log('No userId provided, disconnecting client');
-      client.disconnect();
-      return;
-    }
-
-    console.log(`Client connected: ${userId}`);
-    this.activeUsers.set(userId, client);
-	client.emit('connected', { message: 'welcome to transcendence'});
-    this.gameState.addPlayer(userId);
-  }
-
-  handleDisconnect(client: Socket) {
-	const userId = client.handshake.query.userId as string;
-    // const userId = Array.isArray(client.handshake.query.userId) ? client.handshake.query.userId[0] : client.handshake.query.userId;
-    if (!userId) {
-      console.log('No userId provided, cant disconnect?');
-      return;
-    }
-
-    console.log(`Client disconnected: ${userId}`);
-    this.activeUsers.delete(userId);
-    this.gameState.removePlayer(userId);
-  }
-
   @SubscribeMessage('playerMove')
-  handlePlayerMove(client: Socket, data: { y: number }): void {
-	const userId = client.handshake.query.userId as string;
+  handlePlayerMove(client: Socket, data: { userId: string, y: number }): void {
+	// const userId = client.handshake.query.userId as string;
+	const userId = data.userId;
     if (!userId) {
       console.log('No userId provided for playerMove');
       return;

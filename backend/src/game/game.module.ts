@@ -9,7 +9,7 @@ import { GameState } from './game.state'; // Import GameState
       PrismaModule,
       forwardRef(() => UserModule ),
     ],
-  providers: [GameGateway, GameState], // Provide GameState
+  providers: [GameGateway, GameState], // re-add gamegateway if needed
   exports: [GameState], // Export GameState to be used in other modules if necessary
 })
 export class GameModule {}

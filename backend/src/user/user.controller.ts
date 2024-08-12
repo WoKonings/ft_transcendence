@@ -31,13 +31,14 @@ export class UserController {
     return this.userService.getUserForAuth(String(username));
   }
 
-  @UseGuards(AuthGuard)
+  //todo: re-enable the guards for eval.
+//   @UseGuards(AuthGuard)
   @Get('search/:username')
   async getUserByUsernameOrEmail(@Param('username') username: string) {
     return this.userService.getUserByUsernameOrEmail(String(username));
   }
 
-  @UseGuards(AuthGuard)
+//   @UseGuards(AuthGuard)
   @Get(':id')
   async getUserById(@Param('id') id: string) {
     return this.userService.getUserById(Number(id));
