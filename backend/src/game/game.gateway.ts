@@ -1,8 +1,11 @@
 import { SubscribeMessage, WebSocketGateway, WebSocketServer, OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { Inject, Injectable, forwardRef } from '@nestjs/common';
+import { Inject, Injectable, forwardRef, UseGuards } from '@nestjs/common';
 import { GameState } from './game.state';
 import { UserService } from '../user/user.service';
+import { PrismaService } from '../prisma.service';
+import { AuthGuard } from '../auth/auth.guard';
+// import { JwtService } from '@nestjs/jwt';
 
 @WebSocketGateway({ cors: true })
 @Injectable()
@@ -16,6 +19,8 @@ export class GameGateway {
   constructor(
     @Inject(forwardRef(() => UserService)) private readonly userService: UserService,
     private readonly gameState: GameState,
+    private readonly prisma: PrismaService,
+    // private readonly jwtService: JwtService,
   ) {
     this.gameState.setUserService(this.userService); // Set UserService in GameState
   }
