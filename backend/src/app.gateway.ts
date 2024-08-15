@@ -22,7 +22,7 @@ export class AppGateway implements OnGatewayInit, OnGatewayConnection, OnGateway
   @UseGuards(AuthGuard) // Automatically use this guard for authentication
   async handleConnection(client: Socket) {
     try {
-      const token = client.handshake.query.token as string;
+      const token = client.handshake.auth.token as string;
       const decoded = this.jwtService.verify(token);
 
       // Store the socket ID in the user record
@@ -47,7 +47,8 @@ export class AppGateway implements OnGatewayInit, OnGatewayConnection, OnGateway
         data: { socket: null },
       });
 
-      console.log(`Client disconnected: ${client.id}`);
+      console.log(`SOCKET DISCONNECTED: ${client.id}`);
+
     } catch (error) {
       console.log('Error handling disconnect:', error);
     }
