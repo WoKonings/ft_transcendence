@@ -25,6 +25,7 @@ model User {
   socket	  String?
 
   //relation
+  isOnline    Boolean	@default(false) //todo: fully implement
   isInGame    Boolean   @default(false)
   isInQueue   Boolean   @default(false)
   isBad       Boolean   @default(false)

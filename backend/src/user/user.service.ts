@@ -1,6 +1,7 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException, UseGuards } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { Prisma, User, Channel } from '@prisma/client';
+import { AuthGuard } from '@nestjs/passport';
 
 @Injectable()
 export class UserService {
@@ -19,6 +20,40 @@ export class UserService {
       }
       throw error;
     }
+  }
+
+  async addUserAsFriend(targetId: number, userId: number) {
+    // Fetch the target user
+
+    console.log('targetId:', targetId, 'userId:', userId); // Log IDs to verify they are correct
+    if (!targetId || !userId) {
+      throw new Error('Invalid user IDs provided');
+    }
+    const targetUser = await this.prisma.user.findUnique({
+      where: { id: targetId },
+    });
+
+    if (!targetUser) {
+      throw new BadRequestException('Target user not found');
+    }
+
+    // Check if userId is already in the pending list
+    if (targetUser.pending.includes(userId)) {
+      // throw new BadRequestException('Friend request already sent');
+      return { message: 'Friend request already sent'};
+    }
+
+    // Update the target user's pending list
+    await this.prisma.user.update({
+      where: { id: targetId },
+      data: {
+        pending: {
+          push: userId,
+        },
+      },
+    });
+
+    return { message: 'Friend request sent' };
   }
 
   async getUserForAuth(usernameOrEmail: string): Promise<User | null> {
@@ -44,15 +79,15 @@ export class UserService {
     });
   }
 
-  async getUserSafely(usernameOrEmail: string): Promise<User | null> {
-    return this.prisma.user.findFirst({
-      where: {
-        OR: [
-          { username: usernameOrEmail },
-          { email: usernameOrEmail },
-        ],
+  async getAllUsers() {
+    const users = await this.prisma.user.findMany({
+      select: {
+      id: true,
+      username: true,
       },
-    });
+	});
+  
+	return users;
   }
 
   //todo: error catching if no user?

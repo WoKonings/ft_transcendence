@@ -25,14 +25,17 @@
         </button>
     </div>
 
-    <div class="game-and-chat">
-    <div class="chat-box-container">
-        <ChatBox v-if="isLoggedIn && currentUser" />
-    </div>
-    <div class="pong-game-container">
-        <PongGame v-if="isLoggedIn && showGame" />
-    </div>
-    </div>
+    <div class="main-container">
+		<div class="chat-box-container">
+			<ChatBox v-if="isLoggedIn && currentUser" />
+		</div>
+		<div class="pong-game-container">
+			<PongGame v-if="isLoggedIn && showGame" />
+		</div>
+		<div class="user-list-container">
+			<UserList v-if="isLoggedIn && currentUser" />
+		</div>
+		</div>
     </div>
 
     <p v-if="error" style="color: red">{{ error }}</p>
@@ -44,12 +47,14 @@ import { mapState, mapActions } from 'vuex';
 import PongGame from './PongGame.vue';
 import ChatBox from './Chat-Box.vue';
 import io from 'socket.io-client'
+import UserList from './UserList.vue';
 
 export default {
   name: 'HelloWorld',
   components: {
   PongGame,
-  ChatBox
+  ChatBox,
+  UserList,
   },
   data() {
     return {
@@ -177,9 +182,41 @@ export default {
 
 </script>
 
-<style scoped>
 
-.game-and-chat {
+
+<style scoped>
+.main-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  height: 100vh;
+  padding: 20px;
+  box-sizing: border-box;
+}
+
+.chat-box-container {
+  flex: 1;
+  margin-right: 20px; /* Space between chat and game */
+  max-width: 300px;
+  height: 100%;
+}
+
+.pong-game-container {
+  flex: 2;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.user-list-container {
+  flex: 1;
+  margin-left: 20px; /* Space between game and user list */
+  max-width: 300px;
+  height: 100%;
+}
+</style>
+
+<!-- .game-and-chat {
     display: flex;
     flex-direction: row;
     justify-content: center;
@@ -193,14 +230,4 @@ export default {
 
 .pong-game-container {
     flex: 1;
-}
-/* .game-and-chat {
-display: flex;
-flex-direction: column;
-align-items: center;
-} */
-
-/* .game-and-chat > * {
-margin-bottom: 20px;
-} */
-</style>
+} -->

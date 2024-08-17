@@ -43,22 +43,23 @@ export class GameGateway {
 
   // Handle user disconnect
   @SubscribeMessage('leaveGame')
-  handleLeaveGame(client: Socket,  userId: string): void {
-    // const userId = userId;
+  handleLeaveGame(client: Socket, data: { userId: string, username: string }): void {
+    const userId = data.userId;
+	const username = data.username;
     if (!userId) {
       console.log('No userId provided for leave_game');
       return;
     }
-    console.log('someone leaving the game');
+    console.log(`${data.username} leaving the game`);
 
     const game = this.getGameSessionForUser(userId)
     if (!game)
     {
-      console.log(`user:  ${userId} is not in a game to leave.`);
+      console.log(`user: ${username} is not in a game to leave.`);
       return;
     }
     game.gameState.removePlayer(userId);
-    console.log(`removed paddle from user: ${userId}`);
+    console.log(`removed paddle from user: ${username}`);
 
     //notify other player, and set leaving player to null.
     if (game.player_one && game.player_one.userId == userId)
@@ -181,7 +182,7 @@ export class GameGateway {
     const gameSession = this.getGameSessionForUser(userId);
     if (gameSession) {
       gameSession.gameState.updatePlayerPosition(userId, data.y);
-      console.log(`y updated to: ${data.y} vs ball y: ${gameSession.gameState.ball.y}`);
+    //   console.log(`y updated to: ${data.y} vs ball y: ${gameSession.gameState.ball.y}`);
     }
   }
   
@@ -234,10 +235,10 @@ export class GameGateway {
       this.gameSessions.forEach((session, sessionId) => {
         if (session.player_one && session.player_one.socket.id === client.id) {
           // session.player_one = null;
-          this.handleLeaveGame(client, session.player_one.userId);
+          this.handleLeaveGame(client, { userId: session.player_one.userId, username: session.player_one.username });
           console.log(`Player one disconnected from session: ${sessionId}`);
         } else if (session.player_two && session.player_two.socket.id === client.id) {
-          this.handleLeaveGame(client, session.player_two.userId);
+          this.handleLeaveGame(client, { userId: session.player_two.userId, username: session.player_two.username} );
           console.log(`Player two disconnected from session: ${sessionId}`);
         }
 

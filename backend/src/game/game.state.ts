@@ -74,33 +74,33 @@ export class GameState {
     }
 
     for (const id in this.paddles) {
-        const paddle = this.paddles[id];
-        const paddleTop = paddle.y + paddle.height - 2;
-        const paddleBottom = paddle.y - 2;
-        const paddleFront = paddle.x + paddle.width;
-
-        // Check collision with paddle front (side)
-        if (this.bounceCooldown <= 0 && this.ball.x - this.ball.radius < paddleFront && this.ball.x + this.ball.radius > paddle.x) {
-            if (this.ball.y > paddleBottom && this.ball.y < paddleTop) {
-                this.ball.dx *= -1.1; // Invert and slightly increase the speed
-                this.bounceCooldown = 150;
-                // console.log('frontbounce');
-			}
-            // Check collision with paddle top/bottom
-            // if (this.bounceCooldown <= 0 && (this.ball.y + this.ball.radius > paddleTop && this.ball.dy < 0)) {
-            //   this.ball.dy *= -1;
-            //   this.bounceCooldown = 150; // Set cooldown after bouncing
-            //   console.log('topbounce');
-	        // } else if (this.bounceCooldown <= 0 && (this.ball.y - this.ball.radius < paddleBottom && this.ball.dy > 0)) {
-            // this.ball.dy *= -1;
-            // this.bounceCooldown = 150; // Set cooldown after bouncing
-            // console.log('bottombounce');
-        }
+      const paddle = this.paddles[id];
+      if (this.ball.x - this.ball.radius < paddle.x + paddle.width && this.ball.x + this.ball.radius > paddle.x &&
+        this.ball.y > paddle.y - 2 && this.ball.y < paddle.y + paddle.height - 2 && this.bounceCooldown <= 0) {
+        this.ball.dx *= -1.1;
+        this.bounceCooldown = 150;
+      }
     }
+      //attempted better physics, they suck tho
+    // for (const id in this.paddles) {
+    //     const paddle = this.paddles[id];
+    //     const paddleTop = paddle.y + paddle.height - 2;
+    //     const paddleBottom = paddle.y - 2;
+    //     const paddleFront = paddle.x + paddle.width;
+
+    //     // Check collision with paddle front (side)
+    //     if (this.bounceCooldown <= 0 && this.ball.x - this.ball.radius < paddleFront && this.ball.x + this.ball.radius > paddle.x) {
+    //         if (this.ball.y > paddleBottom && this.ball.y < paddleTop) {
+    //             this.ball.dx *= -1.1; // Invert and slightly increase the speed
+    //             this.bounceCooldown = 150;
+    //             // console.log('frontbounce');
+		// 	}
+
+    //     }
+    // }
 
     // Ball collision with left and right screen boundaries
     if (this.ball.x - this.ball.radius < -20 || this.ball.x + this.ball.radius > 20) {
-        console.log('reset');
         this.resetBall();
     }
 }
@@ -156,6 +156,7 @@ export class GameState {
 //     }
 //   }
 
+  //todo: make the direction random
   resetBall() {
     // this.ball = { x: 400, y: 300, dx: 4, dy: 4, radius: 10 }; //2d
     this.ball = { x: 0, y: 0, dx: 0.2, dy: 0.2, radius: 0.5 };

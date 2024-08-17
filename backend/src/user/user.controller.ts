@@ -26,9 +26,24 @@ export class UserController {
       }, HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }
+
+  @UseGuards(AuthGuard)
+  @Post('add')
+  async addUserAsFriend(
+    @Body('targetId') targetId: number,
+    @Body('userId') userId: number,
+  ) {
+    return this.userService.addUserAsFriend(targetId, userId);
+  }
   
   async getUserForAuth(@Param('username') username: string) {
     return this.userService.getUserForAuth(String(username));
+  }
+
+//   @UseGuards(AuthGuard)
+  @Get('all')
+  async getAllUsers() {
+    return this.userService.getAllUsers();
   }
 
   //todo: re-enable the guards for eval.
