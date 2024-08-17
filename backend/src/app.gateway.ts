@@ -40,6 +40,7 @@ export class AppGateway implements OnGatewayInit, OnGatewayConnection, OnGateway
   }
 
   async handleDisconnect(client: Socket) {
+	console.log('Handle disconnect in app gateway!');
     try {
       // Find the user by socket ID and clear the socket ID field
       await this.prisma.user.updateMany({

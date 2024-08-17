@@ -86,8 +86,9 @@ export class GameGateway {
         
   // Handle "join_game" event from client
   @SubscribeMessage('joinGame')
-  handleJoinGame(client: Socket, data: { userId: string }, username: string): void {
+  handleJoinGame(client: Socket, data: { userId: string, username: string }): void {
     const userId = data.userId;
+    const username = data.username;
   
     if (!client)
     {
@@ -96,6 +97,10 @@ export class GameGateway {
     }
     if (!userId) {
       console.log('No userId provided for join_game');
+      return;
+    }
+    if (!username) {
+      console.log('No username provided for join_game');
       return;
     }
   
@@ -109,17 +114,18 @@ export class GameGateway {
       return;
     }
     if (session.player_one && session.player_one.userId == userId)
-      session.gameState.paddles[userId] = {x: 30, y: 250, width: 10, height: 100, dy: 0};
+      session.gameState.paddles[userId] = {x: -14, y: 0, width: 1, height: 4, dy: 0};
+    // session.gameState.paddles[userId] = {x: 30, y: 250, width: 10, height: 100, dy: 0}; // used to be x30 y250 h100 w10 dy0
     if (session.player_two && session.player_two.userId == userId)
-      session.gameState.paddles[userId] = {x: 570, y: 250, width: 10, height: 100, dy: 0};
-    if (session.player_one && session.player_two)
+      session.gameState.paddles[userId] = {x: 14, y: 0, width: 1, height: 4, dy: 0};
+    // session.gameState.paddles[userId] = {x: 760, y: 250, width: 10, height: 100, dy: 0}; //used to be x760: y250 100 w10 dy0
+    if (session.player_one != null && session.player_two != null)
     {
       console.log('GAME IS NOW STARTING!');
       session.player_one.socket.emit('opponentJoined', session.player_two.username);
       session.player_two.socket.emit('opponentJoined', session.player_one.username);
       session.paused = false;
     }
-    // this.startGameLoop();
   }
         
   // Assign user to a game room or create a new one
@@ -175,6 +181,7 @@ export class GameGateway {
     const gameSession = this.getGameSessionForUser(userId);
     if (gameSession) {
       gameSession.gameState.updatePlayerPosition(userId, data.y);
+      console.log(`y updated to: ${data.y} vs ball y: ${gameSession.gameState.ball.y}`);
     }
   }
   
@@ -192,7 +199,7 @@ export class GameGateway {
         return session;
       }
     }
-      console.log('CANNOT FIND USERS SESSION');
+      console.log('CANNOT FIND USERS SESSION'); //todo: some way to detect the user is not actually ingame and reset their state?
       return undefined;
     }
     
