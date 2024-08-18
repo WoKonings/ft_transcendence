@@ -1,0 +1,54 @@
+import { Controller, UseGuards, Delete, Get, Post, Body, Param, HttpException, HttpStatus } from '@nestjs/common';
+import { UserService } from './user.service';
+import { Prisma } from '@prisma/client';
+import { AuthGuard } from '../auth/auth.guard';
+
+
+
+@Controller('user')
+export class UserController {
+  constructor(private readonly userService: UserService) {}
+
+  @Post()
+  async createUser(@Body() userData: Prisma.UserCreateInput) {
+    try {
+      return await this.userService.createUser(userData);
+    } catch (error) {
+      if (error.message.includes('Unique constraint violation')) {
+        throw new HttpException({
+          status: HttpStatus.CONFLICT,
+          error: error.message,
+        }, HttpStatus.CONFLICT);
+      }
+      throw new HttpException({
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+        error: 'Internal Server Error',
+      }, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+  }
+  
+  async getUserForAuth(@Param('username') username: string) {
+    return this.userService.getUserForAuth(String(username));
+  }
+
+  //todo: re-enable the guards for eval.
+//   @UseGuards(AuthGuard)
+  @Get('search/:username')
+  async getUserByUsernameOrEmail(@Param('username') username: string) {
+    return this.userService.getUserByUsernameOrEmail(String(username));
+  }
+
+//   @UseGuards(AuthGuard)
+  @Get(':id')
+  async getUserById(@Param('id') id: string) {
+    return this.userService.getUserById(Number(id));
+  }
+
+  //todo: check if logged into this account so not EVERYONE can delete with a simple CURL?
+  @UseGuards(AuthGuard)
+  @Delete(':id')
+  async deleteUser(@Param('id') id: string) {
+    return this.userService.deleteUser(Number(id));
+  }
+
+}

@@ -1,0 +1,43 @@
+# version: '3.7'
+
+services:
+  backend:
+    build:
+      context: ./backend
+    container_name: backend
+    ports:
+      - "3000:3000"
+    volumes:
+      - "./backend:/usr/src/app"
+    depends_on:
+      - postgres
+    environment:
+      DATABASE_URL: postgres://dbuser:dbpassword@postgres:5432/db
+    restart: on-failure
+
+  postgres:
+    image: postgres:15
+    container_name: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    #todo: add .env for the postgres variables
+    environment:
+      POSTGRES_USER: dbuser
+      POSTGRES_PASSWORD: dbpassword
+      POSTGRES_DB: db
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: frontend
+    ports:
+      - "8080:8080"
+    volumes:
+      - "./frontend:/app"
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:
