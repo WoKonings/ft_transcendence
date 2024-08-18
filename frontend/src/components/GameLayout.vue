@@ -1,5 +1,9 @@
 <template>
-  <div class="game-layout">
+  <!-- HIGHLIGHT: Added v-if="isAuthenticated" to conditionally render the layout -->
+  <div v-if="isAuthenticated">
+    <!-- Your GameLayout content -->
+    <h1>Welcome to the Game Layout</h1>
+    <div class="game-layout">
     <!-- Sidebar -->
     <div class="sidebar">
       <div class="friends-list-container">
@@ -14,9 +18,15 @@
     <div class="main-content">
       <div class="center-container">
         <StatHistory class="stat-history" />
-        <button class="play-pong">Play Pong</button>
+        <button class="play-pong">test</button>
       </div>
     </div>
+  </div>
+    <!-- Rest of the component -->
+  </div>
+  <!-- HIGHLIGHT: Added fallback message for unauthenticated users -->
+  <div v-else>
+    <p>Please log in to access the game.</p>
   </div>
 </template>
 
@@ -27,6 +37,11 @@ import StatHistory from './StatHistory.vue';
 
 export default {
   name: 'GameLayout',
+  data() {
+    return {
+      isAuthenticated: false,
+    }
+  },
   components: {
     FriendsList,
     ChatBox,

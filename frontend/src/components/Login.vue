@@ -5,13 +5,14 @@
       <form @submit.prevent="handleLogin">
         <input type="text" v-model="username" placeholder="Username" required />
         <input type="password" v-model="password" placeholder="Password" required />
-        <button type="submit">Login</button>
+        <button @click="login" type="submit">Login</button>
       </form>
     </div>
   </div>
 </template>
 
 <script>
+import { mapMutations } from 'vuex';
 export default {
   data() {
     return {
@@ -20,6 +21,12 @@ export default {
     };
   },
   methods: {
+    ...mapMutations(['login']),
+    login() {
+      // Logic to authenticate user
+      this.login(); // This will set isAuthenticated to true
+      this.$router.push('/game'); // Redirect to game layout
+    },
     handleLogin() {
       // Handle the login logic here
       console.log('Logging in with', this.username, this.password);

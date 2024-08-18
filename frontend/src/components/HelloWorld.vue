@@ -33,8 +33,12 @@
 
       <!-- New components -->
       <div class="user-components">
-        <UserSettings />
       </div>
+    </div>
+
+    <div>
+      <p>Is Logged In: {{ isLoggedIn }}</p> <!-- Debugging line -->
+      <GameLayout v-if="isLoggedIn" />
     </div>
 
     <!-- Game and chat -->
@@ -61,10 +65,12 @@ import PongGame from './PongGame.vue';
 // import StatHistory from './StatHistory.vue';
 // import UserSettings from './UserSettings.vue';
 import io from 'socket.io-client';
+import GameLayout from './GameLayout.vue';
 
 export default {
   name: 'HelloWorld',
   components: {
+    GameLayout,
     PongGame,
     // ChatBox,
     // FriendsList,

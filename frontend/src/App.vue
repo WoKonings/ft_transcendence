@@ -1,18 +1,18 @@
 <template>
   <!-- <img alt="Vue logo" src="./assets/logo.png"> -->
   <HelloWorld />
-  <GameLayout />
+  <!-- <GameLayout /> -->
 </template>
 
 <script>
 import HelloWorld from './components/HelloWorld.vue'
-import GameLayout from './components/GameLayout.vue'
+// import GameLayout from './components/GameLayout.vue'
 
 export default {
   name: 'App',
   components: {
     HelloWorld,
-    GameLayout,
+    // GameLayout,
   }
 }
 </script>
