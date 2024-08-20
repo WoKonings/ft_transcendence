@@ -5,6 +5,9 @@ import { GameState } from './game.state';
 import { UserService } from '../user/user.service';
 import { PrismaService } from '../prisma.service';
 import { AuthGuard } from '../auth/auth.guard';
+import { JoinGameDto } from './dto/join-game.dto';
+import { PlayerMoveDto } from './dto/player-move.dto';
+import { LeaveGameDto } from './dto/leave-game.dto';
 // import { UUID } from 'typeorm/driver/mongodb/bson.typings';
 // import { randomUUID } from 'crypto';
 // import { JwtService } from '@nestjs/jwt';
@@ -43,34 +46,29 @@ export class GameGateway {
     this.startGameLoop();
   }
 
-  // Handle user disconnect
   @SubscribeMessage('leaveGame')
-  handleLeaveGame(client: Socket, data: { userId: string, username: string }): void {
-    const userId = data.userId;
-	const username = data.username;
+  handleLeaveGame(client: Socket, data: LeaveGameDto): void {
+    const { userId, username } = data;
     if (!userId) {
       console.log('No userId provided for leave_game');
       return;
     }
-    console.log(`${data.username} leaving the game`);
+    console.log(`${username} leaving the game`);
 
-    const game = this.getGameSessionForUser(userId)
+    const game = this.getGameSessionForUser(userId);
     if (!game) {
       console.log(`user: ${username} is not in a game to leave.`);
       return;
     }
-    // game.gameState.removePlayer(userId);
     console.log(`removed paddle from user: ${username}`);
 
-    //notify other player, and set leaving player to null.
-    if (game.player_one && game.player_one.userId == userId) {
-      console.log('player one bailed'); 
+    if (game.player_one && game.player_one.userId === userId) {
+      console.log('player one bailed');
       if (game.player_two)
         game.player_two.socket.emit('opponentLeft', game.player_one.username);
       game.player_one = null;
       game.gameState.playerOne = null;
-    }
-    else if (game.player_two && game.player_two.userId == userId) {
+    } else if (game.player_two && game.player_two.userId === userId) {
       console.log('player two bailed');
       if (game.player_one)
         game.player_one.socket.emit('opponentLeft', game.player_two.username);
@@ -87,12 +85,11 @@ export class GameGateway {
         
   // Handle "joinGame" event from client
   @SubscribeMessage('joinGame')
-  handleJoinGame(client: Socket, data: { userId: string, username: string }): void {
-    const userId = data.userId;
-    const username = data.username;
-  
+  handleJoinGame(client: Socket, data: JoinGameDto): void {
+    const { userId, username } = data;
+
     if (!client) {
-      console.log('No socket')
+      console.log('No socket');
       return;
     }
     if (!userId) {
@@ -103,22 +100,19 @@ export class GameGateway {
       console.log('No username provided for join_game');
       return;
     }
-  
-    // Assign the user to a game room
+
     this.assignUserToRoom(client, userId, username);
-    let session = this.getGameSessionForUser(userId);
-    client.emit('gameJoined', session.player_one.userId == userId ? 1 : 2);
-    if (!session)
-    {
+    const session = this.getGameSessionForUser(userId);
+    client.emit('gameJoined', session.player_one.userId === userId ? 1 : 2);
+    if (!session) {
       console.log('cannot find user session to add paddle');
       return;
     }
-    if (session.player_one && session.player_one.userId == userId)
-      session.gameState.paddle1 = {x: -14, y: 0, width: 1, height: 4, dy: 0};
-    if (session.player_two && session.player_two.userId == userId)
-      session.gameState.paddle2 = {x: 14, y: 0, width: 1, height: 4, dy: 0};
-    if (session.player_one != null && session.player_two != null)
-    {
+    if (session.player_one && session.player_one.userId === userId)
+      session.gameState.paddle1 = { x: -14, y: 0, width: 1, height: 4, dy: 0 };
+    if (session.player_two && session.player_two.userId === userId)
+      session.gameState.paddle2 = { x: 14, y: 0, width: 1, height: 4, dy: 0 };
+    if (session.player_one && session.player_two) {
       console.log('GAME IS NOW STARTING!');
       session.player_one.socket.emit('opponentJoined', session.player_two.username);
       session.player_two.socket.emit('opponentJoined', session.player_one.username);
@@ -126,6 +120,7 @@ export class GameGateway {
     }
     this.userService.setIsInGame(Number(userId), true);
   }
+
         
   // Assign user to a game room or create a new one
   assignUserToRoom(client: Socket, userId: string, username: string) {
@@ -134,7 +129,6 @@ export class GameGateway {
     if (availableSession) {
       console.log('joining session!');
       // Notify the existing player about the new opponent
-    //   availableSession.gameState.addPlayer(userId);
       if (availableSession.player_one == null) {
         availableSession.player_one = { userId, socket: client, username }; //todo: maybe add more data?
         availableSession.gameState.playerOne = userId;
@@ -174,17 +168,16 @@ export class GameGateway {
   }
         
   @SubscribeMessage('playerMove')
-  handlePlayerMove(client: Socket, data: { userId: string, y: number }): void {
-    const userId = data.userId;
+  handlePlayerMove(client: Socket, data: PlayerMoveDto): void {
+    const { userId, y } = data;
     if (!userId) {
       console.log('No userId provided for playerMove');
       return;
     }
-    
+
     const gameSession = this.getGameSessionForUser(userId);
     if (gameSession) {
-      gameSession.gameState.updatePlayerPosition(userId, data.y);
-    //   console.log(`y updated to: ${data.y} vs ball y: ${gameSession.gameState.ball.y}`);
+      gameSession.gameState.updatePlayerPosition(userId, y);
     }
   }
   
