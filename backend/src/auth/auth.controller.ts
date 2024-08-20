@@ -11,6 +11,7 @@ import {
 import { AuthGuard } from './auth.guard';
 import { AuthService } from './auth.service';
 import { UserService } from '../user/user.service';
+import { SignInDto } from './sign-in.dto';
 
 //added readonly
 @Controller('auth')
@@ -22,7 +23,7 @@ export class AuthController {
 
   @HttpCode(HttpStatus.OK)
   @Post('login')
-  async signIn(@Body() signInDto: Record<string, any>) {
+  async signIn(@Body() signInDto: SignInDto) {
     console.log(`Attempting to log in: password = ${signInDto.password} && username = ${signInDto.username}`); // debug log, remove later
     return this.authService.signIn(signInDto.username, signInDto.password);
   }

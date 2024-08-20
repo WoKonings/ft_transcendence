@@ -9,6 +9,7 @@ import { AuthGuard } from '../auth/auth.guard';
 // import { randomUUID } from 'crypto';
 // import { JwtService } from '@nestjs/jwt';
 
+//todo: think about adding player stats if we want them visible in the lobby?
 interface Player {
   username: string;
 	userId: string;
@@ -18,12 +19,13 @@ interface Player {
 interface GameSession {
   player_one: Player;
   player_two: Player;
-	gameState: GameState;
+  gameState: GameState;
   paused: boolean;
   gameId: string;
 }
 
 @WebSocketGateway({ cors: true })
+// @UseGuards(AuthGuard)
 @Injectable()
 export class GameGateway {
   @WebSocketServer() server: Server;
@@ -53,46 +55,43 @@ export class GameGateway {
     console.log(`${data.username} leaving the game`);
 
     const game = this.getGameSessionForUser(userId)
-    if (!game)
-    {
+    if (!game) {
       console.log(`user: ${username} is not in a game to leave.`);
       return;
     }
-    game.gameState.removePlayer(userId);
+    // game.gameState.removePlayer(userId);
     console.log(`removed paddle from user: ${username}`);
 
     //notify other player, and set leaving player to null.
-    if (game.player_one && game.player_one.userId == userId)
-    {
+    if (game.player_one && game.player_one.userId == userId) {
       console.log('player one bailed'); 
       if (game.player_two)
         game.player_two.socket.emit('opponentLeft', game.player_one.username);
       game.player_one = null;
+      game.gameState.playerOne = null;
     }
-    else if (game.player_two && game.player_two.userId == userId)
-    {
+    else if (game.player_two && game.player_two.userId == userId) {
       console.log('player two bailed');
       if (game.player_one)
         game.player_one.socket.emit('opponentLeft', game.player_two.username);
       game.player_two = null;
+      game.gameState.playerTwo = null;
     }
     game.paused = true;
     console.log('The game is now paused');
-    if (!game.player_one && !game.player_two)
-    {
+    if (!game.player_one && !game.player_two) {
       console.log('Both players are gone. Deleting game instance');
       this.gameSessions.delete(game.gameId);
     }
   }
         
-  // Handle "join_game" event from client
+  // Handle "joinGame" event from client
   @SubscribeMessage('joinGame')
   handleJoinGame(client: Socket, data: { userId: string, username: string }): void {
     const userId = data.userId;
     const username = data.username;
   
-    if (!client)
-    {
+    if (!client) {
       console.log('No socket')
       return;
     }
@@ -107,19 +106,17 @@ export class GameGateway {
   
     // Assign the user to a game room
     this.assignUserToRoom(client, userId, username);
-    client.emit('game_joined', { success: true, message: 'Joined game room successfully.' });
     let session = this.getGameSessionForUser(userId);
+    client.emit('gameJoined', session.player_one.userId == userId ? 1 : 2);
     if (!session)
     {
       console.log('cannot find user session to add paddle');
       return;
     }
     if (session.player_one && session.player_one.userId == userId)
-      session.gameState.paddles[userId] = {x: -14, y: 0, width: 1, height: 4, dy: 0};
-    // session.gameState.paddles[userId] = {x: 30, y: 250, width: 10, height: 100, dy: 0}; // used to be x30 y250 h100 w10 dy0
+      session.gameState.paddle1 = {x: -14, y: 0, width: 1, height: 4, dy: 0};
     if (session.player_two && session.player_two.userId == userId)
-      session.gameState.paddles[userId] = {x: 14, y: 0, width: 1, height: 4, dy: 0};
-    // session.gameState.paddles[userId] = {x: 760, y: 250, width: 10, height: 100, dy: 0}; //used to be x760: y250 100 w10 dy0
+      session.gameState.paddle2 = {x: 14, y: 0, width: 1, height: 4, dy: 0};
     if (session.player_one != null && session.player_two != null)
     {
       console.log('GAME IS NOW STARTING!');
@@ -127,6 +124,7 @@ export class GameGateway {
       session.player_two.socket.emit('opponentJoined', session.player_one.username);
       session.paused = false;
     }
+    this.userService.setIsInGame(Number(userId), true);
   }
         
   // Assign user to a game room or create a new one
@@ -136,16 +134,20 @@ export class GameGateway {
     if (availableSession) {
       console.log('joining session!');
       // Notify the existing player about the new opponent
+    //   availableSession.gameState.addPlayer(userId);
       if (availableSession.player_one == null) {
         availableSession.player_one = { userId, socket: client, username }; //todo: maybe add more data?
+        availableSession.gameState.playerOne = userId;
         console.log(`${username} joined lobby as player one`);
       }
       else if (availableSession.player_two == null) {
         availableSession.player_two = { userId, socket: client, username };
+        availableSession.gameState.playerTwo = userId;
         console.log(`${username} joined lobby as player two`);
       }
     } else {
       const newGameState = new GameState();
+      newGameState.playerOne = userId;
       const newSession: GameSession = {
         player_one: { userId, socket: client, username },
         player_two: null,
@@ -214,18 +216,51 @@ export class GameGateway {
         if (session.paused == false)
         {
           session.gameState.update();
-          let newGameState = {
-            ball: session.gameState.ball,
-            paddles: session.gameState.paddles,
-            scores: session.gameState.scores,
-            players: session.gameState.players,
+          if (session.gameState.score.playerOne >= 7)
+          {
+            this.handleGameOver(session.player_one, session.player_two);
+            session.gameState.score.playerOne = 0;
+            session.gameState.score.playerTwo = 0;
+            session.paused = true;
           }
-          // this.server.emit('update', newGameState);
-          session.player_one.socket.emit('update', newGameState);
-          session.player_two.socket.emit('update', newGameState);
+          if (session.gameState.score.playerTwo >= 7)
+          {
+            this.handleGameOver(session.player_two, session.player_one);
+            session.gameState.score.playerOne = 0;
+            session.gameState.score.playerTwo = 0;
+            session.paused = true;
+          }
+          session.player_one.socket.emit('update', session.gameState);
+          session.player_two.socket.emit('update', session.gameState);
         };
       });
     }, 1000 / 60); // 60 FPS
+	}
+
+  async handleGameOver(winner: Player, loser: Player) {
+		try {
+			await this.prisma.user.update({
+				where: { id: Number(winner.userId) },
+				data: {
+					gamesPlayed: { increment: 1 },
+					gamesWon: { increment: 1 },
+				},
+			});
+			await this.prisma.user.update({
+				where: { id: Number(loser.userId) },
+				data: {
+					gamesPlayed: { increment: 1 },
+				},
+			});
+
+			// You can also emit an event to the client, log the result, etc.
+			console.log(`Game over: ${winner.username} won against ${loser.username}`);
+      winner.socket.emit('gameWon');
+      loser.socket.emit('gameLost');
+
+		} catch (error) {
+			console.error('Error updating game stats:', error);
+		}
 	}
 
   async handleDisconnect(client: Socket) {
@@ -234,7 +269,6 @@ export class GameGateway {
       // Find the session the client belongs to and remove them
       this.gameSessions.forEach((session, sessionId) => {
         if (session.player_one && session.player_one.socket.id === client.id) {
-          // session.player_one = null;
           this.handleLeaveGame(client, { userId: session.player_one.userId, username: session.player_one.username });
           console.log(`Player one disconnected from session: ${sessionId}`);
         } else if (session.player_two && session.player_two.socket.id === client.id) {

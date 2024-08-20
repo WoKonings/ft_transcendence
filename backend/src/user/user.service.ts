@@ -23,9 +23,8 @@ export class UserService {
   }
 
   async addUserAsFriend(targetId: number, userId: number) {
-    // Fetch the target user
-
-    console.log('targetId:', targetId, 'userId:', userId); // Log IDs to verify they are correct
+	  console.log('targetId:', targetId, 'userId:', userId); // Log IDs to verify they are correct
+	// Fetch the target user
     if (!targetId || !userId) {
       throw new Error('Invalid user IDs provided');
     }
@@ -119,7 +118,7 @@ export class UserService {
       where: { id },
     });
     if (!user) {
-      throw new NotFoundException('User with ID ${id} not found.');
+      throw new NotFoundException(`User with ID ${id} not found.`);
     }
     return this.prisma.user.delete({
       where: { id },
