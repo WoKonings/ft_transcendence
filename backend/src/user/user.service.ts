@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException, UseGuards } from '@
 import { PrismaService } from '../prisma.service';
 import { Prisma, User, Channel } from '@prisma/client';
 import { AuthGuard } from '@nestjs/passport';
+import { GetFriendsDto } from './dto/get-friends.dto';
 
 @Injectable()
 export class UserService {
@@ -88,6 +89,71 @@ export class UserService {
   
 	return users;
   }
+
+  async getFriends(userId: number) {
+	// Fetch the user with their friends' IDs
+	const user = await this.prisma.user.findUnique({
+		where: { id: userId },
+		select: { friends: true },
+	});
+
+	if (!user) {
+		throw new BadRequestException('User not found');
+	}
+
+	// Retrieve each friend's information
+	const friendsList = await Promise.all(
+		user.friends.map(async (friendId) => {
+			const friend = await this.prisma.user.findUnique({
+				where: { id: friendId },
+				select: {
+					id: true,
+					username: true,
+					isOnline: true,
+					isInGame: true,
+					isInQueue: true,
+					// avatar: true,
+				},
+			});
+			return friend;
+		}),
+	);
+
+	return friendsList;
+}
+
+async getIncomingPendingFriends(userId: number) {
+	// Fetch the user with their friends' IDs
+	const user = await this.prisma.user.findUnique({
+		where: { id: userId },
+		select: { pending: true },
+	});
+
+	if (!user) {
+		throw new BadRequestException('User not found');
+	}
+
+	// Retrieve each friend's information
+	const pendingList = await Promise.all(
+		user.pending.map(async (pendingId) => {
+			const pending = await this.prisma.user.findUnique({
+				where: { id: pendingId },
+				select: {
+					id: true,
+					username: true,
+					isOnline: true,
+					isInGame: true,
+					isInQueue: true,
+					// avatar: true,
+				},
+			});
+			return pending;
+		}),
+	);
+	return pendingList;
+}
+
+
 
   //todo: error catching if no user?
   async getUserById(userId: number): Promise<User | null> {

@@ -3,6 +3,7 @@ import { UserService } from './user.service';
 import { AuthGuard } from '../auth/auth.guard';
 import { CreateUserDto } from './dto/create-user.dto';
 import { AddFriendDto } from './dto/add-friend.dto';
+import { GetFriendsDto } from './dto/get-friends.dto';
 
 @Controller('user')
 export class UserController {
@@ -36,6 +37,20 @@ export class UserController {
 	async getAllUsers() {
 		return this.userService.getAllUsers();
 	}
+
+  @Post('friends')
+  async getFriends(@Body() getFriendsDto: GetFriendsDto) {
+    const { userId } = getFriendsDto;
+    return this.userService.getFriends(userId);
+  }
+
+
+  @Post('pending')
+  async getIncomingPendingFriends(@Body() getFriendsDto: GetFriendsDto) {
+    const { userId } = getFriendsDto;
+    return this.userService.getIncomingPendingFriends(userId);
+  }
+
 
 	@Get('search/:username')
 	async getUserByUsernameOrEmail(@Param('username') username: string) {

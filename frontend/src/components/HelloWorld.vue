@@ -1,5 +1,5 @@
 <template>
-    <div>
+  <div>
     <h1>{{ message }}</h1>
     <form v-if="!isLoggedIn" @submit.prevent="createUser">
         <h2>Create Account</h2>
@@ -26,17 +26,22 @@
     </div>
 
     <div class="main-container">
-		<div class="chat-box-container">
-			<ChatBox v-if="isLoggedIn && currentUser" />
-		</div>
-		<div class="pong-game-container">
-			<PongGame v-if="isLoggedIn && showGame" />
-		</div>
-		<div class="user-list-container">
-			<UserList v-if="isLoggedIn && currentUser" />
-		</div>
-		</div>
-    </div>
+      <div class="chat-box-container">
+        <ChatBox v-if="isLoggedIn && currentUser" />
+        </div>
+        <div class="pong-game-container">
+          <PongGame v-if="isLoggedIn && showGame" />
+        </div>
+        <div class="sidebar">
+          <div class="friends-list-container">
+            <FriendsList v-if="isLoggedIn && currentUser" />
+          </div>
+          <div class="user-list-container">
+            <UserList v-if="isLoggedIn && currentUser" />
+          </div>
+        </div>
+      </div>
+  </div>
 
     <p v-if="error" style="color: red">{{ error }}</p>
 
@@ -48,6 +53,7 @@ import PongGame from './PongGame.vue';
 import ChatBox from './Chat-Box.vue';
 import io from 'socket.io-client'
 import UserList from './UserList.vue';
+import FriendsList from './FriendsList.vue'
 
 export default {
   name: 'HelloWorld',
@@ -55,6 +61,7 @@ export default {
   PongGame,
   ChatBox,
   UserList,
+  FriendsList,
   },
   data() {
     return {
@@ -208,26 +215,36 @@ export default {
   align-items: center;
 }
 
+.sidebar {
+  display: flex;
+  margin-left: 20px;
+  flex-direction: column;
+  justify-content: space-between;
+  max-width: 300px;
+}
+
+.friends-list-container {
+  margin-bottom: 20px; /* Space between friends list and user list */
+}
+
 .user-list-container {
+  max-width: 100%;
+}
+
+</style>
+
+<!-- .user-list-container {
+  flex: 1;
+  margin-left: 20px; /* Space between game and user list */
+  margin-bottom: 20px;
+  max-width: 300px;
+  height: 100%;
+} -->
+
+/* CHAT GPT PLEASE CHANGE THIS CONTAINER! */
+<!-- .friends-list-container {
   flex: 1;
   margin-left: 20px; /* Space between game and user list */
   max-width: 300px;
   height: 100%;
-}
-</style>
-
-<!-- .game-and-chat {
-    display: flex;
-    flex-direction: row;
-    justify-content: center;
-    align-items: center;
-    margin-top: 20px;
-}
-
-.chat-box-container {
-    margin-right: 20px;
-}
-
-.pong-game-container {
-    flex: 1;
 } -->
