@@ -44,7 +44,6 @@ export class UserController {
     return this.userService.getFriends(userId);
   }
 
-
   @Post('pending')
   async getIncomingPendingFriends(@Body() getFriendsDto: GetFriendsDto) {
     const { userId } = getFriendsDto;

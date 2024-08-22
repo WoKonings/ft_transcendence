@@ -1,19 +1,19 @@
 import { IsEmail, IsNotEmpty, IsString, Length } from 'class-validator';
 
-//todo: adjust length or other limit parameters.
+//todo: re-enable later.
 export class CreateUserDto {
 	@IsString()
 	@IsNotEmpty()
-	@Length(3, 20)
+	// @Length(3, 20)
 	username: string;
 
 	@IsString()
 	@IsNotEmpty()
-	@IsEmail()
+	// @IsEmail()
 	email: string;
 
 	@IsString()
 	@IsNotEmpty()
-	@Length(8, 50)
+	// @Length(8, 50)
 	password: string;
 }

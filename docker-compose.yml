@@ -14,6 +14,7 @@ services:
     environment:
       DATABASE_URL: postgres://dbuser:dbpassword@postgres:5432/db
     restart: on-failure
+    mem_limit: 1.5g
 
   postgres:
     image: postgres:15
@@ -27,6 +28,7 @@ services:
       POSTGRES_USER: dbuser
       POSTGRES_PASSWORD: dbpassword
       POSTGRES_DB: db
+    mem_limit: 1.5g
 
   frontend:
     build:
@@ -38,6 +40,7 @@ services:
       - "./frontend:/app"
     depends_on:
       - backend
+    mem_limit: 1.5g
 
 volumes:
   pgdata:

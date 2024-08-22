@@ -8,6 +8,7 @@ import { GetFriendsDto } from './dto/get-friends.dto';
 export class UserService {
   constructor(private prisma: PrismaService) {}
 
+  //todo: LOG IN PROPER
   async createUser(data: Prisma.UserCreateInput): Promise<User> {
     try {
       return await this.prisma.user.create({
@@ -23,6 +24,7 @@ export class UserService {
     }
   }
 
+  //todo: accept user if they added you and you add them?
   async addUserAsFriend(targetId: number, userId: number) {
 	  console.log('targetId:', targetId, 'userId:', userId); // Log IDs to verify they are correct
 	// Fetch the target user
@@ -35,6 +37,38 @@ export class UserService {
 
     if (!targetUser) {
       throw new BadRequestException('Target user not found');
+    }
+
+    // Check if target user already added user, if so, accept on both sides.
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId}
+    })
+    if (user && user.pending.includes(targetId)) {
+      //update user
+      await this.prisma.user.update({
+        where: { id: userId },
+        data: {
+          pending: {
+            set: user.pending.filter(id => id !== targetId)
+          },
+          friends: {
+            push: targetId
+          }
+        }
+      })
+      await this.prisma.user.update({
+        where: { id: targetId },
+        data: {
+          pending: {
+            set: user.pending.filter(id => id !== userId)
+            // remove userId
+          },
+          friends: {
+            push: userId
+          }
+        }
+      })
+      return;
     }
 
     // Check if userId is already in the pending list
@@ -82,8 +116,8 @@ export class UserService {
   async getAllUsers() {
     const users = await this.prisma.user.findMany({
       select: {
-      id: true,
-      username: true,
+        id: true,
+        username: true,
       },
 	});
   

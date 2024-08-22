@@ -59,8 +59,12 @@ const getUsers = () => {
 
 const updateList = (data) => {
   console.log('Fetched users data:', data); // Debugging line
+  if (data.userId == currentUser.value.id) {
+    console.log("caught self");
+    return;
+  }
 	users.value = data.map(user => ({
-		id: user.id, // Assuming userId is the correct field name
+		id: user.id,
 		username: user.username,
 		avatar: user.avatar || 'https://via.placeholder.com/40', // Optional avatar handling
 	}));
@@ -79,6 +83,7 @@ const closeOptions = () => {
 const addAsFriend = (user) => {
 	console.log(`Adding ${user.username}, id: ${user.id} as a friend`);
 	console.log(`Current user ID: ${currentUser.value.id}`);
+	console.log(`token?: ${localStorage.getItem('access_token')}`);
 	fetch('http://localhost:3000/user/add', {
 		method: 'POST',
 		headers: {
@@ -87,7 +92,7 @@ const addAsFriend = (user) => {
 		},
 		body: JSON.stringify({
 			targetId: user.id,
-			userId: currentUser.value.id, // Access currentUser ID from Vuex store
+			userId: currentUser.value.id,
 		}),
 	})
 		.then(response => response.json())

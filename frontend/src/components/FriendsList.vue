@@ -19,28 +19,51 @@
       </li>
     </ul>
     <p v-if="error" style="color: red">{{ error }}</p>
+
+    <!-- Modal for viewing pending requests -->
+    <div v-if="showPendingRequestsModal" class="modal">
+      <div class="modal-content">
+        <h3>Pending Friend Requests</h3>
+        <ul>
+          <li v-for="request in pendingFriendRequests" :key="request.id">
+            <div class="request-info">
+              <span>{{ request.name }}</span>
+              <button @click="acceptRequest(request.id)">Accept</button>
+              <button @click="declineRequest(request.id)">Decline</button>
+            </div>
+          </li>
+        </ul>
+        <button @click="closePendingRequests">Close</button>
+      </div>
+    </div>
   </div>
 </template>
 
 <script>
+import { mapState } from 'vuex';
+
 export default {
   name: 'FriendsList',
   data() {
     return {
       friends: [],
-      pendingFriendRequests: [], // Store for pending friend requests
-      error: ''
+      pendingFriendRequests: [],
+      error: '',
+      showPendingRequestsModal: false,
     };
+  },
+  computed: {
+    ...mapState(['currentUser', 'socket']),
   },
   created() {
     this.fetchFriends();
-    this.fetchPendingRequests(); // Fetch pending requests on load
-    this.initializeSocketListeners(); // Initialize socket listeners on component creation
+    this.fetchPendingRequests();
+    this.initializeSocketListeners();
   },
   methods: {
     async fetchFriends() {
       this.error = '';
-      const userId = this.$store.state.currentUser.id; // Assuming Vuex store contains currentUser
+      const userId = this.currentUser.id;  
       try {
         const response = await fetch('http://localhost:3000/user/friends', {
           method: 'POST',
@@ -55,7 +78,7 @@ export default {
           throw new Error(err.error);
         }
         const data = await response.json();
-        this.friends = data; // Update the friends list
+        this.friends = data;
       } catch (err) {
         console.error('Error fetching friends:', err);
         this.error = err.message;
@@ -63,7 +86,7 @@ export default {
     },
     async fetchPendingRequests() {
       this.error = '';
-      const userId = this.$store.state.currentUser.id; // Assuming Vuex store contains currentUser
+      const userId = this.currentUser.id;
       try {
         const response = await fetch('http://localhost:3000/user/pending', {
           method: 'POST',
@@ -78,24 +101,66 @@ export default {
           throw new Error(err.error);
         }
         const data = await response.json();
-        this.pendingFriendRequests = data; // Update the pending requests list
+        this.pendingFriendRequests = data;
       } catch (err) {
         console.error('Error fetching pending requests:', err);
         this.error = err.message;
       }
     },
     initializeSocketListeners() {
-      const socket = this.$store.state.socket; // Access the socket from the Vuex store
-      if (socket) {
-        socket.on('newFriendRequest', (data) => {
+      if (this.socket) {
+        this.socket.on('newFriendRequest', (data) => {
           this.pendingFriendRequests.push(data);
           console.log('New friend request:', data);
         });
       }
     },
     viewPendingRequests() {
-      console.log('Viewing pending friend requests:', this.pendingFriendRequests);
-      // Add logic to view and handle pending friend requests
+      this.showPendingRequestsModal = true;
+    },
+    closePendingRequests() {
+      this.showPendingRequestsModal = false;
+    },
+    async acceptRequest(requestId) {
+      try {
+        const response = await fetch(`http://localhost:3000/user/add`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ targetId: requestId, userId: this.currentUser.id })
+        });
+        if (!response.ok) {
+          const err = await response.json();
+          throw new Error(err.error);
+        }
+        this.pendingFriendRequests = this.pendingFriendRequests.filter(r => r.id !== requestId);
+        this.fetchFriends();
+      } catch (err) {
+        console.error('Error accepting request:', err);
+        this.error = err.message;
+      }
+    },
+    async declineRequest(requestId) {
+      try {
+        const response = await fetch(`http://localhost:3000/remove`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ requestId })
+        });
+        if (!response.ok) {
+          const err = await response.json();
+          throw new Error(err.error);
+        }
+        this.pendingFriendRequests = this.pendingFriendRequests.filter(r => r.id !== requestId);
+      } catch (err) {
+        console.error('Error declining request:', err);
+        this.error = err.message;
+      }
     },
     inviteToPlay(friend) {
       console.log('Inviting to play:', friend.name);
@@ -108,43 +173,36 @@ export default {
 </script>
 
 <style scoped>
-.friends-list {
-  background-color: #34495e;
+/* Existing styles */
+
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.modal-content {
+  background: #2c3e50;
   padding: 20px;
   border-radius: 10px;
   width: 300px;
   color: white;
 }
 
-h2 {
-  margin-bottom: 20px;
-}
-
-ul {
-  list-style: none;
-  padding: 0;
-}
-
-li {
+.request-info {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 15px;
+  margin-bottom: 10px;
 }
 
-.friend-info {
-  display: flex;
-  align-items: center;
-}
-
-.friend-info img {
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
-  margin-right: 10px;
-}
-
-.actions button {
+.request-info button {
   background-color: #2ecc71;
   border: none;
   color: white;
@@ -154,27 +212,21 @@ li {
   cursor: pointer;
 }
 
-.actions button:hover {
+.request-info button:hover {
   background-color: #27ae60;
 }
 
-.header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.notification {
+.modal-content button {
   background-color: #e74c3c;
   border: none;
   color: white;
   padding: 5px 10px;
+  margin-top: 10px;
   border-radius: 5px;
   cursor: pointer;
-  margin-left: 10px;
 }
 
-.notification:hover {
+.modal-content button:hover {
   background-color: #c0392b;
 }
 </style>
