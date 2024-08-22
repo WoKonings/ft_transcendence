@@ -44,13 +44,15 @@ model User {
 
 model Channel {
 
-	id		  Int		@id @default(autoincrement())
-
+	id		  Int		 @id @default(autoincrement())
+  name    String @unique
+  private Boolean
 	//users
-	users	  Int[]
+	users	  String[]
 	// kicked	  Int[]
 	// invited	  Int[]
 
 	messages  String[]
 
 }
+

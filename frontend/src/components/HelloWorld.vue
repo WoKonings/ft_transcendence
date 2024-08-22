@@ -28,7 +28,7 @@
     <div class="main-container">
 		<div class="chat-box-container">
 			<ChatBox v-if="isLoggedIn && currentUser" />
-		</div>
+		</div> 
 		<div class="pong-game-container">
 			<PongGame v-if="isLoggedIn && showGame" />
 		</div>
@@ -37,7 +37,6 @@
 		</div>
 		</div>
     </div>
-
     <p v-if="error" style="color: red">{{ error }}</p>
 
 </template>
@@ -48,12 +47,14 @@ import PongGame from './PongGame.vue';
 import ChatBox from './Chat-Box.vue';
 import io from 'socket.io-client'
 import UserList from './UserList.vue';
+//import ChatTabs from './Chat-Tabs.vue';
 
 export default {
   name: 'HelloWorld',
   components: {
   PongGame,
   ChatBox,
+  //ChatTabs,
   UserList,
   },
   data() {
@@ -213,6 +214,13 @@ export default {
   margin-left: 20px; /* Space between game and user list */
   max-width: 300px;
   height: 100%;
+}
+
+.chat-tabs-container {
+  flex: 1;
+  margin-right: 20px; /* Space between chat and game */
+  max-width: 150px;
+  height: 90%;
 }
 </style>
 

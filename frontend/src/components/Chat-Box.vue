@@ -1,147 +1,151 @@
 <template>
-    <div class="chat-box">
-      <div class="messages">
-        <div class="message-container">
-          <!-- Add placeholder messages for demonstration -->
-          <div class="message">
-            <div class="avatar">
-              <img src="https://via.placeholder.com/40" alt="Avatar" />
-            </div>
-            <div class="content">
-              <div class="username">User 1</div>
-              <div class="text">Hello, how are you?</div>
-            </div>
-          </div>
-          <div class="message">
-            <div class="avatar">
-              <img src="https://via.placeholder.com/40" alt="Avatar" />
-            </div>
-            <div class="content">
-              <div class="username">User 2</div>
-              <div class="text">I'm doing great, thanks for asking!</div>
-            </div>
-          </div>
+  <div class="chat-container">
+    <div class="chat-tabs">
+      <div class="tabs">
+        <div 
+          v-for="(chat, index) in chats" 
+          :key="index" 
+          @click="selectChat(index)"
+          :class="{ 'active-tab': selectedChatIndex === index }"
+          class="tab"
+        >
+          {{ chat.name }}
         </div>
       </div>
-      <div class="input-container">
-        <form @submit.prevent="handleSubmit">
-          <input v-model="text" placeholder="Type your message..." />
-          <button type="submit">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <line x1="22" y1="2" x2="11" y2="13"></line>
-              <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-            </svg>
-          </button>
-        </form>
-      </div>
     </div>
-  </template>
-  
-  <script setup>
-  import { ref } from 'vue';
-  
-  const text = ref('');
-  
-  const handleSubmit = (event) => {
-    event.preventDefault();
-    console.log(text.value);
-    text.value = '';
-  };
-  </script>
-  
-  <style scoped>
-  .chat-box {
-    position: relative;
-    width: 100%;
-    height: 400px;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
+
+    <div v-if="selectedChat" class="chat-box">
+      <div class="messages" ref="messagesContainer">
+        <div v-for="(message, index) in selectedChat.messages" :key="index" class="message">
+          <span>{{ message.sender }}:</span> {{ message.text }}
+        </div>
+      </div>
+
+      <form @submit.prevent="sendMessage" class="input-container">
+        <input v-model="newMessage" placeholder="Type a message..." />
+        <button type="submit">Send</button>
+      </form>
+    </div>
+    <div v-else class="chat-box">
+      <p>Select a chat to view messages.</p>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref, onMounted, onUpdated } from 'vue';
+import { useStore } from 'vuex';
+
+// Dummy data for the example
+const chats = ref([
+  { name: 'Chat 1', messages: [{ sender: 'John', text: 'Hello!' }, { sender: 'You', text: 'Hi!' }] },
+  { name: 'Chat 2', messages: [{ sender: 'Bob', text: 'Hey there!' }] },
+  { name: 'Chat 3', messages: [{ sender: 'Alice', text: 'What\'s up?' }] }
+]);
+
+// import { ref, onMounted, onUnmounted } from 'vue';
+
+const store = useStore();
+const socket = store.state.socket;
+const currentUser = store.state.currentUser;
+const selectedChatIndex = ref(0);
+const selectedChat = ref(chats.value[selectedChatIndex.value]);
+const newMessage = ref('');
+
+const selectChat = (index) => {
+  selectedChatIndex.value = index;
+  selectedChat.value = chats.value[index];
+};
+
+const sendMessage = () => {
+  if (newMessage.value.trim() !== '') {
+    selectedChat.value.messages.push({ sender: 'You', text: newMessage.value });
+    console.log(`socket is : ${socket.id}`);
+    socket.emit('sendMessage', { userId: currentUser.id, channelId: 1, message: newMessage.value });
+    newMessage.value = '';
+    scrollToBottom();
   }
-  
-  .messages {
-    flex: 1;
-    padding: 16px;
-    overflow-y: auto;
-  }
-  
-  .message-container {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-  }
-  
-  .message {
-    display: flex;
-    align-items: start;
-    gap: 16px;
-  }
-  
-  .avatar {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    overflow: hidden;
-  }
-  
-  .avatar img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-  
-  .content {
-    background-color: #f2f2f2;
-    padding: 8px 16px;
-    border-radius: 8px;
-    font-size: 14px;
-  }
-  
-  .username {
-    font-weight: bold;
-    margin-bottom: 4px;
-  }
-  
-  .input-container {
-    display: flex;
-    padding: 8px 16px;
-    background-color: #f2f2f2;
-    border-top: 1px solid #ccc;
-  }
-  
-  .input-container input {
-    flex: 1;
-    padding: 8px 12px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    font-size: 14px;
-  }
-  
-  .input-container button {
-    margin-left: 8px;
-    background-color: #4CAF50;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    padding: 8px 12px;
-    cursor: pointer;
-    font-size: 14px;
-  }
-  
-  .input-container button svg {
-    width: 18px;
-    height: 18px;
-  }
-  </style>
+};
+
+const scrollToBottom = () => {
+  const messagesContainer = document.querySelector('.messages');
+  messagesContainer.scrollTop = messagesContainer.scrollHeight;
+};
+
+// Ensure that the chat scrolls to the bottom when a new message is added
+onUpdated(() => {
+  scrollToBottom();
+});
+
+onMounted(() => {
+  scrollToBottom();
+});
+</script>
+
+<style scoped>
+.chat-container {
+  display: flex;
+  flex-direction: column;
+  height: 30%;
+}
+
+.tabs {
+  display: flex;
+  width: 100%;
+}
+
+.tab {
+  padding: 10px;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+}
+
+.tab.active-tab {
+  border-bottom: 2px solid white;
+}
+
+.chat-box {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background-color: #f1f1f1;
+}
+
+.messages {
+  flex: 1;
+  padding: 10px;
+  overflow-y: auto;
+}
+
+.message {
+  margin-bottom: 10px;
+}
+
+.input-container {
+  display: flex;
+  padding: 10px;
+  background-color: #fff;
+  border-top: 1px solid #ccc;
+}
+
+input {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  margin-right: 10px;
+}
+
+button {
+  padding: 10px 15px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+button:hover {
+  background-color: #0056b3;
+}
+</style>
