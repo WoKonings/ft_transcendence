@@ -5,8 +5,8 @@
         <div 
           v-for="(chat, index) in chats" 
           :key="index" 
-          @click="selectChat(index)"
-          :class="{ 'active-tab': selectedChatIndex === index }"
+          @click="selectChat(chat.name)" 
+          :class="{ 'active-tab': selectedChat?.name === chat.name }" 
           class="tab"
         >
           {{ chat.name }}
@@ -25,6 +25,9 @@
         <input v-model="newMessage" placeholder="Type a message..." />
         <button type="submit">Send</button>
       </form>
+
+      <button @click="joinNewChannel">Join New Channel</button>
+      <button @click="leaveChat">Leave Chat</button> <!-- New Leave Chat Button -->
     </div>
     <div v-else class="chat-box">
       <p>Select a chat to view messages.</p>
@@ -36,34 +39,68 @@
 import { ref, onMounted, onUpdated } from 'vue';
 import { useStore } from 'vuex';
 
-// Dummy data for the example
-const chats = ref([
-  { name: 'Chat 1', messages: [{ sender: 'John', text: 'Hello!' }, { sender: 'You', text: 'Hi!' }] },
-  { name: 'Chat 2', messages: [{ sender: 'Bob', text: 'Hey there!' }] },
-  { name: 'Chat 3', messages: [{ sender: 'Alice', text: 'What\'s up?' }] }
-]);
-
-// import { ref, onMounted, onUnmounted } from 'vue';
-
 const store = useStore();
 const socket = store.state.socket;
 const currentUser = store.state.currentUser;
-const selectedChatIndex = ref(0);
-const selectedChat = ref(chats.value[selectedChatIndex.value]);
+
+const chats = ref([]);
+const selectedChat = ref(null);
 const newMessage = ref('');
 
-const selectChat = (index) => {
-  selectedChatIndex.value = index;
-  selectedChat.value = chats.value[index];
+const fetchInitialChat = async () => {
+  try {
+    // Initialize with the General chat
+    const generalChat = { name: 'General', messages: [] };
+    chats.value.push(generalChat);
+    selectedChat.value = generalChat;
+    socket.emit('joinChannel', { channel: 'General', userId: currentUser.id });
+  } catch (error) {
+    console.error('Failed to fetch initial chat:', error);
+  }
+};
+
+const selectChat = (name) => {
+  selectedChat.value = chats.value.find(chat => chat.name === name);
 };
 
 const sendMessage = () => {
   if (newMessage.value.trim() !== '') {
-    selectedChat.value.messages.push({ sender: 'You', text: newMessage.value });
-    console.log(`socket is : ${socket.id}`);
-    socket.emit('sendMessage', { userId: currentUser.id, channelId: 1, message: newMessage.value });
+    console.log (`sending: ${newMessage.value} to: ${selectedChat.value.name} from: ${currentUser.id}`);
+    const message = { sender: 'You', text: newMessage.value };
+    selectedChat.value.messages.push(message);
+    socket.emit('sendMessage', { senderId: currentUser.id, channel: selectedChat.value.name, message: newMessage.value });
     newMessage.value = '';
     scrollToBottom();
+  }
+};
+
+const joinNewChannel = async () => {
+  try {
+    const channelname = prompt("Enter Channel name to join:");
+    if (!channelname) return;  // Check if a name was entered
+    const newChat = { name: channelname, messages: [] };
+    chats.value.push(newChat);
+    socket.emit('joinChannel', { channel: channelname, username: currentUser.username, userId: currentUser.id });
+    selectChat(channelname);  // Automatically select the newly joined chat
+  } catch (error) {
+    console.error('Failed to join new channel:', error);
+  }
+};
+
+const leaveChat = () => {
+  if (selectedChat.value) {
+    const channelName = selectedChat.value.name;
+    socket.emit('leave', { channel: channelName, userId: currentUser.id });
+    
+    // Remove the chat from the list
+    chats.value = chats.value.filter(chat => chat.name !== channelName);
+    
+    // Select another chat or clear selection
+    if (chats.value.length > 0) {
+      selectedChat.value = chats.value[0];  // Select the first chat in the list
+    } else {
+      selectedChat.value = null;  // No chats left, clear selection
+    }
   }
 };
 
@@ -72,13 +109,27 @@ const scrollToBottom = () => {
   messagesContainer.scrollTop = messagesContainer.scrollHeight;
 };
 
-// Ensure that the chat scrolls to the bottom when a new message is added
 onUpdated(() => {
   scrollToBottom();
 });
 
-onMounted(() => {
-  scrollToBottom();
+onMounted(async () => {
+  await fetchInitialChat();
+
+  socket.on('recieveMessage', (message) => {
+    console.log(`received: ${message.message} in channel: ${message.channel} from ${message.sender}`);
+    const chat = chats.value.find(c => c.name === message.channel);
+    if (chat) {
+      chat.messages.push({ sender: message.sender, text: message.message });
+    } else {
+      // If the chat doesn't exist, create it
+      const newChat = { name: message.channel, messages: [{ sender: message.sender, text: message.message }] };
+      chats.value.push(newChat);
+    }
+    if (selectedChat.value.name === message.channel) {
+      scrollToBottom();
+    }
+  });
 });
 </script>
 
@@ -86,7 +137,7 @@ onMounted(() => {
 .chat-container {
   display: flex;
   flex-direction: column;
-  height: 30%;
+  height: 100%;
 }
 
 .tabs {

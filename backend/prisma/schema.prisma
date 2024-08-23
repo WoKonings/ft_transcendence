@@ -49,6 +49,7 @@ model Channel {
   private Boolean
 	//users
 	users	  String[]
+  banned  String[]
 	// kicked	  Int[]
 	// invited	  Int[]
 

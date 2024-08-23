@@ -41,19 +41,26 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('sendMessage')
-  async handleMessage(client: Socket, payload: { senderId: number; channelId: number; message: string }) {
-    const channel = await this.chatService.getChannelById(payload.channelId);
-    console.log(`channelId: ${payload.channelId}`);
+  async handleMessage(client: Socket, payload: { senderId: number; channel: string; message: string }) {
+    const channel = await this.chatService.getChannelByName(payload.channel);
+    console.log(`channelId: ${payload.channel}`);
     if (!channel) {
       console.log('no channel found');
       return;
     }
+    const user = await this.userService.getUserById(payload.senderId);
+    if (!user) {
+      console.log ('how the fuck does user not exist in gateway sendmessage wadafakae')
+      return;
+    }
     console.log(`got message: ${payload.message}`);
-    for (const userId of channel.users) {
-        const userSocket = this.socketService.getUserSocket(userId);
-        // if (userSocket != client)
-
-            userSocket.emit('recieveMessage', { message: payload.message, sender: 'joe' } ); //todo: get sender username
+    for (const username of channel.users) {
+        const user = await this.userService.getUserByUsernameOrEmail(username);
+        const userSocket = this.socketService.getUserSocket(user.id);
+        console.log (`actually sending message to :${username} in channel: ${channel.name}`);
+        console.log (`userSock? ${userSocket.id}`);
+        if (userSocket != client)
+          userSocket.emit('recieveMessage', { message: payload.message, sender: user.username, channel: channel.name } ); //todo: get sender username
     }
     // this.server.to(recipientSocketId).emit('receiveMessage', {
     //   senderId: payload.senderId,
@@ -64,26 +71,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('joinChannel')
-  async handleJoinChannel(client: Socket, payload: { channel: number, userId: number }) {
-    const user = await this.userService.getUserById(payload.userId);
-    // this.channels[payload.channel].users.push(payload.userId);
-    const channel = await this.chatService.getChannelById(payload.channel);
-
-    //check if user is already in the channel they are trying to join
-    if (channel.users.includes(payload.userId)) {
-      console.log ("juicer already in channel");
-      return;
-    } // add the user to the channel
-
-    this.prisma.channel.update({
-      where: { id: channel.id },
-      data: {
-        users: {
-          push: payload.userId,
-        },
-      },
-    })
-    console.log (`JUICER: ${user.username} ADDED!`);
-
+  async handleJoinChannel(client: Socket, payload: { channel: string, username: string }) {
+    return this.chatService.joinChannel(payload.channel, payload.username);
   }
 }

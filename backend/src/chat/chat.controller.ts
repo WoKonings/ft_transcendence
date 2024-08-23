@@ -16,6 +16,11 @@ export class ChatController {
   joinChannel(channelName: string, username: string) {
     return this.chatService.joinChannel(channelName, username);
   }
+
+  @Get('leave')
+  leaveChannel(channelName: string, username: string) {
+    return this.chatService.leaveChannel(channelName, username);
+  }
   // @Get('user/:id/socket')
   // getUserSocket(@Param('id') userId: number) {
   //   const socketId = this.chatService.getUserSocketById(userId);

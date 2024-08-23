@@ -45,7 +45,7 @@ export class AppGateway implements OnGatewayInit, OnGatewayConnection, OnGateway
       client.disconnect();
     }
   }
-
+  //todo: figure out why juicer is not found
   async handleDisconnect(client: Socket) {
     try {
       const user = await this.prisma.user.findFirst({
