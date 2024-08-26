@@ -53,7 +53,7 @@ const fetchInitialChat = async () => {
     const generalChat = { name: 'General', messages: [] };
     chats.value.push(generalChat);
     selectedChat.value = generalChat;
-    socket.emit('joinChannel', { channel: 'General', userId: currentUser.id });
+    socket.emit('joinChannel', { channel: 'General', username: currentUser.username });
   } catch (error) {
     console.error('Failed to fetch initial chat:', error);
   }
@@ -79,6 +79,7 @@ const joinNewChannel = async () => {
     const channelname = prompt("Enter Channel name to join:");
     if (!channelname) return;  // Check if a name was entered
     const newChat = { name: channelname, messages: [] };
+    
     chats.value.push(newChat);
     socket.emit('joinChannel', { channel: channelname, username: currentUser.username, userId: currentUser.id });
     selectChat(channelname);  // Automatically select the newly joined chat

@@ -53,12 +53,17 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       console.log ('how the fuck does user not exist in gateway sendmessage wadafakae')
       return;
     }
-    console.log(`got message: ${payload.message}`);
+    console.log(`got message: ${payload.message} from userid ${user.id}`);
     for (const username of channel.users) {
         const user = await this.userService.getUserByUsernameOrEmail(username);
+        if (!user) {
+          console.error(`User ${username} not found when trying to send a message`);
+          continue;
+        }
+        console.log(`found user ${user.username}`);
         const userSocket = this.socketService.getUserSocket(user.id);
         console.log (`actually sending message to :${username} in channel: ${channel.name}`);
-        console.log (`userSock? ${userSocket.id}`);
+        //console.log (`userSock? ${userSocket.id}`);
         if (userSocket != client)
           userSocket.emit('recieveMessage', { message: payload.message, sender: user.username, channel: channel.name } ); //todo: get sender username
     }

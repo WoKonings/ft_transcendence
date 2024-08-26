@@ -16,6 +16,19 @@ export class ChatService {
   //   return user ? user.socket : null;
   // }
 
+  async onModuleInit() {
+    await this.createGeneralChannel();
+  }
+
+  async createGeneralChannel() {
+    const generalChannel = await this.getChannelByName('General');
+    if (!generalChannel) {
+      await this.createChannel('General', 'admin'); // "admin" or any default username
+      console.log('General channel created');
+    }
+  }
+
+
   async getChannelById(channelId: number): Promise<Channel | null> {
     const channel = await this.prisma.channel.findUnique({
       where: { id: channelId },
@@ -45,7 +58,7 @@ export class ChatService {
       console.log("no username or no channel name  to create channel");
       return;
     }
-    console.log(` making channel with user: ${username}`)
+    console.log(` making channel ${channelName} with user: ${username}`)
     const newChannel = await this.prisma.channel.create({
       data: {
         name: channelName,
@@ -65,15 +78,21 @@ export class ChatService {
     if (!channel)
       return await this.createChannel(channelName, username);
 
+    if(!username)
+    {
+      console.log(`${username} is invalid`);
+      
+    }
+
     if (channel.users.includes(username))
     {
       console.log("already in channel");
       return;
     }
 
+
     const updatedUsers = [...channel.users, username];
 
-    // Step 3: Update the channel with the new user list
     await this.prisma.channel.update({
       where: { name: channelName },
       data: {
