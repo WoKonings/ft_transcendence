@@ -59,20 +59,16 @@ const getUsers = () => {
 
 const updateList = (data) => {
   console.log('Fetched users data:', data); // Debugging line
-  if (data.userId == currentUser.value.id) {
-    console.log("caught self");
-    return;
-  }
-	users.value = data.map(user => ({
-		id: user.id,
-		username: user.username,
-		avatar: user.avatar || 'https://via.placeholder.com/40', // Optional avatar handling
-	}));
+  users.value = data.filter(user => user.id !== currentUser.value.id).map(user => ({
+    id: user.id,
+    username: user.username,
+    avatar: user.avatar || 'https://via.placeholder.com/40', // Optional avatar handling
+  }));
   console.log('Mapped users:', users.value); // Debugging line
 };
 
 const selectUser = (user) => {
-  console.log('Selected user:', user); // Debugging line
+  // console.log('Selected user:', user); // Debugging line
 	selectedUser.value = user;
 };
 
@@ -83,7 +79,7 @@ const closeOptions = () => {
 const addAsFriend = (user) => {
 	console.log(`Adding ${user.username}, id: ${user.id} as a friend`);
 	console.log(`Current user ID: ${currentUser.value.id}`);
-	console.log(`token?: ${localStorage.getItem('access_token')}`);
+	// console.log(`token?: ${localStorage.getItem('access_token')}`);
 	fetch('http://localhost:3000/user/add', {
 		method: 'POST',
 		headers: {

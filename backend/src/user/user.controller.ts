@@ -33,6 +33,12 @@ export class UserController {
 		return this.userService.addUserAsFriend(addFriendDto.targetId, addFriendDto.userId);
 	}
 
+	@UseGuards(AuthGuard)
+	@Post('remove')
+	async removeFriend(@Body() addFriendDto: AddFriendDto) {
+		return this.userService.removeFriend(addFriendDto.targetId, addFriendDto.userId);
+	}
+
 	@Get('all')
 	async getAllUsers() {
 		return this.userService.getAllUsers();

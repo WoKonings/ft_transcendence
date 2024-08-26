@@ -28,7 +28,7 @@ export class UserService {
   async addUserAsFriend(targetId: number, userId: number) {
 	  console.log('targetId:', targetId, 'userId:', userId); // Log IDs to verify they are correct
 	// Fetch the target user
-    if (!targetId || !userId) {
+    if (!targetId || !userId || targetId == userId) {
       throw new Error('Invalid user IDs provided');
     }
     const targetUser = await this.prisma.user.findUnique({
@@ -90,6 +90,40 @@ export class UserService {
     return { message: 'Friend request sent' };
   }
 
+  async removeFriend(targetId: number, userId: number) {
+    const target = await this.getUserById(targetId);
+    const user = await this.getUserById(userId);
+    if (!target || !user) {
+      console.log("couldnt fetch users to delete");
+      return;
+    }
+    if (!user.friends.includes(targetId)) {
+      console.log("user is not friends with target to remove");
+      return { message: `You are not friends with ${target.username}` };
+    }
+    if (!target.friends.includes(userId)) {
+      console.log("target is not friends with user to remove");
+      return { message: `THIS GOT TRIGGERED, MEANING VERY BAD FRIEND HANDLING!!` };
+    }
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+         friends: {
+          set: user.friends.filter(friendId => friendId !== targetId)
+        }
+       }
+    })
+    await this.prisma.user.update({
+      where: { id: targetId },
+      data: {
+        friends: {
+          set: target.friends.filter(friendId => friendId !== userId)
+        }
+      }
+    });
+    return { message: `Removed ${target.username} succesfully` };
+	}
+
   async getUserForAuth(usernameOrEmail: string): Promise<User | null> {
     return this.prisma.user.findFirst({
       where: {
@@ -134,7 +168,7 @@ export class UserService {
 	if (!user) {
 		throw new BadRequestException('User not found');
 	}
-
+  console.log (`fetching friends for user: ${userId}`);
 	// Retrieve each friend's information
 	const friendsList = await Promise.all(
 		user.friends.map(async (friendId) => {
@@ -187,13 +221,16 @@ async getIncomingPendingFriends(userId: number) {
 	return pendingList;
 }
 
-
-
   //todo: error catching if no user?
   async getUserById(userId: number): Promise<User | null> {
-    return this.prisma.user.findUnique({
+    const user = await this.prisma.user.findUnique({
       where: { id: userId },
     });
+    if (!user) {
+      console.log(`could not find user by id: ${userId}`);
+      return (null);
+    }
+    return (user);
   }
 
   async getIsInGame(userId: number): Promise<Boolean> {
