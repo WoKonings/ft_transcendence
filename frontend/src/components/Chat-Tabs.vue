@@ -1,72 +1,145 @@
 <template>
-  <div class="chat-tabs">
-    <div class="tabs">
-      <div 
-        v-for="(chat, index) in chats" 
-        :key="index" 
-        @click="selectChat(index)"
-        :class="{ 'active-tab': selectedChatIndex === index }"
-        class="tab"
-      >
-        {{ chat.name }}
+  <div class="chat-container">
+    <div class="chat-tabs">
+      <div class="tabs">
+        <div 
+          v-for="(chat, index) in chats" 
+          :key="index" 
+          @click="selectChat(chat.name)" 
+          :class="{ 'active-tab': selectedChat?.name === chat.name }" 
+          class="tab"
+        >
+          {{ chat.name }}
+        </div>
       </div>
     </div>
-    <div class="chat-content">
-      <div v-if="selectedChat">
-        <h3>{{ selectedChat.name }}</h3>
-        <div class="messages">
-          <div v-for="(message, index) in selectedChat.messages" :key="index" class="message">
-            <span>{{ message.sender }}:</span> {{ message.text }}
-          </div>
-        </div>
-        <div class="input-container">
-          <form @submit.prevent="sendMessage">
-            <input v-model="newMessage" placeholder="Type a message..." />
-            <button type="submit">Send</button>
-          </form>
+
+    <div v-if="selectedChat" class="chat-box">
+      <div class="messages" ref="messagesContainer">
+        <div 
+          v-for="(message, index) in selectedChat.messages" 
+          :key="index" 
+          :class="['message', { 'alternate-message': index % 2 === 0 }]"
+        >
+          <span>{{ message.sender }}:</span> {{ message.text }}
         </div>
       </div>
-      <div v-else>
-        <p>Select a chat to view messages.</p>
-      </div>
+
+      <form @submit.prevent="sendMessage" class="input-container">
+        <input v-model="newMessage" placeholder="Type a message..." />
+        <button type="submit">Send</button>
+      </form>
+
+      <button @click="joinNewChannel">Join New Channel</button>
+      <button @click="leaveChat">Leave Chat</button>
+    </div>
+    <div v-else class="chat-box">
+      <p>Select a chat to view messages.</p>
     </div>
   </div>
 </template>
 
-<script>
-export default {
-  data() {
-    return {
-      chats: [
-        // Sample data for demonstration
-        { name: 'General', messages: [{ sender: 'Alice', text: 'Hello!' }, { sender: 'Bob', text: 'Hi there!' }] },
-        { name: 'John Doe', messages: [{ sender: 'John', text: 'Ready to play?' }, { sender: 'You', text: 'Yes!' }] },
-      ],
-      selectedChatIndex: 0,
-      newMessage: '',
-    };
-  },
-  computed: {
-    selectedChat() {
-      return this.chats[this.selectedChatIndex];
-    },
-  },
-  methods: {
-    selectChat(index) {
-      this.selectedChatIndex = index;
-    },
-    sendMessage() {
-      if (this.newMessage.trim() !== '') {
-        this.selectedChat.messages.push({ sender: 'You', text: this.newMessage });
-        this.newMessage = '';
-      }
-    },
-  },
+<script setup>
+import { ref, onMounted, onUpdated } from 'vue';
+import { useStore } from 'vuex';
+
+const store = useStore();
+const socket = store.state.socket;
+const currentUser = store.state.currentUser;
+
+const chats = ref([]);
+const selectedChat = ref(null);
+const newMessage = ref('');
+
+const fetchInitialChat = async () => {
+  try {
+    // Initialize with the General chat
+    const generalChat = { name: 'General', messages: [] };
+    chats.value.push(generalChat);
+    selectedChat.value = generalChat;
+    socket.emit('joinChannel', { channel: 'General', username: currentUser.username });
+  } catch (error) {
+    console.error('Failed to fetch initial chat:', error);
+  }
 };
+
+const selectChat = (name) => {
+  selectedChat.value = chats.value.find(chat => chat.name === name);
+};
+
+const sendMessage = () => {
+  if (newMessage.value.trim() !== '') {
+    console.log (`sending: ${newMessage.value} to: ${selectedChat.value.name} from: ${currentUser.id}`);
+    const message = { sender: 'You', text: newMessage.value };
+    selectedChat.value.messages.push(message);
+    socket.emit('sendMessage', { senderId: currentUser.id, channel: selectedChat.value.name, message: newMessage.value });
+    newMessage.value = '';
+    scrollToBottom();
+  }
+};
+
+const joinNewChannel = async () => {
+  try {
+    const channelname = prompt("Enter Channel name to join:");
+    if (!channelname) return;  // Check if a name was entered
+    const newChat = { name: channelname, messages: [] };
+    
+    chats.value.push(newChat);
+    socket.emit('joinChannel', { channel: channelname, username: currentUser.username, userId: currentUser.id });
+    selectChat(channelname);  // Automatically select the newly joined chat
+  } catch (error) {
+    console.error('Failed to join new channel:', error);
+  }
+};
+
+const leaveChat = () => {
+  if (selectedChat.value) {
+    const channelName = selectedChat.value.name;
+    socket.emit('leave', { channel: channelName, userId: currentUser.id });
+    
+    // Remove the chat from the list
+    chats.value = chats.value.filter(chat => chat.name !== channelName);
+    
+    // Select another chat or clear selection
+    if (chats.value.length > 0) {
+      selectedChat.value = chats.value[0];  // Select the first chat in the list
+    } else {
+      selectedChat.value = null;  // No chats left, clear selection
+    }
+  }
+};
+
+const scrollToBottom = () => {
+  const messagesContainer = document.querySelector('.messages');
+  messagesContainer.scrollTop = messagesContainer.scrollHeight;
+};
+
+onUpdated(() => {
+  scrollToBottom();
+});
+
+onMounted(async () => {
+  await fetchInitialChat();
+
+  socket.on('recieveMessage', (message) => {
+    console.log(`received: ${message.message} in channel: ${message.channel} from ${message.sender}`);
+    const chat = chats.value.find(c => c.name === message.channel);
+    if (chat) {
+      chat.messages.push({ sender: message.sender, text: message.message });
+    } else {
+      // If the chat doesn't exist, create it
+      const newChat = { name: message.channel, messages: [{ sender: message.sender, text: message.message }] };
+      chats.value.push(newChat);
+    }
+    if (selectedChat.value.name === message.channel) {
+      scrollToBottom();
+    }
+  });
+});
 </script>
 
 <style scoped>
-.chat-tabs {
+.chat-container {
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -74,36 +147,29 @@ export default {
 
 .tabs {
   display: flex;
-  background-color: #2c3e50;
-  border-bottom: 2px solid #34495e;
+  width: 100%;
 }
 
 .tab {
-  padding: 10px 20px;
+  padding: 10px;
   cursor: pointer;
-  color: white;
+  border-bottom: 2px solid transparent;
 }
 
-.tab:hover {
-  background-color: #34495e;
+.tab.active-tab {
+  border-bottom: 2px solid white;
 }
 
-.active-tab {
-  background-color: #1abc9c;
-}
-
-.chat-content {
+.chat-box {
   flex: 1;
   display: flex;
   flex-direction: column;
-  padding: 20px;
-  background-color: #ecf0f1;
-  overflow-y: auto;
+  background-color: #f1f1f1;
 }
 
 .messages {
   flex: 1;
-  margin-bottom: 20px;
+  padding: 10px;
   overflow-y: auto;
 }
 
@@ -113,28 +179,29 @@ export default {
 
 .input-container {
   display: flex;
-  align-items: center;
+  padding: 10px;
+  background-color: #fff;
+  border-top: 1px solid #ccc;
 }
 
 input {
   flex: 1;
   padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
   margin-right: 10px;
-  border: 1px solid #bdc3c7;
-  border-radius: 5px;
-  font-size: 14px;
 }
 
 button {
-  padding: 10px 20px;
-  background-color: #3498db;
+  padding: 10px 15px;
+  background-color: #007bff;
   color: white;
   border: none;
-  border-radius: 5px;
+  border-radius: 4px;
   cursor: pointer;
 }
 
 button:hover {
-  background-color: #2980b9;
+  background-color: #0056b3;
 }
 </style>

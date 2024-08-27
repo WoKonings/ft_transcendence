@@ -16,7 +16,11 @@
 
     <div v-if="selectedChat" class="chat-box">
       <div class="messages" ref="messagesContainer">
-        <div v-for="(message, index) in selectedChat.messages" :key="index" class="message">
+        <div 
+          v-for="(message, index) in selectedChat.messages" 
+          :key="index" 
+          :class="['message', { 'alternate-message': index % 2 === 0 }]"
+        >
           <span>{{ message.sender }}:</span> {{ message.text }}
         </div>
       </div>
@@ -27,7 +31,7 @@
       </form>
 
       <button @click="joinNewChannel">Join New Channel</button>
-      <button @click="leaveChat">Leave Chat</button> <!-- New Leave Chat Button -->
+      <button @click="leaveChat">Leave Chat</button>
     </div>
     <div v-else class="chat-box">
       <p>Select a chat to view messages.</p>
@@ -65,8 +69,7 @@ const selectChat = (name) => {
 
 const sendMessage = () => {
   if (newMessage.value.trim() !== '') {
-    console.log (`sending: ${newMessage.value} to: ${selectedChat.value.name} from: ${currentUser.id}`);
-    const message = { sender: 'You', text: newMessage.value };
+    const message = { sender: currentUser.username, text: newMessage.value };
     selectedChat.value.messages.push(message);
     socket.emit('sendMessage', { senderId: currentUser.id, channel: selectedChat.value.name, message: newMessage.value });
     newMessage.value = '';
@@ -138,7 +141,7 @@ onMounted(async () => {
 .chat-container {
   display: flex;
   flex-direction: column;
-  height: 100%;
+  height: 45%;
 }
 
 .tabs {
@@ -171,6 +174,13 @@ onMounted(async () => {
 
 .message {
   margin-bottom: 10px;
+  padding: 8px;
+  border-radius: 4px;
+  background-color: #ffffff;
+}
+
+.alternate-message {
+  background-color: #e0e0e0;
 }
 
 .input-container {

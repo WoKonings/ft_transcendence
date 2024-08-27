@@ -41,39 +41,36 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('sendMessage')
-  async handleMessage(client: Socket, payload: { senderId: number; channel: string; message: string }) {
-    const channel = await this.chatService.getChannelByName(payload.channel);
-    console.log(`channelId: ${payload.channel}`);
-    if (!channel) {
-      console.log('no channel found');
-      return;
-    }
-    const user = await this.userService.getUserById(payload.senderId);
-    if (!user) {
-      console.log ('how the fuck does user not exist in gateway sendmessage wadafakae')
-      return;
-    }
-    console.log(`got message: ${payload.message} from userid ${user.id}`);
-    for (const username of channel.users) {
-        const user = await this.userService.getUserByUsernameOrEmail(username);
-        if (!user) {
-          console.error(`User ${username} not found when trying to send a message`);
-          continue;
-        }
-        console.log(`found user ${user.username}`);
-        const userSocket = this.socketService.getUserSocket(user.id);
-        console.log (`actually sending message to :${username} in channel: ${channel.name}`);
-        //console.log (`userSock? ${userSocket.id}`);
-        if (userSocket != client)
-          userSocket.emit('recieveMessage', { message: payload.message, sender: user.username, channel: channel.name } ); //todo: get sender username
-    }
-    // this.server.to(recipientSocketId).emit('receiveMessage', {
-    //   senderId: payload.senderId,
-    //   content: payload.content,
-    // });
-    // Optionally, store the message in the database or perform other actions
-    // await this.chatService.storeMessage(payload.senderId, payload.recipientId, payload.content);
+async handleMessage(client: Socket, payload: { senderId: number; channel: string; message: string }) {
+  const channel = await this.chatService.getChannelByName(payload.channel);
+  if (!channel) {
+    console.log('no channel found');
+    return;
   }
+  const sender = await this.userService.getUserById(payload.senderId);
+  if (!sender) {
+    console.log('Sender not found');
+    return;
+  }
+  console.log(`got message: ${payload.message} from userid ${sender.id}`);
+  for (const username of channel.users) {
+    const recipient = await this.userService.getUserByUsernameOrEmail(username);
+    if (!recipient) {
+      console.error(`User ${username} not found when trying to send a message`);
+      continue;
+    }
+    console.log(`found user ${recipient.username}`);
+    const userSocket = this.socketService.getUserSocket(recipient.id);
+    console.log(`actually sending message to :${username} in channel: ${channel.name}`);
+    if (userSocket && userSocket !== client) {
+      userSocket.emit('recieveMessage', { 
+        message: payload.message, 
+        sender: sender.username, 
+        channel: channel.name 
+      });
+    }
+  }
+}
 
   @SubscribeMessage('joinChannel')
   async handleJoinChannel(client: Socket, payload: { channel: string, username: string }) {
