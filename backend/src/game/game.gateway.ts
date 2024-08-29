@@ -142,6 +142,9 @@ async handleInviteGame(client: Socket, data: InviteGameDto): Promise<void> {
 			console.log('No username for invite game');
 			return;
 		}
+    if (!senderId) {
+      console.log('No senderId for invite game');
+    }
 
 		const target = await this.userService.getUserByUsernameOrEmail(targetName);
 		if (!target) {

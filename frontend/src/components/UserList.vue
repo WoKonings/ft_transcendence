@@ -107,10 +107,10 @@ const addAsFriend = (user) => {
 	closeOptions();
 };
 
-const inviteToGame = (user) => {
-	console.log(`Inviting ${user.username} to a game`);
-	closeOptions();
-};
+// const inviteToGame = (user) => {
+// 	console.log(`Inviting ${user.username} to a game`);
+// 	closeOptions();
+// };
 
 const sendMessage = (user) => {
 	console.log(`Sending message to ${user.username}`);
