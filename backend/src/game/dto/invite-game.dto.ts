@@ -1,15 +1,15 @@
 import { IsBoolean, IsNotEmpty, IsString } from 'class-validator';
 
-export class JoinGameDto {
+export class InviteGameDto {
   @IsNotEmpty()
   @IsString()
-  readonly userId: string;
+  readonly senderName: string;
 
   @IsNotEmpty()
   @IsString()
-  readonly username: string;
+  readonly senderId: string;
 
   @IsNotEmpty()
-  @IsBoolean()
-  readonly isPrivate: boolean;
+  @IsString()
+  readonly targetName: string;
 }

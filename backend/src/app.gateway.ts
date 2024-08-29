@@ -25,45 +25,57 @@ export class AppGateway implements OnGatewayInit, OnGatewayConnection, OnGateway
       const token = client.handshake.auth.token as string;
       const decoded = this.jwtService.verify(token);
 
-      // Store the socket ID in the user record
-      await this.prisma.user.update({
-        where: { id: decoded.sub },
-        data: { socket: client.id },
-      });
+      console.log(`test: ${decoded.sub}`);
 
-      console.log(`Client connected: ${decoded.username}`);
+      // Store the socket.id in the database
+      await this.prisma.user.update({
+        where: { username: decoded.username},
+        data: { socket: client.id }
+      })
+
+      console.log(`Client connected in app: ${client.id} ${decoded.username}`);
       client.emit('connected', { message: 'Welcome to Transcendence!' });
     } catch (error) {
       console.log('Invalid token, disconnecting client');
       client.disconnect();
     }
   }
-
+  //todo: figure out why juicer is not found
   async handleDisconnect(client: Socket) {
-	console.log('Handle disconnect in app gateway!');
     try {
-      // Find the user by socket ID and clear the socket ID field
-      await this.prisma.user.updateMany({
-        where: { socket: client.id },
+      const user = await this.prisma.user.findFirst({
+        where: { socket: client.id},
+      });
+      if (!user) {
+        console.log('juicer not found');
+        return;
+      }
+      
+      //todo: maybe move to seperate findUserFromSocketIdToday
+      // Find the user by ID and clear the socket ID field
+      this.prisma.user.update({
+        where: { id: user.id },
         data: { socket: null },
       });
-
       console.log(`SOCKET DISCONNECTED: ${client.id}`);
-
     } catch (error) {
       console.log('Error handling disconnect:', error);
     }
   }
 
-  // Method to send messages or data to a specific user using socket ID
-  async sendMessageToUser(userId: string, event: string, data: any) {
-    const user = await this.prisma.user.findUnique({
-      where: { id: Number(userId) },
-      select: { socket: true },
-    });
-
-    if (user && user.socket) {
-      this.server.to(user.socket).emit(event, data);
+  // Method to send messages or data to a specific user using the socket object
+  async sendMessageToUser(userId: number, event: string, data: any) {
+	const user = await this.prisma.user.findUnique({
+		where: { id: userId },
+		select: {
+			socket: true,
+		}
+	})
+	if (!user)
+		return;
+    const socket = this.server.sockets.sockets.get(user.socket);
+    if (socket) {
+      socket.emit(event, data);
     }
   }
 }

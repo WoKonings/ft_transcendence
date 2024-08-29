@@ -1,8 +1,8 @@
-
-
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
 import { UserService } from '../user/user.service';
 import { JwtService } from '@nestjs/jwt';
+import { CreateUserDto } from 'src/user/dto/create-user.dto';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class AuthService {
@@ -16,14 +16,32 @@ export class AuthService {
     pass: string,
   ): Promise<{ access_token: string; user: any | null }> {
     const user = await this.userService.getUserForAuth(username);
-    if (!user || user.password !== pass) {
+    if (!user || !(await bcrypt.compare(pass, user.password))) {
       throw new UnauthorizedException();
     }
-    //todo: figure out if sub is really needed
-    const payload = { sub: user.id, username: user.username, id: user.id};
+    return this.generateToken(user);
+  }
+
+  async register(createUserDto: CreateUserDto): Promise<{ access_token: string; user: any | null }> {
+    const existingUser = await this.userService.getUserForAuth(createUserDto.username);
+    if (existingUser) {
+      throw new ConflictException('Username already exists');
+    }
+
+    const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
+    const newUser = await this.userService.createUser({
+      ...createUserDto,
+      password: hashedPassword,
+    });
+
+    return this.generateToken(newUser);
+  }
+
+  private async generateToken(user: any): Promise<{ access_token: string; user: any | null }> {
+    const payload = { sub: user.id, username: user.username, id: user.id };
     return {
       access_token: await this.jwtService.signAsync(payload),
-      user: { //todo: maybe not return the actual user info?
+      user: {
         id: user.id,
         username: user.username,
         email: user.email

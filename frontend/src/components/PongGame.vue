@@ -208,10 +208,10 @@ export default {
         console.log('Connected to WebSocket server');
       });
 
-      socket.emit('joinGame', {
-        userId: currentUser.id,
-        username: currentUser.username,
-      });
+    //   socket.emit('joinGame', {
+    //     userId: currentUser.id,
+    //     username: currentUser.username,
+    //   });
 
       socket.on('gameJoined', (whichPlayer) => {
         if (whichPlayer == 1) {
@@ -269,7 +269,7 @@ export default {
     const handleMouseMove = (event) => {
       const rect = container.value.getBoundingClientRect();
       playerPosition.y = (rect.bottom - event.clientY) / (rect.bottom - rect.top) * 30 - 15;
-
+      console.log('moving!');
       if (socket) {
         socket.emit('playerMove', {
           userId: currentUser.id,

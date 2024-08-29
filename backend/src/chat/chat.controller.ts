@@ -1,4 +1,26 @@
-import { Controller } from '@nestjs/common';
+import { Controller, Get, Param } from '@nestjs/common';
+import { ChatService } from './chat.service';
 
 @Controller('chat')
-export class ChatController {}
+export class ChatController {
+  constructor(private readonly chatService: ChatService) {}
+
+  @Get('all')
+  getAllChannels() {
+    return this.chatService.getAllChannels();
+  }
+
+  //todo: decide how front end handles joining channels
+
+  @Get('Join')
+  joinChannel(channelName: string, username: string) {
+	console.log (`${username} is joining ${channelName}`);
+    return this.chatService.joinChannel(channelName, username);
+  }
+
+  @Get('leave')
+  leaveChannel(channelName: string, username: string) {
+	console.log (`${username} is leaving ${channelName}`);
+    return this.chatService.leaveChannel(channelName, username);
+  }
+}

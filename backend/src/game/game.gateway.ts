@@ -8,6 +8,8 @@ import { AuthGuard } from '../auth/auth.guard';
 import { JoinGameDto } from './dto/join-game.dto';
 import { PlayerMoveDto } from './dto/player-move.dto';
 import { LeaveGameDto } from './dto/leave-game.dto';
+import { InviteGameDto } from './dto/invite-game.dto';
+import { isPrimitive } from 'util';
 // import { UUID } from 'typeorm/driver/mongodb/bson.typings';
 // import { randomUUID } from 'crypto';
 // import { JwtService } from '@nestjs/jwt';
@@ -23,6 +25,7 @@ interface GameSession {
   player_one: Player;
   player_two: Player;
   gameState: GameState;
+  isPrivate: boolean;
   paused: boolean;
   gameId: string;
 }
@@ -44,6 +47,10 @@ export class GameGateway {
   afterInit(server: Server) {
     console.log('WebSocket server initialized');
     this.startGameLoop();
+  }
+
+  async handleConnection(client: Socket) {
+      console.log(`Client connected in game: ${client.id}`);
   }
 
   @SubscribeMessage('leaveGame')
@@ -86,8 +93,9 @@ export class GameGateway {
   // Handle "joinGame" event from client
   @SubscribeMessage('joinGame')
   handleJoinGame(client: Socket, data: JoinGameDto): void {
-    const { userId, username } = data;
+    const { userId, username, isPrivate = false} = data;
 
+    console.log(`received data: `, data);
     if (!client) {
       console.log('No socket');
       return;
@@ -101,17 +109,13 @@ export class GameGateway {
       return;
     }
 
-    this.assignUserToRoom(client, userId, username);
+    this.assignUserToRoom(client, userId, username, isPrivate);
     const session = this.getGameSessionForUser(userId);
-    client.emit('gameJoined', session.player_one.userId === userId ? 1 : 2);
     if (!session) {
-      console.log('cannot find user session to add paddle');
+      console.log('joining session failed');
       return;
     }
-    if (session.player_one && session.player_one.userId === userId)
-      session.gameState.paddle1 = { x: -14, y: 0, width: 1, height: 4, dy: 0 };
-    if (session.player_two && session.player_two.userId === userId)
-      session.gameState.paddle2 = { x: 14, y: 0, width: 1, height: 4, dy: 0 };
+    client.emit('gameJoined', session.player_one.userId === userId ? 1 : 2);
     if (session.player_one && session.player_two) {
       console.log('GAME IS NOW STARTING!');
       session.player_one.socket.emit('opponentJoined', session.player_two.username);
@@ -121,22 +125,107 @@ export class GameGateway {
     this.userService.setIsInGame(Number(userId), true);
   }
 
-        
+@SubscribeMessage('sendGameInvite')
+async handleInviteGame(client: Socket, data: InviteGameDto): Promise<void> {
+	try {
+		const { senderName, senderId, targetName } = data;
+
+		if (!client) {
+			console.log('No socket in handleInviteGame');
+			return;
+		}
+		if (!targetName) {
+			console.log('No target username to invite');
+			return;
+		}
+		if (!senderName) {
+			console.log('No username for invite game');
+			return;
+		}
+
+		const target = await this.userService.getUserByUsernameOrEmail(targetName);
+		if (!target) {
+			console.log('Invited user does not exist');
+			return;
+		}
+
+		const targetSocket = this.server.sockets.sockets.get(target.socket);
+		if (!targetSocket) {
+			console.log(`Socket not found for user: ${targetName}`);
+			return;
+		}
+
+    let session = this.getGameSessionForUser(senderId);
+    if (!session) {
+      this.handleJoinGame(client, {
+        userId: senderId,
+        username: senderName,
+        isPrivate: true,
+      });
+      session = this.getGameSessionForUser(senderId);
+      if (!session) {
+        console.log (`somehow could not create session for ${senderName}...`);
+        return;
+      }
+      this.gameSessions.set(session.gameId, session);
+    }
+    console.log(`TEST: ${session.gameId}`)
+		targetSocket.emit('gameInvite', {
+			sender: senderName,
+			target: targetName, //todo: probably remove this, shouldnt be needed?
+      gameId: session.gameId, 
+			message: `You have been invited to a game by ${senderName}!`,
+		});
+
+	} catch (error) {
+		console.error('Error handling invite game:', error);
+    }
+  }
+
+  @SubscribeMessage('acceptInvite')
+  async acceptGameInvite(client: Socket, data: { gameId, username, userId}) {
+    console.log ('accepting data: ', data)
+    const { gameId, username, userId } = data;
+    const session = this.gameSessions.get(gameId);
+
+    if (!session) {
+      console.log(`No game session found for gameId: ${gameId}`);
+      client.emit('inviteError', { message: 'Game session not found.' }); //todo implement frontend
+      return;
+    }
+    if (session.player_one == null) {
+      session.player_one = { userId, socket: client, username };
+      session.gameState.playerOne = userId;
+      console.log(`${username} joined lobby as player one`);
+    }
+    else if (session.player_two == null) {
+      session.player_two = { userId, socket: client, username };
+      session.gameState.playerTwo = userId;
+      console.log(`${username} joined lobby as player two`);
+    }
+    if (session.player_one && session.player_two) {
+      console.log(`GAME IS NOW STARTING! with players:`, session.player_one, session.player_two);
+      session.player_one.socket.emit('opponentJoined', session.player_two.username);
+      session.player_two.socket.emit('opponentJoined', session.player_one.username);
+      session.paused = false;
+    }
+    await this.userService.setIsInGame(Number(userId), true);
+  }
+
   // Assign user to a game room or create a new one
-  assignUserToRoom(client: Socket, userId: string, username: string) {
-    const availableSession = this.findAvailableSession();
-    
-    if (availableSession) {
+  assignUserToRoom(client: Socket, userId: string, username: string, isPrivate: boolean) {
+    const session = this.findAvailableSession();
+    if (session) {
       console.log('joining session!');
       // Notify the existing player about the new opponent
-      if (availableSession.player_one == null) {
-        availableSession.player_one = { userId, socket: client, username }; //todo: maybe add more data?
-        availableSession.gameState.playerOne = userId;
+      if (session.player_one == null) {
+        session.player_one = { userId, socket: client, username }; //todo: maybe add more data?
+        session.gameState.playerOne = userId;
         console.log(`${username} joined lobby as player one`);
       }
-      else if (availableSession.player_two == null) {
-        availableSession.player_two = { userId, socket: client, username };
-        availableSession.gameState.playerTwo = userId;
+      else if (session.player_two == null) {
+        session.player_two = { userId, socket: client, username };
+        session.gameState.playerTwo = userId;
         console.log(`${username} joined lobby as player two`);
       }
     } else {
@@ -146,6 +235,7 @@ export class GameGateway {
         player_one: { userId, socket: client, username },
         player_two: null,
         gameState: newGameState,
+        isPrivate: isPrivate,
         paused: true,
         gameId: crypto.randomUUID(),
       };
@@ -155,12 +245,14 @@ export class GameGateway {
     }
   }
   
-  // Find an available session that isn't full
+  // Find an available publicda session that isn't full
   private findAvailableSession(): GameSession | undefined {
     console.log('searching available session');
     for (const session of this.gameSessions.values()) {
-      if (session.player_one == null || session.player_two == null) {
-        return session;
+      if (session.isPrivate == false) {
+        if (session.player_one == null || session.player_two == null) {
+          return session;
+        }
       }
     }
     console.log('no session found');
@@ -176,12 +268,14 @@ export class GameGateway {
     }
 
     const gameSession = this.getGameSessionForUser(userId);
-    if (gameSession) {
-      gameSession.gameState.updatePlayerPosition(userId, y);
+    if (!gameSession) {
+      return;
     }
+    gameSession.gameState.updatePlayerPosition(userId, y);
+    console.log('SUCCESS');
   }
   
-  // finds if the user is in a game, and returns the session if they are.
+  // finds if the userId (as a string) is in a game, and returns the session if they are.
   private getGameSessionForUser(userId: string): GameSession | undefined {
     const user_Id = userId;
     if (!user_Id)
@@ -195,7 +289,7 @@ export class GameGateway {
         return session;
       }
     }
-      console.log('CANNOT FIND USERS SESSION'); //todo: some way to detect the user is not actually ingame and reset their state?
+      // console.log('CANNOT FIND USERS SESSION'); //todo: some way to detect the user is not actually ingame and reset their state?
       return undefined;
     }
     

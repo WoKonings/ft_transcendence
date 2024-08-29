@@ -22,10 +22,10 @@ model User {
   username    String    @unique 
   email       String    @unique //maybe no email needed?
   password    String            //also no password needed
-  socket	  String?
+  socket      String?
 
   //relation
-  isOnline    Boolean	@default(false) //todo: fully implement
+  isOnline    Boolean   @default(false) //todo: fully implement
   isInGame    Boolean   @default(false)
   isInQueue   Boolean   @default(false)
   isBad       Boolean   @default(false)
@@ -44,13 +44,14 @@ model User {
 
 model Channel {
 
-	id		  Int		@id @default(autoincrement())
+  id      Int		 @id @default(autoincrement())
+  name    String @unique
+  private Boolean
+  //users
+  users	  String[]
+  banned  String[]
+  // kicked   Int[]
+  // invited  Int[]
 
-	//users
-	users	  Int[]
-	// kicked	  Int[]
-	// invited	  Int[]
-
-	messages  String[]
-
+  messages  String[]
 }

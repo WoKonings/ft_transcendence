@@ -3,17 +3,18 @@ import { PrismaService } from '../prisma.service';
 import { Prisma, User, Channel } from '@prisma/client';
 import { AuthGuard } from '@nestjs/passport';
 import { GetFriendsDto } from './dto/get-friends.dto';
+import { userInfo } from 'os';
 
 @Injectable()
 export class UserService {
   constructor(private prisma: PrismaService) {}
 
-  //todo: LOG IN PROPER
   async createUser(data: Prisma.UserCreateInput): Promise<User> {
     try {
-      return await this.prisma.user.create({
+      const newUser = await this.prisma.user.create({
         data,
       });
+      return (newUser);
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError) {
         if (error.code === 'P2002') {
@@ -137,7 +138,10 @@ export class UserService {
 
   //todo: delete the email part?
   async getUserByUsernameOrEmail(usernameOrEmail: string): Promise<User | null> {
-    return this.prisma.user.findFirst({
+
+	if (usernameOrEmail == null)
+		return null;
+    const user = await this.prisma.user.findFirst({
       where: {
         OR: [
           { username: usernameOrEmail },
@@ -145,6 +149,8 @@ export class UserService {
         ],
       },
     });
+	console.log(`found ${user.username}, sock: ${user.socket}`);
+	return user;
   }
 
   async getAllUsers() {

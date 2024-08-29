@@ -10,8 +10,9 @@
     <div v-if="selectedUser" class="options-overlay" @click="closeOptions">
       <div class="options" @click.stop>
         <button @click="addAsFriend(selectedUser)">Add as Friend</button>
-        <button @click="inviteToGame(selectedUser)">Invite to Game</button>
+        <!-- <button @click="inviteToGame(selectedUser)">Invite to Game</button> -->
         <button @click="sendMessage(selectedUser)">Send Message</button>
+        <button @click="viewProfile(selectedUser)">Send Message</button>
       </div>
     </div>
   </div>

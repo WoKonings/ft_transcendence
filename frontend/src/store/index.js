@@ -6,6 +6,7 @@ const store = createStore({
       isLoggedIn: false,
       currentUser: null,
       socket: null,
+      showGame: false,
     };
   },
   mutations: {
@@ -23,6 +24,9 @@ const store = createStore({
     },
     SET_SOCKET(state, socket) {
       state.socket = socket;
+    },
+    SET_SHOW_GAME(state, value) {
+      state.showGame = value;
     }
   },
   actions: {
@@ -32,6 +36,9 @@ const store = createStore({
     logOut({ commit }) {
       commit('LOGOUT_USER');
     },
+    toggleShowGame({ commit }, value) {
+      commit('SET_SHOW_GAME', value);
+    }
   },
 });
 

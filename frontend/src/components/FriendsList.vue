@@ -5,25 +5,33 @@
       <button v-if="pendingFriendRequests.length > 0" class="notification" @click="viewPendingRequests">
         {{ pendingFriendRequests.length }} Pending Requests
       </button>
+      <button v-if="invites.length > 0" class="notification" @click="viewInvites">
+        {{ invites.length }} Game Invites
+      </button>
     </div>
-    <div class="user" v-for="friend in friends" :key="friend.id" @click="selectUser(friend)">
+    <div v-for="friend in friends" :key="friend.id" 
+         @click="selectUser(friend)"
+         :class="{ 'highlight': isInviteSender(friend.id) }">
       <div class="avatar">
         <img :src="friend.avatar || 'https://via.placeholder.com/40'" alt="Avatar" />
       </div>
       <div class="username">{{ friend.username }}</div>
     </div>
 
+    <!-- Options Overlay -->
     <div v-if="selectedUser" class="options-overlay" @click="closeOptions">
       <div class="options" @click.stop>
         <button @click="inviteToPlay(selectedUser)">Invite to Play</button>
         <button @click="sendMessage(selectedUser)">Send Message</button>
+        <button @click="viewProfile(selectedUser)">View Profile</button>
         <button @click="removeFriend(selectedUser)">Remove Friend</button>
       </div>
     </div>
 
+    <!-- Error Message -->
     <p v-if="error" style="color: red">{{ error }}</p>
 
-    <!-- Modal for viewing pending requests -->
+    <!-- Modal for Viewing Pending Requests -->
     <div v-if="showPendingRequestsModal" class="options-overlay" @click="closePendingRequests">
       <div class="options" @click.stop>
         <h3>Pending Friend Requests</h3>
@@ -33,6 +41,19 @@
           <button @click="declineRequest(request.id)">Decline</button>
         </div>
         <button @click="closePendingRequests">Close</button>
+      </div>
+    </div>
+
+    <!-- Modal for Viewing Game Invites -->
+    <div v-if="showInvitesModal" class="options-overlay" @click="closeInvites">
+      <div class="options" @click.stop>
+        <h3>Game Invites</h3>
+        <div v-for="invite in invites" :key="invite.gameId" class="request-info">
+          <span>{{ invite.sender }}</span>
+          <button @click="acceptInvite(invite)">Accept</button>
+          <button @click="declineInvite(invite.gameId)">Decline</button>
+        </div>
+        <button @click="closeInvites">Close</button>
       </div>
     </div>
   </div>
@@ -48,13 +69,16 @@ const socket = computed(() => store.state.socket);
 
 const friends = ref([]);
 const pendingFriendRequests = ref([]);
+const invites = ref([]);
 const error = ref('');
 const showPendingRequestsModal = ref(false);
+const showInvitesModal = ref(false);
 const selectedUser = ref(null);
+const inviteSenders = ref(new Set()); // To keep track of users who sent invites
 
 const fetchFriends = async () => {
   error.value = '';
-  const userId = currentUser.value.id;  
+  const userId = currentUser.value.id;
   try {
     const response = await fetch('http://localhost:3000/user/friends', {
       method: 'POST',
@@ -69,7 +93,6 @@ const fetchFriends = async () => {
       throw new Error(err.error);
     }
     const data = await response.json();
-    console.log(`test: ${data}`);
     friends.value = data;
   } catch (err) {
     console.error('Error fetching friends:', err);
@@ -105,7 +128,11 @@ const initializeSocketListeners = () => {
   if (socket.value) {
     socket.value.on('newFriendRequest', (data) => {
       pendingFriendRequests.value.push(data);
-      console.log('New friend request:', data);
+    });
+
+    socket.value.on('gameInvite', (data) => {
+      invites.value.push(data);
+      inviteSenders.value.add(data.sender);
     });
   }
 };
@@ -118,9 +145,17 @@ const closePendingRequests = () => {
   showPendingRequestsModal.value = false;
 };
 
+const viewInvites = () => {
+  showInvitesModal.value = true;
+};
+
+const closeInvites = () => {
+  showInvitesModal.value = false;
+};
+
 const acceptRequest = async (requestId) => {
   try {
-    const response = await fetch(`http://localhost:3000/user/add`, {
+    const response = await fetch('http://localhost:3000/user/add', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
@@ -153,25 +188,37 @@ const declineRequest = async (requestId) => {
         userId: currentUser.value.id,
       }),
     });
-
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
-
     const data = await response.json();
-
     if (data.error) {
       throw new Error(data.error);
     }
-
     pendingFriendRequests.value = pendingFriendRequests.value.filter(r => r.id !== requestId);
-    console.log(data.message);
   } catch (error) {
     console.error('Error declining friend request:', error);
     error.value = error.message;
-  } finally {
-    // any cleanup goes here
   }
+};
+
+const acceptInvite = async (invite) => {
+  // Handle invite acceptance logic
+  console.log('Accepted invite:', invite);
+  socket.value.emit('acceptInvite', {
+    gameId: invite.gameId,
+    username: currentUser.value.username,
+    userId: currentUser.value.id,
+  })
+  invites.value = invites.value.filter(i => i.gameId !== invite.gameId);
+  closeInvites();
+  store.commit('SET_SHOW_GAME', true);
+};
+
+const declineInvite = async (gameId) => {
+  // Handle invite decline logic
+  console.log('Declined invite for game:', gameId);
+  invites.value = invites.value.filter(i => i.gameId !== gameId);
 };
 
 const selectUser = (user) => {
@@ -183,11 +230,15 @@ const closeOptions = () => {
 };
 
 const inviteToPlay = (friend) => {
-  console.log('Inviting to play:', friend.name);
+  console.log(`friend?: ${friend} ??:`, friend);
+  socket.value.emit('sendGameInvite', {
+    senderName: currentUser.value.username,
+    targetName: friend.username,
+  });
+  store.dispatch('toggleShowGame', true);
   closeOptions();
 };
 
-//todo: merge with guzzy branch?
 const sendMessage = (friend) => {
   console.log('Sending message to:', friend.name);
   closeOptions();
@@ -206,25 +257,24 @@ const removeFriend = async (friend) => {
         userId: currentUser.value.id,
       }),
     });
-
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
-
     const data = await response.json();
-
     if (data.error) {
       throw new Error(data.error);
     }
-
     friends.value = friends.value.filter(f => f.id !== friend.id);
-    // console.log(data.message);
   } catch (error) {
     console.error('Error removing friend:', error);
     error.value = error.message;
   } finally {
     closeOptions();
   }
+};
+
+const isInviteSender = (friendId) => {
+  return inviteSenders.value.has(friends.value.find(f => f.id === friendId)?.username);
 };
 
 onMounted(() => {
@@ -257,6 +307,11 @@ onMounted(() => {
   padding: 8px;
   border-bottom: 1px solid #ddd;
   transition: background-color 0.2s;
+}
+
+.user.highlight {
+  background-color: #e0ffea;
+  animation: blink 1s step-start infinite;
 }
 
 .user:hover {
@@ -355,5 +410,9 @@ onMounted(() => {
 
 .request-info button:hover {
   background-color: #45a049;
+}
+
+@keyframes blink {
+  50% { background-color: #d0f7d4; }
 }
 </style>

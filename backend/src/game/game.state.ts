@@ -3,15 +3,15 @@ import { UserService } from '../user/user.service';
 
 @Injectable()
 export class GameState {
-	ball: { x: number, y: number, dx: number, dy: number, radius: number };
-	paddle1: { x: number, y: number, width: number, height: number, dy: number };
-	paddle2: { x: number, y: number, width: number, height: number, dy: number };
+  ball: { x: number, y: number, dx: number, dy: number, radius: number };
+  paddle1: { x: number, y: number, width: number, height: number, dy: number };
+  paddle2: { x: number, y: number, width: number, height: number, dy: number };
   gamesWon: { playerOne: number, playerTwo: number};
-	score: { playerOne: number, playerTwo: number };
-	playerOne: string | null; // Stores player one's ID
-	playerTwo: string | null; // Stores player two's ID
-	bounceCooldown: number;
-	lastUpdateTime: number;
+  score: { playerOne: number, playerTwo: number };
+  playerOne: string | null;
+  playerTwo: string | null;
+  bounceCooldown: number;
+  lastUpdateTime: number;
 	// private userService: UserService;
 
 	constructor() {
@@ -19,7 +19,7 @@ export class GameState {
 		this.paddle1 = { x: -14, y: 0, width: 1, height: 4, dy: 0 };
 		this.paddle2 = { x: 14, y: 0, width: 1, height: 4, dy: 0 };
 		this.score = { playerOne: 0, playerTwo: 0 };
-    this.gamesWon = { playerOne: 0, playerTwo: 0 }
+		this.gamesWon = { playerOne: 0, playerTwo: 0 }
 		this.playerOne = null;
 		this.playerTwo = null;
 		this.bounceCooldown = 0;
@@ -59,6 +59,7 @@ export class GameState {
 		}
 
 		// Ball collision with paddles
+		//todo: fix
 		if (
 			this.ball.x - this.ball.radius < this.paddle1.x + this.paddle1.width &&
 			this.ball.y > this.paddle1.y - 2 &&

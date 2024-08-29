@@ -9,23 +9,23 @@ import { GetFriendsDto } from './dto/get-friends.dto';
 export class UserController {
 	constructor(private readonly userService: UserService) {}
 
-	@Post()
-	async createUser(@Body() createUserDto: CreateUserDto) {
-		try {
-			return await this.userService.createUser(createUserDto);
-		} catch (error) {
-			if (error.message.includes('Unique constraint violation')) {
-				throw new HttpException({
-					status: HttpStatus.CONFLICT,
-					error: error.message,
-				}, HttpStatus.CONFLICT);
-			}
-			throw new HttpException({
-				status: HttpStatus.INTERNAL_SERVER_ERROR,
-				error: 'Internal Server Error',
-			}, HttpStatus.INTERNAL_SERVER_ERROR);
-		}
-	}
+	// @Post()
+	// async createUser(@Body() createUserDto: CreateUserDto) {
+	// 	try {
+	// 		return await this.userService.createUser(createUserDto);
+	// 	} catch (error) {
+	// 		if (error.message.includes('Unique constraint violation')) {
+	// 			throw new HttpException({
+	// 				status: HttpStatus.CONFLICT,
+	// 				error: error.message,
+	// 			}, HttpStatus.CONFLICT);
+	// 		}
+	// 		throw new HttpException({
+	// 			status: HttpStatus.INTERNAL_SERVER_ERROR,
+	// 			error: 'Internal Server Error',
+	// 		}, HttpStatus.INTERNAL_SERVER_ERROR);
+	// 	}
+	// }
 
 	@UseGuards(AuthGuard)
 	@Post('add')

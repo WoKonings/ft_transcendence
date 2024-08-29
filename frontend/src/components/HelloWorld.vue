@@ -47,149 +47,144 @@
 
 </template>
 
-<script>
-import { mapState, mapActions } from 'vuex';
+<script setup>
+import { ref, computed, onMounted } from 'vue';
+import { useStore } from 'vuex';
+import { io } from 'socket.io-client';
 import PongGame from './PongGame.vue';
 import ChatBox from './Chat-Box.vue';
-import io from 'socket.io-client'
 import UserList from './UserList.vue';
-import FriendsList from './FriendsList.vue'
+import FriendsList from './FriendsList.vue';
 
-export default {
-  name: 'HelloWorld',
-  components: {
-  PongGame,
-  ChatBox,
-  UserList,
-  FriendsList,
-  },
-  data() {
-    return {
-      message: 'User Authentication',
-      newUser: {
-      username: '',
-      email: '',
-      password: ''
-      },
-      loginDetails: {
-      username: '',
-      password: ''
-      },
-      error: '',
-      showGame: false,
-      socket: null
-    };
-  },
-  computed: {
-  ...mapState(['isLoggedIn', 'currentUser'])
-  },
-  methods: {
-  ...mapActions(['logIn', 'logOut']),
-  createUser() {
-    this.error = '';
-    fetch('http://localhost:3000/user', {
-    method: 'POST',
-    headers: {
+const store = useStore();
+
+const message = ref('User Authentication');
+const newUser = ref({
+  username: '',
+  email: '',
+  password: ''
+});
+const loginDetails = ref({
+  username: '',
+  password: ''
+});
+const error = ref('');
+const socket = ref(null);
+
+const isLoggedIn = computed(() => store.state.isLoggedIn);
+const currentUser = computed(() => store.state.currentUser);
+const showGame = computed(() => store.state.showGame);
+
+const createUser = async () => {
+  error.value = '';
+  try {
+    const response = await fetch('http://localhost:3000/auth/register', {
+      method: 'POST',
+      headers: {
         'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(this.newUser)
-    })
-    .then(response => {
-        if (!response.ok) {
-        return response.json().then(err => {
-            throw new Error(err.error);
-        });
-        }
-        return response.json();
-    })
-    .then(data => {
-        this.logIn(data);
-    })
-    .catch(error => {
-        console.error('Error creating user:', error);
-        this.error = error.message;
+      },
+      body: JSON.stringify(newUser.value)
     });
-  },
-  loginUser() {
-    this.error = '';
-    fetch('http://localhost:3000/auth/login', {
-    method: 'POST',
-    headers: {
-        'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(this.loginDetails)
-    })
-    .then(response => {
-      if (!response.ok) {
-      return response.json().then(err => {
-        throw new Error(err.error);
-      });
-      }
-      return response.json();
-    })
-    .then(data => {
-      localStorage.setItem('access_token', data.access_token);
-      console.log(`Received access token: ${data.access_token}`)
-      this.logIn(data.user);
-      // console.log(`reference user: ${data.user.id}, ${data.user.username}`);
-      // console.log(`Logged in as user: ${this.currentUser.id}, ${this.currentUser.username}`);
-      this.initializeSocket();
-    })
-    .catch(error => {
-      console.error('Error logging in:', error);
-      this.error = error.message;
-    });
-  },
-  logoutUser() {
-    localStorage.setItem('access_token', null); //maybe not needed
-    this.logOut();
-  },
-  deleteAccount() {
-    this.error = '';
-    fetch(`http://localhost:3000/user/${this.currentUser.id}`, {
-    method: 'DELETE',
-    headers: {
-      'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
-      'Content-Type': 'application/json'
+
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.error);
     }
-    })
-    .then(response => {
-      if (!response.ok) {
-      return response.json().then(err => {
-          throw new Error(err.error);
-      });
-      }
-      this.logoutUser();
-    })
-    .catch(error => {
-        console.error('Error deleting account:', error);
-        this.error = error.message;
-    });
-  },
-  initializeSocket() {
-    const token = localStorage.getItem('access_token');
-    if (!token) return;
 
-    this.socket = io('http://localhost:3000', {
-        auth: { token },
-        // query: { token },
-    });
-
-    this.socket.on('connected', (message) => {
-        console.log(message);
-    });
-
-    this.$store.commit('SET_SOCKET', this.socket); // Store the socket in Vuex
-  },
-  toggleGame() {
-      this.showGame = !this.showGame;
-  }
+    const data = await response.json();
+    localStorage.setItem('access_token', data.access_token);
+    console.log(`Received access token: ${data.access_token}`);
+    store.dispatch('logIn', data.user);
+    initializeSocket();
+  } catch (error) {
+    console.error('Error creating user:', error);
+    error.value = error.message;
   }
 };
 
+const loginUser = async () => {
+  error.value = '';
+  try {
+    const response = await fetch('http://localhost:3000/auth/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(loginDetails.value)
+    });
+
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.error);
+    }
+
+    const data = await response.json();
+    localStorage.setItem('access_token', data.access_token);
+    console.log(`Received access token: ${data.access_token}`);
+    store.dispatch('logIn', data.user);
+    initializeSocket();
+  } catch (error) {
+    console.error('Error logging in:', error);
+    error.value = error.message;
+  }
+};
+
+const logoutUser = () => {
+  localStorage.setItem('access_token', null);
+  store.dispatch('logOut');
+};
+
+const deleteAccount = async () => {
+  error.value = '';
+  try {
+    const response = await fetch(`http://localhost:3000/user/${currentUser.value.id}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.error);
+    }
+
+    logoutUser();
+  } catch (error) {
+    console.error('Error deleting account:', error);
+    error.value = error.message;
+  }
+};
+const initializeSocket = () => {
+  const token = localStorage.getItem('access_token');
+  if (!token) return;
+
+  socket.value = io('http://localhost:3000', {
+    auth: { token },
+  });
+
+  socket.value.on('connected', (message) => {
+    console.log(message);
+  });
+
+  store.commit('SET_SOCKET', socket.value);
+};
+
+const toggleGame = () => {
+  if (!showGame.value) {
+    socket.value.emit('joinGame', {
+      userId: currentUser.value.id,
+      username: currentUser.value.username,
+    });
+  }
+  store.dispatch('toggleShowGame', !showGame.value);
+};
+
+onMounted(() => {
+  // Any initialization that needs to happen on component mount
+});
 </script>
-
-
 
 <style scoped>
 .main-container {

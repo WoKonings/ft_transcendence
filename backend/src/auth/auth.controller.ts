@@ -11,9 +11,9 @@ import {
 import { AuthGuard } from './auth.guard';
 import { AuthService } from './auth.service';
 import { UserService } from '../user/user.service';
-import { SignInDto } from './sign-in.dto';
+import { SignInDto } from './dto/sign-in.dto';
+import { CreateUserDto } from 'src/user/dto/create-user.dto';
 
-//added readonly
 @Controller('auth')
 export class AuthController {
   constructor(
@@ -37,5 +37,10 @@ export class AuthController {
       username: user.username,
       email: user.email,
     };
+  }
+
+  @Post('register')
+  async register(@Body() createUserDto: CreateUserDto) {
+    return this.authService.register(createUserDto);
   }
 }
