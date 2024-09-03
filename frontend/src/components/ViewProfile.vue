@@ -21,7 +21,7 @@
         <div class="profile-header">
           <div class="profile-picture">
             <img
-              :src="`https://robohash.org/${userProfile.username}?set=set2`"
+              :src="`https://robohash.org/${userProfile.username}?set=set4`"
               :alt="`${userProfile.username}'s profile picture`"
             />
           </div>
@@ -43,11 +43,11 @@
           </div>
           <div class="info-row">
             <span class="info-label">Wins:</span>
-            <span class="info-value">{{ userProfile.wins }}</span>
+            <span class="info-value">{{ userProfile.gamesWon }}</span>
           </div>
           <div class="info-row">
             <span class="info-label">Losses:</span>
-            <span class="info-value">{{ userProfile.losses }}</span>
+            <span class="info-value">{{ userProfile.gamesPlayed - userProfile.gamesWon }}</span>
           </div>
         </div>
       </div>
