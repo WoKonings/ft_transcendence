@@ -77,8 +77,10 @@ import {
       console.log('Sender not found');
       return;
     }
-    console.log(`got message: ${payload.message} from userid ${sender.id}`);
+    console.log(`got message: ${payload.message} from userid ${sender.username}`);
     for (const username of channel.users) {
+      if (username == 'admin')
+         continue;
       const recipient = await this.userService.getUserByUsernameOrEmail(username);
       if (!recipient) {
         console.error(`User ${username} not found when trying to send a message`);
