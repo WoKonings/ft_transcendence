@@ -59,7 +59,8 @@ export class AppGateway implements OnGatewayInit, OnGatewayConnection, OnGateway
         data: { socket: null, isOnline: false, isInGame: false, isInQueue: false },
       });
 
-      client.broadcast.emit('newStatus', {
+      client.broadcast.emit('userStatusUpdate', {
+        id: user.id,
         username: user.username,
         isOnline: false,
         isInGame: false,

@@ -2,7 +2,7 @@ import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/co
 import { UserService } from '../user/user.service';
 import { JwtService } from '@nestjs/jwt';
 import { CreateUserDto } from 'src/user/dto/create-user.dto';
-import * as bcrypt from 'bcrypt';
+import * as bcrypt from 'bcryptjs';
 
 @Injectable()
 export class AuthService {
@@ -28,13 +28,19 @@ export class AuthService {
       throw new ConflictException('Username already exists');
     }
 
-    const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
-    const newUser = await this.userService.createUser({
-      ...createUserDto,
-      password: hashedPassword,
-    });
+    try {
+      // const hashedPassword = createUserDto.password;
+      const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
+      const newUser = await this.userService.createUser({
+        ...createUserDto,
+        password: hashedPassword,
+      });
+      return this.generateToken(newUser);
 
-    return this.generateToken(newUser);
+    } catch {
+      console.log('bcrypt in registry probably broken again');
+      return null;
+    }
   }
 
   private async generateToken(user: any): Promise<{ access_token: string; user: any | null }> {

@@ -69,7 +69,9 @@ const updateUserStatus = (username, isOnline, isInGame, isInQueue) => {
 		user.isInQueue = isInQueue;
 		// Trigger reactivity
 		users.value = [...users.value];
-	}
+	} else {
+
+  }
 };
 
 const updateList = (data) => {
@@ -152,7 +154,7 @@ const viewProfile = (user) => {
 
 onMounted(() => {
   getUsers();
-  socket.value.on('newStatus', (data) => {
+  socket.value.on('userStatusUpdate', (data) => {
 		updateUserStatus(data.username, data.newStatus);
 	});
 });

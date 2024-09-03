@@ -41,6 +41,7 @@ export class AuthController {
 
   @Post('register')
   async register(@Body() createUserDto: CreateUserDto) {
+    console.log ('beebop');
     return this.authService.register(createUserDto);
   }
 }
