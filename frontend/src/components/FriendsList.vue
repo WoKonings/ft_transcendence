@@ -23,10 +23,17 @@
       <div class="options" @click.stop>
         <button @click="inviteToPlay(selectedUser)">Invite to Play</button>
         <button @click="sendMessage(selectedUser)">Send Message</button>
-        <button @click="viewProfile(selectedUser)">View Profile</button>
+        <button @click="viewProfile(selectedUser)">Profile</button>
         <button @click="removeFriend(selectedUser)">Remove Friend</button>
       </div>
     </div>
+          <ViewProfile
+          :selectedUser="selectedUser"
+          :isVisible="isProfileVisible"
+          @close="isProfileVisible = false"
+        />
+    </div>
+
 
     <!-- Error Message -->
     <p v-if="error" style="color: red">{{ error }}</p>
@@ -56,12 +63,12 @@
         <button @click="closeInvites">Close</button>
       </div>
     </div>
-  </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from 'vue';
 import { useStore } from 'vuex';
+import ViewProfile from './ViewProfile.vue';
 
 const store = useStore();
 const currentUser = computed(() => store.state.currentUser);
@@ -75,6 +82,8 @@ const showPendingRequestsModal = ref(false);
 const showInvitesModal = ref(false);
 const selectedUser = ref(null);
 const inviteSenders = ref(new Set()); // To keep track of users who sent invites
+const isProfileVisible = ref(false); // State to manage profile visibility
+
 
 const fetchFriends = async () => {
   error.value = '';
@@ -148,6 +157,12 @@ const closePendingRequests = () => {
 const viewInvites = () => {
   showInvitesModal.value = true;
 };
+
+const viewProfile = (user) => {
+  isProfileVisible.value = true; // Show the profile modal
+  console.log(`viewing ${user.username}`); 
+};
+
 
 const closeInvites = () => {
   showInvitesModal.value = false;
