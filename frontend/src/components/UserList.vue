@@ -33,7 +33,6 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue';
 import { useStore } from 'vuex';
-import { computed } from 'vue';
 import ViewProfile from './ViewProfile.vue'; // Import the viewProfile 
 
 const store = useStore();
@@ -79,9 +78,11 @@ const updateUserStatus = (username, isOnline, isInGame, isInQueue) => {
 		user.isInQueue = isInQueue;
 		// Trigger reactivity
 		users.value = [...users.value];
-	} else {
-
-  }
+	}
+  //todo: add user instead
+  // else {
+    // users.value.push{  };
+  // }
 };
 
 const updateList = (data) => {
@@ -150,10 +151,10 @@ const addAsFriend = (user) => {
 	closeOptions();
 };
 
-const inviteToGame = (user) => {
-	console.log(`Inviting ${user.username} to a game`);
-	closeOptions();
-}
+// const inviteToGame = (user) => {
+// 	console.log(`Inviting ${user.username} to a game`);
+// 	closeOptions();
+// }
 
 const viewProfile = (user) => {
   isProfileVisible.value = true; // Show the profile modal
@@ -166,11 +167,11 @@ const sendMessage = (user) => {
   closeOptions();
 };
 
-const viewProfile = (user) => {
-  console.log(`Viewing profile of ${user.username}`);
-  // Implement profile viewing logic here
-  closeOptions();
-};
+// const viewProfile = (user) => {
+//   console.log(`Viewing profile of ${user.username}`);
+//   // Implement profile viewing logic here
+//   closeOptions();
+// };
 
 onMounted(() => {
   getUsers();

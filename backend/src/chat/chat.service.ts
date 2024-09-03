@@ -2,9 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { Channel } from '@prisma/client';
 import { UserService } from 'src/user/user.service';
-import { PrismaService } from '../prisma.service';
-import { Channel } from '@prisma/client';
-import { UserService } from 'src/user/user.service';
+
 
 @Injectable()
 export class ChatService {

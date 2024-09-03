@@ -14,7 +14,6 @@ import { AppGateway } from './app.gateway';
 import { JwtStrategy } from './auth/jwt.strategy';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { ChatModule } from './chat/chat.module';
 import { Socket } from 'socket.io';
 
 
