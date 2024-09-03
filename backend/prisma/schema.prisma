@@ -55,3 +55,4 @@ model Channel {
 
   messages  String[]
 }
+

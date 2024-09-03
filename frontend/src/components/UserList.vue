@@ -17,15 +17,24 @@
       <div class="options" @click.stop>
         <button @click="addAsFriend(selectedUser)">Add as Friend</button>
         <button @click="sendMessage(selectedUser)">Send Message</button>
-        <button @click="viewProfile(selectedUser)">View Profile</button>
+        <button @click="viewProfile(selectedUser)">Profile</button>
       </div>
     </div>
+            <ViewProfile
+            :selectedUser="selectedUser"
+            :isVisible="isProfileVisible"
+            @close="isProfileVisible = false"
+          />
   </div>
+
+
 </template>
 
 <script setup>
 import { ref, onMounted, computed } from 'vue';
 import { useStore } from 'vuex';
+import { computed } from 'vue';
+import ViewProfile from './ViewProfile.vue'; // Import the viewProfile 
 
 const store = useStore();
 const socket = computed(() => store.state.socket);
@@ -34,6 +43,7 @@ const currentUser = computed(() => store.state.currentUser);
 const users = ref([]);
 const error = ref('');
 const selectedUser = ref(null);
+const isProfileVisible = ref(false); // State to manage profile visibility
 
 const getUsers = () => {
   error.value = '';
@@ -138,6 +148,16 @@ const addAsFriend = (user) => {
 		});
 
 	closeOptions();
+};
+
+const inviteToGame = (user) => {
+	console.log(`Inviting ${user.username} to a game`);
+	closeOptions();
+}
+
+const viewProfile = (user) => {
+  isProfileVisible.value = true; // Show the profile modal
+  console.log(`viewing ${user.username}`); 
 };
 
 const sendMessage = (user) => {

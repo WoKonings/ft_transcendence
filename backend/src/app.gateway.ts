@@ -4,6 +4,7 @@ import { Injectable, UseGuards } from '@nestjs/common';
 import { AuthGuard } from './auth/auth.guard';
 import { PrismaService } from './prisma.service';
 import { JwtService } from '@nestjs/jwt';
+import { SocketManagerService } from './socket-manager/socket-manager.service';
 
 @WebSocketGateway({ cors: true })
 @Injectable()
@@ -13,6 +14,7 @@ export class AppGateway implements OnGatewayInit, OnGatewayConnection, OnGateway
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
+    private readonly socketManager: SocketManagerService, // Inject SocketManagerService
   ) {}
 
   afterInit(server: Server) {

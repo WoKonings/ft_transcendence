@@ -244,4 +244,28 @@ onMounted(() => {
   margin-left: 20px; /* Space between game and user list */
   max-width: 300px;
   height: 100%;
+}
+
+.chat-tabs-container {
+  flex: 1;
+  margin-right: 20px; /* Space between chat and game */
+  max-width: 150px;
+  height: 90%;
+}
+</style>
+
+<!-- .game-and-chat {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+    margin-top: 20px;
+}
+
+.chat-box-container {
+    margin-right: 20px;
+}
+
+.pong-game-container {
+    flex: 1;
 } -->

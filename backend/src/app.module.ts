@@ -9,6 +9,7 @@ import { AuthModule } from './auth/auth.module';
 import { PassportModule } from '@nestjs/passport';
 import { GameGateway } from './game/game.gateway';
 import { GameModule } from './game/game.module';
+import { ChatModule } from './chat/chat.module';
 import { AppGateway } from './app.gateway';
 import { JwtStrategy } from './auth/jwt.strategy';
 import { JwtModule } from '@nestjs/jwt';
