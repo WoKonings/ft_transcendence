@@ -1,4 +1,4 @@
-import { WebSocketGateway, WebSocketServer, OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect } from '@nestjs/websockets';
+import { WebSocketGateway, WebSocketServer, OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect, SubscribeMessage } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { Injectable, UseGuards } from '@nestjs/common';
 import { AuthGuard } from './auth/auth.guard';
@@ -30,7 +30,7 @@ export class AppGateway implements OnGatewayInit, OnGatewayConnection, OnGateway
       // Store the socket.id in the database
       await this.prisma.user.update({
         where: { username: decoded.username},
-        data: { socket: client.id }
+        data: { socket: client.id, isOnline: true }
       })
 
       console.log(`Client connected in app: ${client.id} ${decoded.username}`);
@@ -40,6 +40,7 @@ export class AppGateway implements OnGatewayInit, OnGatewayConnection, OnGateway
       client.disconnect();
     }
   }
+
   //todo: figure out why juicer is not found
   async handleDisconnect(client: Socket) {
     try {
@@ -55,13 +56,76 @@ export class AppGateway implements OnGatewayInit, OnGatewayConnection, OnGateway
       // Find the user by ID and clear the socket ID field
       this.prisma.user.update({
         where: { id: user.id },
-        data: { socket: null },
+        data: { socket: null, isOnline: false, isInGame: false, isInQueue: false },
       });
+
+      client.broadcast.emit('newStatus', {
+        username: user.username,
+        isOnline: false,
+        isInGame: false,
+        isInQueue: false,
+      })
+
       console.log(`SOCKET DISCONNECTED: ${client.id}`);
     } catch (error) {
       console.log('Error handling disconnect:', error);
     }
   }
+
+  // Handle "joinGame" event from client
+  @SubscribeMessage('logOut')
+  async handleLogOut(client: Socket, userId: number): Promise<void> {
+    this.handleDisconnect(client);
+    // console.log(`logging out user:  `, userId);
+    // if (!client) {
+    //   console.log('No socket');
+    //   return;
+    // }
+    // if (!userId) {
+    //   console.log('No userId provided for logOut');
+    //   return;
+    // }
+
+    // const user = await this.prisma.user.findUnique({
+    //   where: { id: userId }
+    // })
+    // if (!user) {
+    //   console.log('User is not real, and therefore cannot logout')
+    //   return;
+    // }
+    // //set user status
+    // await this.prisma.user.update({
+    //   where: {
+    //     id: userId,
+    //   },
+    //   data: {
+    //     isInGame: false,
+    //     isInQueue: false,
+    //     isOnline: false,
+    //   }
+    // })
+
+    // //disconnect user from channels
+    // const channels = await this.prisma.channel.findMany({
+    //   where: {
+    //     users: {
+    //       has: user.username
+    //     }
+    //   }
+    // })
+
+    // for (const channel of channels) {
+    //   await this.prisma.channel.update({
+    //     where: { id: channel.id },
+    //     data: {
+    //       users: {
+    //         set: channel.users.filter((username) => username !== user.username)
+    //       }
+    //     }
+    //   })
+    // }
+  }
+
 
   // Method to send messages or data to a specific user using the socket object
   async sendMessageToUser(userId: number, event: string, data: any) {

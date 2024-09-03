@@ -4,6 +4,7 @@ import { Prisma, User, Channel } from '@prisma/client';
 import { AuthGuard } from '@nestjs/passport';
 import { GetFriendsDto } from './dto/get-friends.dto';
 import { userInfo } from 'os';
+import { TreeLevelColumn } from 'typeorm';
 
 @Injectable()
 export class UserService {
@@ -158,6 +159,9 @@ export class UserService {
       select: {
         id: true,
         username: true,
+        isInGame: true,
+        isInQueue: true,
+        isOnline: true,
       },
 	});
   
@@ -260,9 +264,51 @@ async getIncomingPendingFriends(userId: number) {
     const user = await this.prisma.user.findUnique({
       where: { id },
     });
+  
     if (!user) {
       throw new NotFoundException(`User with ID ${id} not found.`);
     }
+  
+    // Find all users who have this user in their friends list
+    const friends = await this.prisma.user.findMany({
+      where: {
+        friends: {
+          has: id,
+        },
+      },
+    });
+  
+    // Update each friend's friends list to remove the deleted user's ID
+    for (const friend of friends) {
+      await this.prisma.user.update({
+        where: { id: friend.id },
+        data: {
+          friends: {
+            set: friend.friends.filter((friendId) => friendId !== id), // Remove the deleted user's ID
+          },
+        },
+      });
+    }
+
+    const channels = await this.prisma.channel.findMany({
+      where: {
+        users: {
+          has: user.username
+        }
+      }
+    })
+
+    for (const channel of channels) {
+      await this.prisma.channel.update({
+        where: { id: channel.id },
+        data: {
+          users: {
+            set: channel.users.filter((username) => username !== user.username) // Remove the deleted user's ID from all channels
+          }
+        }
+      })
+    }
+
     return this.prisma.user.delete({
       where: { id },
     });

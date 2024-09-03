@@ -109,8 +109,7 @@ export class ChatService {
   }
 
   async leaveChannel(channelName: string, username: string) {
-    // Find the channel by its name
-    const channel = await this.prisma.channel.findUnique({
+    let channel = await this.prisma.channel.findUnique({
       where: { name: channelName },
     });
   
@@ -118,21 +117,29 @@ export class ChatService {
       console.log('No channel found to leave.');
       return;
     }
-  
+    console.log (`finding user: ${username} in channel ${channelName}`)
     if (!channel.users.includes(username)) {
       console.log("User is not in the channel.");
       return;
     }
   
     const updatedUsers = channel.users.filter(user => user !== username);
-  
     await this.prisma.channel.update({
       where: { name: channelName },
       data: {
         users: updatedUsers,
       },
     });
-  
+
+    channel = await this.prisma.channel.findUnique({
+      where: { name: channelName },
+    });
+    if (channel.users.length <= 0) {
+      console.log(`No members in channel ${channelName}, deleting channel`);
+      await this.prisma.channel.delete({
+        where: { name: channelName}
+      })
+    }
     console.log(`${username} has left the channel: ${channelName}`);
   }
   

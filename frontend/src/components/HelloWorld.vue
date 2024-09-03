@@ -130,6 +130,8 @@ const loginUser = async () => {
 };
 
 const logoutUser = () => {
+  socket.value.emit('logOut', { id: currentUser.value.id})
+  
   localStorage.setItem('access_token', null);
   store.dispatch('logOut');
 };

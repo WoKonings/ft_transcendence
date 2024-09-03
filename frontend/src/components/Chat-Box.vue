@@ -29,9 +29,8 @@
         <input v-model="newMessage" placeholder="Type a message..." />
         <button type="submit">Send</button>
       </form>
-
       <button @click="joinNewChannel">Join New Channel</button>
-      <button @click="leaveChat">Leave Chat</button>
+      <button v-if="selectedChat.name !== 'General'" @click="leaveChat">Leave Chat</button>
     </div>
     <div v-else class="chat-box">
       <p>Select a chat to view messages.</p>
@@ -93,9 +92,9 @@ const joinNewChannel = async () => {
 };
 
 const leaveChat = () => {
-  if (selectedChat.value) {
+  if (selectedChat.value && selectedChat.value.name != 'General') {
     const channelName = selectedChat.value.name;
-    socket.emit('leave', { channel: channelName, userId: currentUser.id });
+    socket.emit('leaveChannel', { channel: channelName, username: currentUser.username });
     
     // Remove the chat from the list
     chats.value = chats.value.filter(chat => chat.name !== channelName);

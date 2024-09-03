@@ -15,7 +15,7 @@ const store = createStore({
       state.currentUser = user;
     },
     LOGOUT_USER(state) {
-      if (state.socket){
+      if (state.socket) {
         state.socket.disconnect();
       }
       state.currentUser = null;

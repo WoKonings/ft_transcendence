@@ -275,7 +275,6 @@ async handleInviteGame(client: Socket, data: InviteGameDto): Promise<void> {
       return;
     }
     gameSession.gameState.updatePlayerPosition(userId, y);
-    console.log('SUCCESS');
   }
   
   // finds if the userId (as a string) is in a game, and returns the session if they are.

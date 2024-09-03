@@ -34,6 +34,33 @@ import {
 	}
   
 	async handleDisconnect(client: Socket) {
+    const user = await this.prisma.user.findFirst({
+      where: { socket: client.id},
+    });
+    if (!user) {
+      console.log('juicer not found');
+      return;
+    }
+    const channels = await this.prisma.channel.findMany({
+      where: {
+        users: {
+          has: user.username
+        }
+      }
+    })
+
+    for (const channel of channels) {
+      console.log(`${client.id} disconnected from channel: ${channel.name}`);
+      await this.prisma.channel.update({
+        where: { id: channel.id },
+        data: {
+          users: {
+            set: channel.users.filter((username) => username !== user.username) // Remove the deleted user's ID from all channels
+          }
+        }
+      })
+    } 
+   
 	  // Handle client disconnect, e.g., update status in the database
 	  console.log(`Client disconnected: ${client.id}`);
 	}
@@ -79,5 +106,9 @@ import {
 	@SubscribeMessage('joinChannel')
 	async handleJoinChannel(client: Socket, payload: { channel: string, username: string }) {
 	  return this.chatService.joinChannel(payload.channel, payload.username);
+	}
+  @SubscribeMessage('leaveChannel')
+	async handleLeavehannel(client: Socket, payload: { channel: string, username: string }) {
+	  return this.chatService.leaveChannel(payload.channel, payload.username);
 	}
 }

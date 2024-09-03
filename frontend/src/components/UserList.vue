@@ -1,8 +1,14 @@
 <template>
   <div class="user-list">
-    <div class="user" v-for="user in users" :key="user.id" @click="selectUser(user)">
+    <div 
+      v-for="user in sortedUsers" 
+      :key="user.id" 
+      class="user" 
+      @click="selectUser(user)"
+    >
       <div class="avatar">
         <img :src="user.avatar || 'https://via.placeholder.com/40'" alt="Avatar" />
+        <div class="status-indicator" :class="getStatusClass(user)"></div>
       </div>
       <div class="username">{{ user.username }}</div>
     </div>
@@ -10,22 +16,19 @@
     <div v-if="selectedUser" class="options-overlay" @click="closeOptions">
       <div class="options" @click.stop>
         <button @click="addAsFriend(selectedUser)">Add as Friend</button>
-        <!-- <button @click="inviteToGame(selectedUser)">Invite to Game</button> -->
         <button @click="sendMessage(selectedUser)">Send Message</button>
-        <button @click="viewProfile(selectedUser)">Send Message</button>
+        <button @click="viewProfile(selectedUser)">View Profile</button>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { useStore } from 'vuex';
-import { computed } from 'vue';
 
-const store = useStore(); // Access the Vuex store
-
-// Get the current user from Vuex store
+const store = useStore();
+const socket = computed(() => store.state.socket);
 const currentUser = computed(() => store.state.currentUser);
 
 const users = ref([]);
@@ -33,48 +36,76 @@ const error = ref('');
 const selectedUser = ref(null);
 
 const getUsers = () => {
-	error.value = '';
-	fetch('http://localhost:3000/user/all', {
-		method: 'GET',
-		headers: {
-			'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
-			'Content-Type': 'application/json',
-		},
-	})
-		.then(response => {
-			if (!response.ok) {
-				return response.json().then(err => {
-					throw new Error(err.error);
-				});
-			}
-			return response.json(); // Parse the response to JSON
-		})
-		.then(data => {
-			updateList(data); // Update the users list
-		})
-		.catch(err => {
-			console.error('Error fetching users:', err);
-			error.value = err.message;
-		});
+  error.value = '';
+  fetch('http://localhost:3000/user/all', {
+    method: 'GET',
+    headers: {
+      'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+      'Content-Type': 'application/json',
+    },
+  })
+    .then(response => {
+      if (!response.ok) {
+        return response.json().then(err => {
+          throw new Error(err.error);
+        });
+      }
+      return response.json();
+    })
+    .then(data => {
+      updateList(data);
+    })
+    .catch(err => {
+      console.error('Error fetching users:', err);
+      error.value = err.message;
+    });
+};
+
+const updateUserStatus = (username, isOnline, isInGame, isInQueue) => {
+	const user = users.value.find(u => u.username === username);
+	if (user) {
+		user.isOnline = isOnline;
+		user.isInGame = isInGame;
+		user.isInQueue = isInQueue;
+		// Trigger reactivity
+		users.value = [...users.value];
+	}
 };
 
 const updateList = (data) => {
-  console.log('Fetched users data:', data); // Debugging line
-  users.value = data.filter(user => user.id !== currentUser.value.id).map(user => ({
-    id: user.id,
-    username: user.username,
-    avatar: user.avatar || 'https://via.placeholder.com/40', // Optional avatar handling
-  }));
-  console.log('Mapped users:', users.value); // Debugging line
+  users.value = data
+    .filter(user => user.id !== currentUser.value.id)
+    .map(user => ({
+      id: user.id,
+      username: user.username,
+      avatar: user.avatar || 'https://via.placeholder.com/40',
+      isOnline: user.isOnline,
+      isInGame: user.isInGame,
+      isInQueue: user.isInQueue,
+    }));
+};
+
+const sortedUsers = computed(() => {
+  return [...users.value].sort((a, b) => {
+    if (a.isOnline && !b.isOnline) return -1;
+    if (!a.isOnline && b.isOnline) return 1;
+    return 0;
+  });
+});
+
+const getStatusClass = (user) => {
+  if (user.isInGame) return 'status-in-game';
+  if (user.isInQueue) return 'status-in-queue';
+  if (user.isOnline) return 'status-online';
+  return 'status-offline';
 };
 
 const selectUser = (user) => {
-  // console.log('Selected user:', user); // Debugging line
-	selectedUser.value = user;
+  selectedUser.value = user;
 };
 
 const closeOptions = () => {
-	selectedUser.value = null;
+  selectedUser.value = null;
 };
 
 const addAsFriend = (user) => {
@@ -107,22 +138,25 @@ const addAsFriend = (user) => {
 	closeOptions();
 };
 
-// const inviteToGame = (user) => {
-// 	console.log(`Inviting ${user.username} to a game`);
-// 	closeOptions();
-// };
-
 const sendMessage = (user) => {
-	console.log(`Sending message to ${user.username}`);
-	closeOptions();
+  console.log(`Sending message to ${user.username}`);
+  // Implement message sending logic here
+  closeOptions();
 };
 
-// Fetch users when the component is mounted
+const viewProfile = (user) => {
+  console.log(`Viewing profile of ${user.username}`);
+  // Implement profile viewing logic here
+  closeOptions();
+};
+
 onMounted(() => {
-	getUsers();
+  getUsers();
+  socket.value.on('newStatus', (data) => {
+		updateUserStatus(data.username, data.newStatus);
+	});
 });
 </script>
-
 
 <style scoped>
 .user-list {
@@ -152,12 +186,39 @@ onMounted(() => {
   height: 40px;
   border-radius: 50%;
   overflow: hidden;
+  position: relative;
 }
 
 .avatar img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+.status-indicator {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+}
+
+.status-online {
+  background-color: #4CAF50;
+}
+
+.status-offline {
+  background-color: #9e9e9e;
+}
+
+.status-in-queue {
+  background-color: #FFC107;
+}
+
+.status-in-game {
+  background-color: #2196F3;
 }
 
 .username {
