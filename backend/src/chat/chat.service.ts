@@ -24,7 +24,7 @@ export class ChatService {
   async createGeneralChannel() {
     const generalChannel = await this.getChannelByName('General');
     if (!generalChannel) {
-      await this.createChannel('General', 'admin'); // "admin" or any default username
+      await this.createChannel('General', 'admin', null); // "admin" or any default username
       console.log('General channel created');
     }
   }
@@ -54,7 +54,7 @@ export class ChatService {
     return channel;
   }
 
-  async createChannel(channelName: string, username: string) {
+  async createChannel(channelName: string, username: string, password: string) {
     if (!username || !channelName) {
       console.log("no username or no channel name  to create channel");
       return;
@@ -66,23 +66,24 @@ export class ChatService {
         private: false,
         users: [username], 
         messages: [], 
+        password: password || null,
       },
     });
   
     return newChannel;
   }
 
-  async joinChannel(channelName: string, username: string) {
+  async joinChannel(channelName: string, username: string, password: string) {
     const channel = await this.prisma.channel.findUnique({
       where: { name: channelName }
     })
     if (!channel)
-      return await this.createChannel(channelName, username);
+      return await this.createChannel(channelName, username, password);
 
     if(!username)
     {
       console.log(`${username} is invalid`);
-      
+      return;
     }
 
     if (channel.users.includes(username))
@@ -90,7 +91,15 @@ export class ChatService {
       console.log("already in channel");
       return;
     }
-
+    
+    if (channel.password)
+    {
+      if(password != channel.password)
+        {
+          console.log("wrong password");
+          return;
+        }
+    }
 
     const updatedUsers = [...channel.users, username];
 

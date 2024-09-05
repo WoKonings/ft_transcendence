@@ -106,9 +106,10 @@ import {
   }
   
 	@SubscribeMessage('joinChannel')
-	async handleJoinChannel(client: Socket, payload: { channel: string, username: string }) {
-	  return this.chatService.joinChannel(payload.channel, payload.username);
+	async handleJoinChannel(client: Socket, payload: { channel: string, username: string, password: string }) {
+	  return this.chatService.joinChannel(payload.channel, payload.username, payload.password);
 	}
+
   @SubscribeMessage('leaveChannel')
 	async handleLeavehannel(client: Socket, payload: { channel: string, username: string }) {
 	  return this.chatService.leaveChannel(payload.channel, payload.username);
