@@ -5,6 +5,9 @@
       <div class="score">{{ player2Score }}</div>
     </div>
     <div class="pong-game" ref="container"></div>
+    <div id="endScreen" class="end-screen">
+      <div id="endScreenMessage" class="end-screen-message"></div>
+    </div>
     <div v-if="waitingForOpponent" class="waiting-overlay">
       Waiting for opponent...
     </div>
@@ -225,6 +228,14 @@ export default {
           updateGameObjects(gameState);
       });
 
+      socket.on('gameWon', () => {
+        showEndScreen('You won!');
+      });
+
+      socket.on('gameLost', () => {
+        showEndScreen('You lost!');
+      });
+
       socket.on('playerScored', (username) => {
         if (username == currentUser.username) {
           player1Score.value += 1;
@@ -277,6 +288,18 @@ export default {
         });
       }
     };
+
+    const showEndScreen = (message) => {
+      const endScreen = document.getElementById('endScreen');
+      const endScreenMessage = document.getElementById('endScreenMessage');
+      endScreenMessage.textContent = message;
+      endScreen.style.display = 'flex';  // Make it visible
+    }
+
+    // const hideEndScreen = () => {
+    //   const endScreen = document.getElementById('endScreen');
+    //   endScreen.style.display = 'none';  // Hide it
+    // }
 
     const updateGameObjects = (gameState) => {
       if (!gameState || !gameState.paddle1 || !gameState.paddle2 || !gameState.ball) {
@@ -370,4 +393,28 @@ export default {
 	flex: 1;
 	text-align: center;
 }
+
+.end-screen {
+	display: none;  /* Hidden by default */
+	position: absolute;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	background-color: rgba(0, 0, 0, 0.7);  /* Semi-transparent black */
+	justify-content: center;
+	align-items: center;
+	z-index: 9999;  /* Ensure it's on top of other elements */
+}
+
+.end-screen-message {
+	font-size: 4rem;
+	color: white;
+	font-family: 'Arial', sans-serif;
+	text-align: center;
+	padding: 20px;
+	border-radius: 10px;
+	background-color: rgba(0, 0, 0, 0.8);  /* Solid background for the text */
+}
+
 </style>

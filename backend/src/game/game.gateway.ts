@@ -10,7 +10,6 @@ import { PlayerMoveDto } from './dto/player-move.dto';
 import { LeaveGameDto } from './dto/leave-game.dto';
 import { InviteGameDto } from './dto/invite-game.dto';
 
-//todo: think about adding player stats if we want them visible in the lobby?
 interface Player {
   username: string;
 	userId: string;
@@ -68,6 +67,12 @@ export class GameGateway {
       return;
     }
     console.log(`removed paddle from user: ${username}`);
+    this.userService.setIsInGame(Number(userId), false);
+    client.broadcast.emit('userStatusUpdate', {
+      username: username,
+      userId: userId,
+      isInGame: false,
+    })
 
     if (game.player_one && game.player_one.userId === userId) {
       console.log('player one bailed');
@@ -122,6 +127,16 @@ export class GameGateway {
       session.player_one.socket.emit('opponentJoined', session.player_two.username);
       session.player_two.socket.emit('opponentJoined', session.player_one.username);
       session.paused = false;
+      session.player_two.socket.broadcast.emit('userStatusUpdate', {
+        username: username,
+        userId: userId,
+        isInGame: true,
+      })
+      session.player_two.socket.broadcast.emit('userStatusUpdate', {
+        username: username,
+        userId: userId,
+        isInGame: true,
+      })
     }
     this.userService.setIsInGame(Number(userId), true);
   }
@@ -213,6 +228,22 @@ async handleInviteGame(client: Socket, data: InviteGameDto): Promise<void> {
       session.player_one.socket.emit('opponentJoined', session.player_two.username);
       session.player_two.socket.emit('opponentJoined', session.player_one.username);
       session.paused = false;
+      session.player_two.socket.broadcast.emit('userStatusUpdate', {
+        username: username,
+        userId: userId,
+        // isOnline: true,
+        isInGame: true,
+        // isInQueue: false,
+        // avatar: 
+      })
+      session.player_two.socket.broadcast.emit('userStatusUpdate', {
+        username: username,
+        userId: userId,
+        // isOnline: true,
+        isInGame: true,
+        // isInQueue: false,
+        // avatar: 
+      })
     }
     await this.userService.setIsInGame(Number(userId), true);
   }
@@ -312,15 +343,11 @@ async handleInviteGame(client: Socket, data: InviteGameDto): Promise<void> {
           if (session.gameState.score.playerOne >= 7)
           {
             this.handleGameOver(session.player_one, session.player_two, session);
-            // session.gameState.score.playerOne = 0;
-            // session.gameState.score.playerTwo = 0;
             session.paused = true;
           }
           if (session.gameState.score.playerTwo >= 7)
           {
             this.handleGameOver(session.player_two, session.player_one, session);
-            // session.gameState.score.playerOne = 0;
-            // session.gameState.score.playerTwo = 0;
             session.paused = true;
           }
           session.player_one.socket.emit('update', session.gameState);

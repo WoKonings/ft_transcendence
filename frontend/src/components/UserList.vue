@@ -77,9 +77,12 @@ const updateUserStatus = (username, userId, isOnline, isInGame, isInQueue, avata
   console.log(`${username} has changed status: online? ${isOnline} ingame? ${isInGame} inqueue? ${isInQueue}`);
 	const user = users.value.find(u => u.username === username);
 	if (user) {
-		user.isOnline = isOnline;
-		user.isInGame = isInGame;
-		user.isInQueue = isInQueue;
+    if (isOnline != null)
+      user.isOnline = isOnline;
+    if (isInGame != null)
+      user.isInGame = isInGame;
+    if (isInQueue != null)
+      user.isInQueue = isInQueue;
 		// Trigger reactivity
 		users.value = [...users.value];
 	} else {
