@@ -31,7 +31,7 @@ import { Socket } from 'socket.io';
 		inject: [ConfigService],
 	  }),
       GameModule,
-	  ChatModule,
+	    ChatModule,
     ],
   controllers: [AppController, HelloController],
   providers: [AppService, HelloService, AppGateway, JwtModule],

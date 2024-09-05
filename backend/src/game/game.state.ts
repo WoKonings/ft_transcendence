@@ -56,25 +56,28 @@ export class GameState {
 			this.bounceCooldown = 150;
 		}
 
-		// Ball collision with paddles
-		//todo: fix
-		if (
-			this.ball.x - this.ball.radius < this.paddle1.x + this.paddle1.width &&
-			this.ball.y > this.paddle1.y - 2 &&
-			this.ball.y < this.paddle1.y + this.paddle1.height - 2 &&
-			this.bounceCooldown <= 0
-		) {
-			this.ball.dx *= -1.1;
-			this.bounceCooldown = 150;
-		} else if (
-			this.ball.x + this.ball.radius > this.paddle2.x &&
-			this.ball.y > this.paddle2.y - 2 &&
-			this.ball.y < this.paddle2.y + this.paddle2.height - 2 &&
-			this.bounceCooldown <= 0
-		) {
-			this.ball.dx *= -1.1;
-			this.bounceCooldown = 150;
-		}
+    // Ball collision with paddles
+    if (
+      this.ball.dx < 0 &&
+      this.ball.x - this.ball.radius <= this.paddle1.x + this.paddle1.width &&
+      this.ball.x > this.paddle1.x &&
+      this.ball.y > this.paddle1.y - 2 &&
+      this.ball.y < this.paddle1.y + this.paddle1.height + 2 &&
+      this.bounceCooldown <= 0
+    ) {
+      this.ball.dx *= -1.1;
+      this.bounceCooldown = 150;
+    } else if (
+      this.ball.dx > 0 && 
+      this.ball.x + this.ball.radius >= this.paddle2.x &&
+      this.ball.x < this.paddle2.x + this.paddle2.width &&
+      this.ball.y > this.paddle2.y - 2 &&
+      this.ball.y < this.paddle2.y + this.paddle2.height + 2 &&
+      this.bounceCooldown <= 0
+    ) {
+      this.ball.dx *= -1.1;
+      this.bounceCooldown = 150;
+    }
 
 		// Ball collision with left and right screen boundaries and award score.
 		if (this.ball.x - this.ball.radius < -20) {
