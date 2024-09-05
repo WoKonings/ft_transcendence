@@ -1,5 +1,6 @@
 <template>
-  <div class="user-list">
+	<div class="user-list">
+    <h2>User List</h2>
     <div 
       v-for="user in sortedUsers" 
       :key="user.id" 
@@ -8,26 +9,27 @@
     >
       <div class="avatar">
         <img :src="user.avatar || 'https://via.placeholder.com/40'" alt="Avatar" />
-        <div class="status-indicator" :class="getStatusClass(user)"></div>
       </div>
+      <div 
+        class="status-indicator" 
+        :class="getStatusClass(user)"
+      ></div>
       <div class="username">{{ user.username }}</div>
     </div>
 
-    <div v-if="selectedUser" class="options-overlay" @click="closeOptions">
-      <div class="options" @click.stop>
-        <button @click="addAsFriend(selectedUser)">Add as Friend</button>
-        <button @click="sendMessage(selectedUser)">Send Message</button>
-        <button @click="viewProfile(selectedUser)">Profile</button>
-      </div>
-    </div>
-            <ViewProfile
-            :selectedUser="selectedUser"
-            :isVisible="isProfileVisible"
-            @close="isProfileVisible = false"
-          />
-  </div>
-
-
+		<div v-if="selectedUser" class="options-overlay" @click="closeOptions">
+			<div class="options" @click.stop>
+				<button @click="addAsFriend(selectedUser)">Add as Friend</button>
+				<button @click="sendMessage(selectedUser)">Send Message</button>
+				<button @click="viewProfile(selectedUser)">Profile</button>
+			</div>
+		</div>
+		<ViewProfile
+			:selectedUser="selectedUser"
+			:isVisible="isProfileVisible"
+			@close="isProfileVisible = false"
+		/>
+	</div>
 </template>
 
 <script setup>
@@ -70,19 +72,29 @@ const getUsers = () => {
     });
 };
 
-const updateUserStatus = (username, isOnline, isInGame, isInQueue) => {
+//todo: add avatar
+const updateUserStatus = (username, userId, isOnline, isInGame, isInQueue, avatar) => {
+  console.log(`${username} has changed status: online? ${isOnline} ingame? ${isInGame} inqueue? ${isInQueue}`);
 	const user = users.value.find(u => u.username === username);
 	if (user) {
-		user.isOnline = isOnline;
-		user.isInGame = isInGame;
-		user.isInQueue = isInQueue;
+    if (isOnline != null)
+      user.isOnline = isOnline;
+    if (isInGame != null)
+      user.isInGame = isInGame;
+    if (isInQueue != null)
+      user.isInQueue = isInQueue;
 		// Trigger reactivity
 		users.value = [...users.value];
-	}
-  //todo: add user instead
-  // else {
-    // users.value.push{  };
-  // }
+	} else {
+    users.value.push({
+        id: userId,
+        username: username,
+        avatar: avatar || 'https://via.placeholder.com/40',
+        isOnline: isOnline,
+        isInGame: isInGame,
+        isInQueue: isInQueue,
+      });
+  }
 };
 
 const updateList = (data) => {
@@ -176,113 +188,122 @@ const sendMessage = (user) => {
 onMounted(() => {
   getUsers();
   socket.value.on('userStatusUpdate', (data) => {
-		updateUserStatus(data.username, data.newStatus);
+		updateUserStatus(data.username, data.userId, data.isOnline, data.isInGame, data.isInQueue, data.avatar);
 	});
 });
 </script>
 
 <style scoped>
 .user-list {
-  width: 100%;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  padding: 16px;
-  background-color: #f2f2f2;
+	width: 100%;
+	border: 1px solid #ccc;
+	border-radius: 8px;
+	padding: 16px;
+	background-color: #f2f2f2;
 }
 
 .user {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 8px;
-  border-bottom: 1px solid #ddd;
-  cursor: pointer;
-  transition: background-color 0.2s;
+	display: flex;
+	align-items: center;
+	gap: 16px;
+	padding: 8px;
+	border-bottom: 1px solid #ddd;
+	cursor: pointer;
+	transition: background-color 0.2s;
+	position: relative; /* Allow absolute positioning of status indicator */
 }
 
 .user:hover {
-  background-color: #e0e0e0;
+	background-color: #e0e0e0;
 }
 
 .avatar {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  overflow: hidden;
-  position: relative;
+	width: 40px;
+	height: 40px;
+	border-radius: 50%;
+	overflow: hidden;
 }
 
 .avatar img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
 }
 
 .status-indicator {
-  position: absolute;
-  bottom: 0;
-  right: 0;
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  border: 2px solid #fff;
+	width: 12px;
+	height: 12px;
+	border-radius: 50%;
+	border: 2px solid #fff;
+	position: absolute;
+	bottom: 5px;
+  left: 35px;
 }
 
 .status-online {
-  background-color: #4CAF50;
+	background-color: #4CAF50;
 }
 
 .status-offline {
-  background-color: #9e9e9e;
+	background-color: #9e9e9e;
 }
 
 .status-in-queue {
-  background-color: #FFC107;
+	background-color: #FFC107;
 }
 
 .status-in-game {
-  background-color: #2196F3;
+	background-color: #2196F3;
 }
 
 .username {
-  font-size: 14px;
-  font-weight: bold;
+	font-size: 14px;
+	font-weight: bold;
 }
 
 .options-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
+	position: fixed;
+	top: 0;
+	left: 0;
+	width: 100%;
+	height: 100%;
+	background-color: rgba(0, 0, 0, 0.5);
+	display: flex;
+	justify-content: center;
+	align-items: center;
 }
 
 .options {
-  background-color: #ffffff;
-  padding: 16px;
-  border-radius: 8px;
-  box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+	background-color: #ffffff;
+	padding: 16px;
+	border-radius: 8px;
+	box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
 }
 
 .options button {
-  background-color: #4CAF50;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  padding: 8px;
-  cursor: pointer;
-  font-size: 14px;
-  transition: background-color 0.2s;
+	background-color: #4CAF50;
+	color: white;
+	border: none;
+	border-radius: 4px;
+	padding: 8px;
+	cursor: pointer;
+	font-size: 14px;
+	transition: background-color 0.2s;
 }
 
 .options button:hover {
-  background-color: #45a049;
+	background-color: #45a049;
 }
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+
 </style>

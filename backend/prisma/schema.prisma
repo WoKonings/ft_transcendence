@@ -13,10 +13,10 @@ generator client {
   provider = "prisma-client-js"
 }
 
-//  todo: 2fa, friends(pending, blocked), rooms
+//  todo: 2fa, rooms
 //
 model User {
-  //account info
+  // account info
   id          Int       @id @default(autoincrement())
   // intraId     Int       @unique //should replace username/email?
   username    String    @unique 
@@ -24,22 +24,23 @@ model User {
   password    String            //also no password needed
   socket      String?
 
-  //relation
+  // status
   isOnline    Boolean   @default(false) //todo: fully implement
   isInGame    Boolean   @default(false)
   isInQueue   Boolean   @default(false)
   isBad       Boolean   @default(false)
-  elo         Int       @default(600)
 
-  //Social
+  // social
   friends     Int[]
   blocked     Int[]
   pending     Int[]
 
-  //stats
+  // stats
+  games       Game[]    @relation("PlayerGames")
+  gamesWon    Game[]    @relation("GameWinner")
   gamesPlayed Int       @default(0)
-  gamesWon    Int       @default(0)
   createdAt   DateTime  @default(now())
+  elo         Int       @default(600)
 }
 
 model Channel {
@@ -58,3 +59,13 @@ model Channel {
   messages  String[]
 }
 
+model Game {
+  id               Int       @id @default(autoincrement())
+  players          User[]    @relation("PlayerGames")
+  playerScores     Int[]     // Scores for each player, order corresponds to players list
+  playerEloChanges Int[]
+  winner           User      @relation("GameWinner", fields: [winnerId], references: [id])
+  winnerId         Int
+  startTime        DateTime  @default(now())
+  endTime          DateTime  @default(now())
+}

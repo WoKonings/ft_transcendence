@@ -46,6 +46,8 @@ export class UserService {
       where: { id: userId}
     })
     if (user && user.pending.includes(targetId)) {
+      console.log('accepting:', targetUser.username, 'for :', user.username); // Log IDs to verify they are correct
+
       //update user
       await this.prisma.user.update({
         where: { id: userId },
@@ -62,7 +64,7 @@ export class UserService {
         where: { id: targetId },
         data: {
           pending: {
-            set: user.pending.filter(id => id !== userId)
+            set: targetUser.pending.filter(id => id !== userId)
             // remove userId
           },
           friends: {
@@ -70,7 +72,7 @@ export class UserService {
           }
         }
       })
-      return;
+      return { message: `You are now friends with ${targetUser.username} ` };
     }
 
     // Check if userId is already in the pending list

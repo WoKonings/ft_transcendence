@@ -4,9 +4,9 @@ import { Injectable, UseGuards } from '@nestjs/common';
 import { AuthGuard } from './auth/auth.guard';
 import { PrismaService } from './prisma.service';
 import { JwtService } from '@nestjs/jwt';
-// import { SocketManagerService } from './socket-manager/socket-manager.service';
 
 @WebSocketGateway({ cors: true })
+@UseGuards(AuthGuard)
 @Injectable()
 export class AppGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer() server: Server;
@@ -27,7 +27,7 @@ export class AppGateway implements OnGatewayInit, OnGatewayConnection, OnGateway
       const token = client.handshake.auth.token as string;
       const decoded = this.jwtService.verify(token);
 
-      console.log(`test: ${decoded.sub}`);
+      // console.log(`test: ${decoded.sub}`);
 
       // Store the socket.id in the database
       await this.prisma.user.update({
@@ -37,10 +37,20 @@ export class AppGateway implements OnGatewayInit, OnGatewayConnection, OnGateway
 
       console.log(`Client connected in app: ${client.id} ${decoded.username}`);
       client.emit('connected', { message: 'Welcome to Transcendence!' });
+      client.broadcast.emit('userStatusUpdate', {
+        username: decoded.username,
+        userId: decoded.sub,
+        isOnline: true,
+        isInGame: false,
+        isInQueue: false,
+        // avatar: 
+      })
     } catch (error) {
       console.log('Invalid token, disconnecting client');
       client.disconnect();
     }
+
+
   }
 
   //todo: figure out why juicer is not found
@@ -62,8 +72,8 @@ export class AppGateway implements OnGatewayInit, OnGatewayConnection, OnGateway
       });
 
       client.broadcast.emit('userStatusUpdate', {
-        id: user.id,
         username: user.username,
+        userId: user.id,
         isOnline: false,
         isInGame: false,
         isInQueue: false,
@@ -78,7 +88,7 @@ export class AppGateway implements OnGatewayInit, OnGatewayConnection, OnGateway
   // Handle "joinGame" event from client
   @SubscribeMessage('logOut')
   async handleLogOut(client: Socket, userId: number): Promise<void> {
-    this.handleDisconnect(client);
+    // this.handleDisconnect(client);
     // console.log(`logging out user:  `, userId);
     // if (!client) {
     //   console.log('No socket');

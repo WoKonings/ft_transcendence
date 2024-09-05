@@ -9,12 +9,7 @@ import { JoinGameDto } from './dto/join-game.dto';
 import { PlayerMoveDto } from './dto/player-move.dto';
 import { LeaveGameDto } from './dto/leave-game.dto';
 import { InviteGameDto } from './dto/invite-game.dto';
-import { isPrimitive } from 'util';
-// import { UUID } from 'typeorm/driver/mongodb/bson.typings';
-// import { randomUUID } from 'crypto';
-// import { JwtService } from '@nestjs/jwt';
 
-//todo: think about adding player stats if we want them visible in the lobby?
 interface Player {
   username: string;
 	userId: string;
@@ -24,14 +19,18 @@ interface Player {
 interface GameSession {
   player_one: Player;
   player_two: Player;
+  gameId: string;
+
   gameState: GameState;
   isPrivate: boolean;
   paused: boolean;
-  gameId: string;
+
+  startTime: number;
+  endTime: number;
 }
 
 @WebSocketGateway({ cors: true })
-// @UseGuards(AuthGuard)
+@UseGuards(AuthGuard)
 @Injectable()
 export class GameGateway {
   @WebSocketServer() server: Server;
@@ -68,6 +67,12 @@ export class GameGateway {
       return;
     }
     console.log(`removed paddle from user: ${username}`);
+    this.userService.setIsInGame(Number(userId), false);
+    client.broadcast.emit('userStatusUpdate', {
+      username: username,
+      userId: userId,
+      isInGame: false,
+    })
 
     if (game.player_one && game.player_one.userId === userId) {
       console.log('player one bailed');
@@ -118,9 +123,20 @@ export class GameGateway {
     client.emit('gameJoined', session.player_one.userId === userId ? 1 : 2);
     if (session.player_one && session.player_two) {
       console.log('GAME IS NOW STARTING!');
+      session.startTime = Date.now();
       session.player_one.socket.emit('opponentJoined', session.player_two.username);
       session.player_two.socket.emit('opponentJoined', session.player_one.username);
       session.paused = false;
+      session.player_two.socket.broadcast.emit('userStatusUpdate', {
+        username: username,
+        userId: userId,
+        isInGame: true,
+      })
+      session.player_two.socket.broadcast.emit('userStatusUpdate', {
+        username: username,
+        userId: userId,
+        isInGame: true,
+      })
     }
     this.userService.setIsInGame(Number(userId), true);
   }
@@ -208,9 +224,26 @@ async handleInviteGame(client: Socket, data: InviteGameDto): Promise<void> {
     }
     if (session.player_one && session.player_two) {
       console.log(`GAME IS NOW STARTING! with players:`, session.player_one, session.player_two);
+      session.startTime = Date.now();
       session.player_one.socket.emit('opponentJoined', session.player_two.username);
       session.player_two.socket.emit('opponentJoined', session.player_one.username);
       session.paused = false;
+      session.player_two.socket.broadcast.emit('userStatusUpdate', {
+        username: username,
+        userId: userId,
+        // isOnline: true,
+        isInGame: true,
+        // isInQueue: false,
+        // avatar: 
+      })
+      session.player_two.socket.broadcast.emit('userStatusUpdate', {
+        username: username,
+        userId: userId,
+        // isOnline: true,
+        isInGame: true,
+        // isInQueue: false,
+        // avatar: 
+      })
     }
     await this.userService.setIsInGame(Number(userId), true);
   }
@@ -241,6 +274,8 @@ async handleInviteGame(client: Socket, data: InviteGameDto): Promise<void> {
         isPrivate: isPrivate,
         paused: true,
         gameId: crypto.randomUUID(),
+        startTime: null,
+        endTime: null,
       };
       console.log(`creating new gamesession: ${newSession.gameId}`);
       console.log(`${username} joined lobby as player one`);
@@ -307,16 +342,12 @@ async handleInviteGame(client: Socket, data: InviteGameDto): Promise<void> {
           session.gameState.update();
           if (session.gameState.score.playerOne >= 7)
           {
-            this.handleGameOver(session.player_one, session.player_two);
-            session.gameState.score.playerOne = 0;
-            session.gameState.score.playerTwo = 0;
+            this.handleGameOver(session.player_one, session.player_two, session);
             session.paused = true;
           }
           if (session.gameState.score.playerTwo >= 7)
           {
-            this.handleGameOver(session.player_two, session.player_one);
-            session.gameState.score.playerOne = 0;
-            session.gameState.score.playerTwo = 0;
+            this.handleGameOver(session.player_two, session.player_one, session);
             session.paused = true;
           }
           session.player_one.socket.emit('update', session.gameState);
@@ -326,31 +357,68 @@ async handleInviteGame(client: Socket, data: InviteGameDto): Promise<void> {
     }, 1000 / 60); // 60 FPS
 	}
 
-  async handleGameOver(winner: Player, loser: Player) {
-		try {
-			await this.prisma.user.update({
-				where: { id: Number(winner.userId) },
-				data: {
-					gamesPlayed: { increment: 1 },
-					gamesWon: { increment: 1 },
-				},
-			});
-			await this.prisma.user.update({
-				where: { id: Number(loser.userId) },
-				data: {
-					gamesPlayed: { increment: 1 },
-				},
-			});
-
-			// You can also emit an event to the client, log the result, etc.
-			console.log(`Game over: ${winner.username} won against ${loser.username}`);
+  async handleGameOver(winner: Player, loser: Player, gameSession: GameSession) {
+    try {
+      // const eloChange = this.calculateEloChange(winner, loser);
+      const eloChange = 69;
+      
+      // Update winner's stats
+      await this.prisma.user.update({
+        where: { id: Number(winner.userId) },
+        data: {
+          gamesPlayed: { increment: 1 },
+          // gamesWon: { increment: 1 },
+          elo: { increment: eloChange }, // Increase Elo for the winner
+        },
+      });
+  
+      // Update loser's stats
+      await this.prisma.user.update({
+        where: { id: Number(loser.userId) },
+        data: {
+          gamesPlayed: { increment: 1 },
+          elo: { decrement: eloChange }, // Decrease Elo for the loser
+        },
+      });
+  
+      // Store game data in the Game model
+      console.log (`score 1: ${gameSession.gameState.score.playerOne} 2: ${gameSession.gameState.score.playerTwo}`);
+      await this.prisma.game.create({
+        data: {
+          players: {
+            connect: [{ id: Number(winner.userId) }, { id: Number(loser.userId) }],
+          },
+          playerScores: [gameSession.gameState.score.playerOne, gameSession.gameState.score.playerTwo],
+          playerEloChanges: [eloChange, -eloChange], // Positive for winner, negative for loser
+          winner: { connect: { id: Number(winner.userId) } },
+          startTime: new Date(gameSession.startTime),
+          endTime: new Date(Date.now()), // Use game end time
+        },
+      });
+  
+      console.log(`Game over: ${winner.username} won against ${loser.username}`);
+      //todo: display changes n stuff?
       winner.socket.emit('gameWon');
       loser.socket.emit('gameLost');
+  
+    } catch (error) {
+      console.error('Error updating game stats:', error);
+    }
+  }
 
-		} catch (error) {
-			console.error('Error updating game stats:', error);
-		}
-	}
+  calculateEloChange(winnerElo: number, loserElo: number): number {
+    const kFactor = 32; // You can adjust the K-factor based on your system
+  
+    // Expected scores
+    const expectedScoreWinner = 1 / (1 + Math.pow(10, (loserElo - winnerElo) / 400));
+    const expectedScoreLoser = 1 / (1 + Math.pow(10, (winnerElo - loserElo) / 400));
+  
+    // Elo change calculation
+    const eloChangeWinner = Math.round(kFactor * (1 - expectedScoreWinner));
+    const eloChangeLoser = Math.round(kFactor * (0 - expectedScoreLoser));
+  
+    return eloChangeWinner; // Return Elo change for winner (positive)
+  }
 
   async handleDisconnect(client: Socket) {
     console.log("Handle disconnect in game gateway!");
