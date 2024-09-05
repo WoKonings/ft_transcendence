@@ -77,40 +77,39 @@ const sendMessage = () => {
   }
 };
 
-// const joinNewChannel = async () => {
-//   try {
-//     const channelname = prompt("Enter Channel name to join:");
-//     if (!channelname) return;  // Check if a name was entered
-//     const newChat = { name: channelname, messages: [] };
-    
-//     chats.value.push(newChat);
-//     socket.emit('joinChannel', { channel: channelname, username: currentUser.username, password:  });
-//     selectChat(channelname);  // Automatically select the newly joined chat
-//   } catch (error) {
-//     console.error('Failed to join new channel:', error);
-//   }
-// };
 
 const joinNewChannel = async () => {
   try {
     const channelName = prompt("Enter Channel name to join:");
     if (!channelName) return;  // Check if a name was entered
     
-    const password = prompt("Enter password if required (leave blank if not):"); // Ask for a password
-    
-    const newChat = { name: channelName, messages: [] };
-    chats.value.push(newChat);
+     // Ask for a password
     
     // Send join channel request with the password if provided
-    socket.emit('joinChannel', { channel: channelName, username: currentUser.username, password: password || null }, (response) => {
-      if (response.error) {
-        alert(response.error); // Show error if joining fails
-        chats.value = chats.value.filter(chat => chat.name !== channelName); // Remove the chat if failed
-      } else {
-        selectChat(channelName); // Automatically select the newly joined chat if successful
+    socket.emit('joinChannel', { channel: channelName, username: currentUser.username, password: null}, (response) => {
+      if (response.success == true) {
+        const newChat = { name: channelName, messages: [] };
+        chats.value.push(newChat);
+        selectChat(channelName);
+        alert(response.message);
+      }
+      else if (response.password)  {
+        const password = prompt("Enter password");
+        socket.emit('joinChannel', { channel: channelName, username: currentUser.username, password: password || null}, (response) => {
+          if (response.success == true) {
+            const newChat = { name: channelName, messages: [] };
+            chats.value.push(newChat);
+            selectChat(channelName);
+            alert(response.message);
+          }
+        });
+      }
+      else {
+        alert(response.message); // Display error message if joining fails
       }
     });
-  } catch (error) {
+  } 
+  catch (error) {
     console.error('Failed to join new channel:', error);
   }
 };

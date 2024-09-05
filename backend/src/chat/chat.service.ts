@@ -54,6 +54,8 @@ export class ChatService {
     return channel;
   }
 
+  async //join chan -> create chan -> you're admin -> channel / password? /
+  
   async createChannel(channelName: string, username: string, password: string) {
     if (!username || !channelName) {
       console.log("no username or no channel name  to create channel");
@@ -70,37 +72,46 @@ export class ChatService {
       },
     });
   
-    return newChannel;
+    // return newChannel;
+    return { success: true, message: "you joined breh"}; 
   }
 
   async joinChannel(channelName: string, username: string, password: string) {
-    const channel = await this.prisma.channel.findUnique({
-      where: { name: channelName }
-    })
-    if (!channel)
-      return await this.createChannel(channelName, username, password);
-
     if(!username)
     {
       console.log(`${username} is invalid`);
       return;
     }
+    const channel = await this.prisma.channel.findUnique({
+      where: { name: channelName }
+    })
+    
+    if (!channel)
+      return await this.createChannel(channelName, username, password);
+
+    if(channel.private)
+    {
+      console.log(`this room is private`);
+      return{ success: false, message: "room is private"}
+    }
+    
 
     if (channel.users.includes(username))
     {
       console.log("already in channel");
       return;
     }
-    
+
+    console.log(`channel password = ${channel.password} and password submitted is ${password}`);
     if (channel.password)
     {
       if(password != channel.password)
         {
           console.log("wrong password");
-          return;
+          return{ success: false, message: "Incorrect password.", password: true};
         }
     }
-
+    
     const updatedUsers = [...channel.users, username];
 
     await this.prisma.channel.update({
@@ -115,7 +126,7 @@ export class ChatService {
 
     console.log (`JUICER: ${username} ADDED!`);
     console.log (`users in ${newchannel.name} : ${newchannel.users}`);
-    return;
+    return { success: true};
   }
 
   async leaveChannel(channelName: string, username: string) {

@@ -13,7 +13,7 @@ export class ChatController {
   //todo: decide how front end handles joining channels
 
   @Get('Join')
-  joinChannel(channelName: string, username: string, password: string) {
+  joinChannel(channelName: string, username: string, password: string, privacy: boolean) {
 	console.log (`${username} is joining ${channelName}`);
     return this.chatService.joinChannel(channelName, username, password);
   }
