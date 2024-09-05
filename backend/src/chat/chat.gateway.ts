@@ -5,10 +5,12 @@ import {
 	OnGatewayConnection,
 	OnGatewayDisconnect,
   } from '@nestjs/websockets';
-  import { Server, Socket } from 'socket.io';
-  import { ChatService } from './chat.service';
-  import { PrismaService } from 'src/prisma.service';
-  import { UserService } from 'src/user/user.service';
+import { Server, Socket } from 'socket.io';
+import { ChatService } from './chat.service';
+import { PrismaService } from 'src/prisma.service';
+import { UserService } from 'src/user/user.service';
+import { UseGuards } from '@nestjs/common';
+import { AuthGuard } from '@nestjs/passport';
   
   
   interface channel {
@@ -17,6 +19,7 @@ import {
   }
   
   @WebSocketGateway({ cors: true })
+  @UseGuards(AuthGuard)
   export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 	@WebSocketServer() server: Server;
 	// private channelMembers: number[];

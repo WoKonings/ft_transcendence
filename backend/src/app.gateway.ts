@@ -6,6 +6,7 @@ import { PrismaService } from './prisma.service';
 import { JwtService } from '@nestjs/jwt';
 
 @WebSocketGateway({ cors: true })
+@UseGuards(AuthGuard)
 @Injectable()
 export class AppGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer() server: Server;
