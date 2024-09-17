@@ -18,10 +18,10 @@ generator client {
 model User {
   // account info
   id          Int       @id @default(autoincrement())
-  // intraId     Int       @unique //should replace username/email?
-  username    String    @unique 
-  email       String    @unique //maybe no email needed?
-  password    String            //also no password needed
+  intraId     Int       @unique @default(autoincrement())
+  username    String    @unique
+  email       String    @unique
+  password    String           
   socket      String?
 
   // status
