@@ -141,9 +141,8 @@ export class UserService {
 
   //todo: delete the email part?
   async getUserByUsernameOrEmail(usernameOrEmail: string): Promise<User | null> {
-
-	if (usernameOrEmail == null)
-		return null;
+    if (usernameOrEmail == null)
+      return null;
     const user = await this.prisma.user.findFirst({
       where: {
         OR: [
@@ -152,9 +151,24 @@ export class UserService {
         ],
       },
     });
-	console.log(`found ${user.username}, sock: ${user.socket}`);
-	return user;
+    if (!user) {
+      console.log ('not found by UsernameOrEmail')
+      return null;
+    }
+    console.log(`found ${user.username}, sock: ${user.socket}`);
+    return user;
   }
+
+  async getUserByIntraId(intraId: number): Promise<User | null> {
+    if (intraId == null)
+      return null;
+    const user = await this.prisma.user.findFirst({
+      where: { intraId: intraId },
+    });
+    return user;
+  }
+
+
 
   async getAllUsers() {
     const users = await this.prisma.user.findMany({

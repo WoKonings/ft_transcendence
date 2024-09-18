@@ -1,20 +1,27 @@
 <template>
   <div>
-    <h1>{{ message }}</h1>
-    <form v-if="!isLoggedIn" @submit.prevent="createUser">
-        <h2>Create Account</h2>
-        <input v-model="newUser.username" placeholder="Username" required />
-        <input v-model="newUser.email" placeholder="Email" required />
-        <input v-model="newUser.password" type="password" placeholder="Password" required />
-        <button type="submit">Create User</button>
-    </form>
+    <div v-if="!isCompleteProfileNeeded"> 
+      <h1>{{ message }}</h1>
+      <form v-if="!isLoggedIn" @submit.prevent="createUser">
+          <h2>Create Account</h2>
+          <input v-model="newUser.username" placeholder="Username" required />
+          <input v-model="newUser.email" placeholder="Email" required />
+          <input v-model="newUser.password" type="password" placeholder="Password" required />
+          <button type="submit">Create User</button>
+      </form>
+  
+      <form v-if="!isLoggedIn" @submit.prevent="loginUser">
+          <h2>Login</h2>
+          <input v-model="loginDetails.username" type="username" placeholder="username" required />
+          <input v-model="loginDetails.password" type="password" placeholder="Password" required />
+          <button type="submit">Login</button>
+      </form>
+  
+      <h2>Login with 42</h2>
+      <button @click="login42" v-if="!isLoggedIn">Login with 42</button>
+    </div>
 
-    <form v-if="!isLoggedIn" @submit.prevent="loginUser">
-        <h2>Login</h2>
-        <input v-model="loginDetails.username" type="username" placeholder="username" required />
-        <input v-model="loginDetails.password" type="password" placeholder="Password" required />
-        <button type="submit">Login</button>
-    </form>
+    <CompleteUser v-if="isCompleteProfileNeeded && !isLoggedIn" @completeProfile="handleCompleteProfile" />
 
     <div v-if="isLoggedIn && currentUser">
         <h2>Welcome, {{ currentUser.username }}</h2>
@@ -33,6 +40,8 @@
           <PongGame v-if="isLoggedIn && showGame" />
         </div>
         <div class="sidebar">
+          <!-- <div class=""></div> -->
+          <UserProfile v-if="isLoggedIn && currentUser" />
           <div class="friends-list-container">
             <FriendsList v-if="isLoggedIn && currentUser" />
           </div>
@@ -55,6 +64,9 @@ import PongGame from './PongGame.vue';
 import ChatBox from './Chat-Box.vue';
 import UserList from './UserList.vue';
 import FriendsList from './FriendsList.vue';
+import CompleteUser from './CompleteUser.vue';
+import UserProfile from './UserProfileButton.vue';
+import router from '@/router/router';
 
 const store = useStore();
 
@@ -72,6 +84,7 @@ const error = ref('');
 const socket = ref(null);
 
 const isLoggedIn = computed(() => store.state.isLoggedIn);
+const isCompleteProfileNeeded = ref(false);
 const currentUser = computed(() => store.state.currentUser);
 const showGame = computed(() => store.state.showGame);
 
@@ -102,6 +115,55 @@ const createUser = async () => {
   }
 };
 
+const login42 = () => {
+  window.location.href = 'http://localhost:3000/auth/42';
+};
+
+const handleCallback = async () => {
+  const route = router.currentRoute.value;
+  const token = route.query.token;
+
+  if (token) {
+    localStorage.setItem('access_token', token);
+
+    if (route.path === '/choose-username') {
+      isCompleteProfileNeeded.value = true;
+    } else {
+      console.log('should be logging in');
+      // Clear query params from the URL without reloading the page
+      router.replace({ path: route.path, query: {} });
+      fetchMe();
+      initializeSocket();
+    }
+  } else {
+    isCompleteProfileNeeded.value = false;
+  }
+};
+const handleCompleteProfile = async (username) => {
+  console.log('completing profile?')
+  const access_token = localStorage.getItem('access_token');
+  try {
+    const response = await fetch('http://localhost:3000/auth/complete-profile', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ access_token, username }),
+    });
+
+    const data = await response.json();
+    localStorage.setItem('access_token', data.access_token);
+
+    // Once complete, hide the CompleteUser component and redirect
+    isCompleteProfileNeeded.value = false;
+    store.dispatch('logIn', data.user);
+    initializeSocket();
+
+    // router.push('/dashboard'); // Uncomment if using Vue Router
+  } catch (error) {
+    console.error('Failed to complete profile:', error);
+    error.value = 'Failed to complete profile. Please try again.';
+  }
+};
+
 const loginUser = async () => {
   error.value = '';
   try {
@@ -128,6 +190,27 @@ const loginUser = async () => {
     error.value = error.message;
   }
 };
+
+const fetchMe = async () => {
+  console.log ('fetching my profile!');
+  const token = localStorage.getItem('access_token');
+  const headers = {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+  };
+  try {
+    // make an API request to /me to get user info
+    const response = await fetch('http://localhost:3000/auth/me', { headers });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch user profile');
+    }
+    const data = await response.json();
+    store.dispatch('logIn', data.user);
+  } catch {
+    console.error('error fetching user profile');
+  }
+}
 
 const logoutUser = () => {
   socket.value.emit('logOut', { id: currentUser.value.id})
@@ -158,19 +241,22 @@ const deleteAccount = async () => {
     error.value = error.message;
   }
 };
+
 const initializeSocket = () => {
   const token = localStorage.getItem('access_token');
   if (!token) return;
 
-  socket.value = io('http://localhost:3000', {
-    auth: { token },
-  });
+  if (socket.value == null) {
+    socket.value = io('http://localhost:3000', {
+      auth: { token },
+    }); 
+    store.commit('SET_SOCKET', socket.value);
+    console.log('established socket');
+  }
 
   socket.value.on('connected', (message) => {
     console.log(message);
   });
-
-  store.commit('SET_SOCKET', socket.value);
 };
 
 const toggleGame = () => {
@@ -184,6 +270,7 @@ const toggleGame = () => {
 };
 
 onMounted(() => {
+  handleCallback();
   // Any initialization that needs to happen on component mount
 });
 </script>
