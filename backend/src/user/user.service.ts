@@ -234,9 +234,10 @@ async getIncomingPendingFriends(userId: number) {
 }
 
   //todo: error catching if no user?
-  async getUserById(userId: number): Promise<User | null> {
+  async getUserById(userId: number) {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
+      include: { channels: true},
     });
     if (!user) {
       console.log(`could not find user by id: ${userId}`);
@@ -263,9 +264,7 @@ async getIncomingPendingFriends(userId: number) {
   }
 
   async deleteUser(id: number): Promise<User> {
-    const user = await this.prisma.user.findUnique({
-      where: { id },
-    });
+    const user = await this.getUserById(id);
   
     if (!user) {
       throw new NotFoundException(`User with ID ${id} not found.`);
@@ -292,24 +291,20 @@ async getIncomingPendingFriends(userId: number) {
       });
     }
 
-    const channels = await this.prisma.channel.findMany({
-      where: {
-        users: {
-          has: user.username
-        }
-      }
-    })
 
-    for (const channel of channels) {
+    for (const channels in user.channels) {
+      console.log(`channel: ${channels}`);
       await this.prisma.channel.update({
-        where: { id: channel.id },
+        where: {name: channels},
         data: {
           users: {
-            set: channel.users.filter((username) => username !== user.username) // Remove the deleted user's ID from all channels
+            disconnect: { username: user.username }
           }
         }
-      })
+        
+      });
     }
+ 
 
     return this.prisma.user.delete({
       where: { id },

@@ -1,121 +1,136 @@
 import {
-	WebSocketGateway,
-	WebSocketServer,
-	SubscribeMessage,
-	OnGatewayConnection,
-	OnGatewayDisconnect,
-  } from '@nestjs/websockets';
+  WebSocketGateway,
+  WebSocketServer,
+  SubscribeMessage,
+  OnGatewayConnection,
+  OnGatewayDisconnect,
+} from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { ChatService } from './chat.service';
 import { PrismaService } from 'src/prisma.service';
 import { UserService } from 'src/user/user.service';
 import { Injectable, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '../auth/auth.guard';
-  
-  
-  interface channel {
-    users: number[];
-    channelId: number;
+import { channel } from 'process';
+
+@WebSocketGateway({ cors: true })
+@UseGuards(AuthGuard)
+@Injectable()
+export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
+  @WebSocketServer() server: Server;
+  private channels: Map<number, { users: number[]; channelId: number }> = new Map();
+
+  constructor(
+    private readonly chatService: ChatService,
+    private readonly userService: UserService,
+    private readonly prisma: PrismaService,
+  ) {}
+
+  async handleConnection(client: Socket) {
+    console.log(`Client connected: ${client.id}`);
   }
-  
-  @WebSocketGateway({ cors: true })
-  @UseGuards(AuthGuard)
-  @Injectable()
-  export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
-	@WebSocketServer() server: Server;
-	// private channelMembers: number[];
-	private channels: Map<number, channel> = new Map();
-  
-	constructor(
-	  private readonly chatService: ChatService,
-	  private readonly userService: UserService,
-	  private readonly prisma: PrismaService,
-	) {}
-  
-	async handleConnection(client: Socket) {
-	  // Handle a new client connection, e.g., authenticate user, update status, etc.
-	  console.log(`Client connected in chat: ${client.id}`);
-	}
-  
-	async handleDisconnect(client: Socket) {
+
+  async handleDisconnect(client: Socket) {
+    // Fetch the user by their socket ID
     const user = await this.prisma.user.findFirst({
-      where: { socket: client.id},
+      where: { socket: client.id },
     });
+
     if (!user) {
-      console.log('juicer not found');
+      console.log('User not found for the disconnect event');
       return;
     }
+
+    // Find all channels the user is in
     const channels = await this.prisma.channel.findMany({
       where: {
         users: {
-          has: user.username
-        }
-      }
-    })
+          some: {
+            id: user.id,
+          },
+        },
+      },
+      include: { users: true }, // Include users to update
+    });
 
+    // Loop through each channel the user is in and remove them from the channel
     for (const channel of channels) {
       console.log(`${client.id} disconnected from channel: ${channel.name}`);
       await this.prisma.channel.update({
         where: { id: channel.id },
         data: {
           users: {
-            set: channel.users.filter((username) => username !== user.username) // Remove the deleted user's ID from all channels
-          }
-        }
-      })
-    } 
-   
-	  // Handle client disconnect, e.g., update status in the database
-	  console.log(`Client disconnected: ${client.id}`);
-	}
-  
-  @SubscribeMessage('sendMessage')
-  async handleMessage(client: Socket, payload: { senderId: number; channel: string; message: string }) {
-    const channel = await this.chatService.getChannelByName(payload.channel);
-    if (!channel) {
-      console.log('no channel found');
-      return;
+            disconnect: { id: user.id }, // Remove user from channel
+          },
+        },
+      });
     }
+
+    console.log(`Client disconnected: ${client.id}`);
+  }
+
+  @SubscribeMessage('sendMessage')
+  async handleMessage(client: Socket, payload: { senderId: number; channelName: string; message: string }) {
+    console.log(`channelName: ${payload.channelName}\n message: ${payload.message}`);
+    const channel = await this.chatService.getChannelByName(payload.channelName);
+
+    if (!channel) {
+      console.log('Channel does not exist');
+      return null;
+    }
+
     const sender = await this.userService.getUserById(payload.senderId);
     if (!sender) {
       console.log('Sender not found');
       return;
     }
-    console.log(`got message: ${payload.message} from userid ${sender.username}`);
-    for (const username of channel.users) {
-      if (username == 'admin')
-         continue;
-      const recipient = await this.userService.getUserByUsernameOrEmail(username);
+
+    console.log(`Got message: ${payload.message} from user ${sender.username}`);
+
+    // Broadcast message to all users in the channel
+    for (const user of channel.users) {
+      if (user.username === 'admin') continue;
+
+      const recipient = await this.userService.getUserById(user.id);
       if (!recipient) {
-        console.error(`User ${username} not found when trying to send a message`);
+        console.error(`User ${user.username} not found`);
         continue;
       }
-      console.log(`found recipient ${username} socket: ${recipient.socket}`);
+
       const userSocket = this.server.sockets.sockets.get(recipient.socket);
-      if (!userSocket) {
-        console.log ('failed to get usersocket to message')
-        continue;
-      }
-      console.log(`actually sending message to :${username} in channel: ${channel.name}`);
-      console.log(`huh: ${userSocket.id} cli: ${client.id}`);
-      if (userSocket && userSocket !== client) {
-        console.log('SENDING');
-        userSocket.emit('recieveMessage', { 
-          message: payload.message, 
-          sender: sender.username, 
-          channel: channel.name 
+      if (!userSocket || userSocket === client) continue;
+
+      console.log(`Sending message to: ${recipient.username} in channel: ${channel.name}`);
+      userSocket.emit('recieveMessage', {
+        message: payload.message,
+        sender: sender.username,
+        channel: channel.name,
+      });
+    }
+  }
+
+  @SubscribeMessage('joinChannel')
+  async handleJoinChannel(client: Socket, payload: { channel: string; username: string; password: string }) {
+    const result = await this.chatService.joinChannel(payload.channel, payload.username, payload.password);
+    if (result.success) {
+      const user = await this.userService.getUserByUsernameOrEmail(payload.username);
+      if (user) {
+        // Associate the user's socket with their ID in the database
+        await this.prisma.user.update({
+          where: { id: user.id },
+          data: { socket: client.id },
         });
       }
     }
+    return result;
   }
-  
-	@SubscribeMessage('joinChannel')
-	async handleJoinChannel(client: Socket, payload: { channel: string, username: string, password: string }) {
-	  return this.chatService.joinChannel(payload.channel, payload.username, payload.password);
-	}
 
   @SubscribeMessage('leaveChannel')
-	async handleLeavehannel(client: Socket, payload: { channel: string, username: string }) {
-	  return this.chatService.leaveChannel(payload.channel, payload.username);
-	}
+  async handleLeaveChannel(client: Socket, payload: { channel: string; username: string }) {
+    const result = await this.chatService.leaveChannel(payload.channel, payload.username);
+    if (result.success) {
+      console.log(`${payload.username} left channel: ${payload.channel}`);
+    }
+    return result;
+  }
 }

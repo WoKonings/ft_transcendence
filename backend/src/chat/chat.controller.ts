@@ -5,12 +5,17 @@ import { ChatService } from './chat.service';
 export class ChatController {
   constructor(private readonly chatService: ChatService) {}
 
-  @Get('all')
-  getAllChannels() {
-    return this.chatService.getAllChannels();
-  }
+  // @Get('all')
+  // getAllChannels() {
+  //   return this.chatService.getAllChannels();
+  // }
 
   //todo: decide how front end handles joining channels
+  @Get('allUsers')
+  getAllUsers(channelName : string) {
+    console.log(`fetching users in ${channelName}`);
+    return this.chatService.getAllUsers(channelName);
+  }
 
   @Get('Join')
   joinChannel(channelName: string, username: string, password: string, privacy: boolean) {

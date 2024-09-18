@@ -35,11 +35,21 @@
     <div v-else class="chat-box">
       <p>Select a chat to view messages.</p>
     </div>
+    <div class="user-list-window">
+      <h3>Users in {{ selectedChat?.name || 'Chat' }}</h3>
+      <div v-if="userListError" class="error-message">{{ userListError }}</div>
+      <ul v-else>
+        <li v-for="user in userList" :key="user.id" class="user-item">
+          <span class="user-name">{{ user.username }}</span>
+          <span class="user-status" :class="{ 'online': user.isOnline }"></span>
+        </li>
+      </ul>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, onUpdated } from 'vue';
+import { ref, onMounted, onUpdated, watch } from 'vue';
 import { useStore } from 'vuex';
 
 const store = useStore();
@@ -49,6 +59,8 @@ const currentUser = store.state.currentUser;
 const chats = ref([]);
 const selectedChat = ref(null);
 const newMessage = ref('');
+const userList = ref([]);
+const userListError = ref(null);
 
 const fetchInitialChat = async () => {
   try {
@@ -62,21 +74,75 @@ const fetchInitialChat = async () => {
   }
 };
 
+const fetchUserList = async () => {
+  if (!selectedChat.value) return;
+
+  const chatname = selectedChat.value.name;
+    // Construct the URL with query parameters
+    try{
+      socket.emit('allUsers', { chatname }, (response) => {
+      const data = response.json();
+      console.log(`error: ${data.message}`);
+      if (data.success) {
+      console.log("SUCCESSSSSSSS!!!");
+      userList.value = Object.values(data.users);
+      console.log(`userlist; ${userList.value}`);
+      userListError.value = null; // Clear any previous errors
+    } else {
+      console.log("not successsss!!!");
+      userListError.value = 'Failed to fetch user list';
+    }
+    });
+    } catch (error) {
+
+       console.error('Error fetching user list:', error);
+       userListError.value = 'Error fetching user list';
+    }
+
+
+    // Check if the response is successful
+
+
+};
+
+
 const selectChat = (name) => {
+
   selectedChat.value = chats.value.find(chat => chat.name === name);
 };
 
+watch(() => selectedChat.value, (newChat) => {
+  if (newChat) {
+    fetchUserList();
+  } else {
+    userList.value = [];
+    userListError.value = null;
+  }
+});
+
 const sendMessage = () => {
-  if (newMessage.value.trim() !== '') {
+  if (newMessage.value.trim() !== '' && selectedChat.value) {
     const message = { sender: currentUser.username, text: newMessage.value };
+    
+    // Push the new message to the selected chat
     selectedChat.value.messages.push(message);
-    socket.emit('sendMessage', { senderId: currentUser.id, channel: selectedChat.value.name, message: newMessage.value });
-    console.log(`sending: ${newMessage.value}`);
+
+    console.log(`Sending message to chat: ${selectedChat.value.name}`);
+    
+    // Emit the message via the socket
+    socket.emit('sendMessage', {
+      senderId: currentUser.id,
+      channelName: selectedChat.value.name,
+      message: newMessage.value,
+    });
+    
+    // Clear the input field after sending the message
     newMessage.value = '';
+
+    // Scroll to the bottom to display the latest message
     scrollToBottom();
   }
 };
-
 
 const joinNewChannel = async () => {
   try {
@@ -92,6 +158,7 @@ const joinNewChannel = async () => {
         chats.value.push(newChat);
         selectChat(channelName);
         alert(response.message);
+        fetchUserList();
       }
       else if (response.password)  {
         const password = prompt("Enter password");
@@ -101,6 +168,7 @@ const joinNewChannel = async () => {
             chats.value.push(newChat);
             selectChat(channelName);
             alert(response.message);
+            fetchUserList();
           }
         });
       }
@@ -112,6 +180,7 @@ const joinNewChannel = async () => {
   catch (error) {
     console.error('Failed to join new channel:', error);
   }
+
 };
 
 const leaveChat = () => {
@@ -156,6 +225,10 @@ onMounted(async () => {
     if (selectedChat.value.name === message.channel) {
       scrollToBottom();
     }
+  });
+
+  socket.on('updateUserList', () => {
+    fetchUserList();
   });
 });
 </script>
@@ -232,5 +305,35 @@ button {
 
 button:hover {
   background-color: #0056b3;
+}
+
+.user-list-window {
+  width: 250px;
+  background-color: #f1f1f1;
+  padding: 10px;
+  overflow-y: auto;
+  border-left: 1px solid #ccc;
+}
+
+.user-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 5px 0;
+}
+
+.user-status {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background-color: #ccc;
+}
+
+.user-status.online {
+  background-color: #4CAF50;
+}
+
+.error-message {
+  color: red;
 }
 </style>

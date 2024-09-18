@@ -16,26 +16,19 @@ generator client {
 //  todo: 2fa, rooms
 //
 model User {
-  // account info
   id          Int       @id @default(autoincrement())
-  // intraId     Int       @unique //should replace username/email?
-  username    String    @unique 
-  email       String    @unique //maybe no email needed?
-  password    String            //also no password needed
+  username    String    @unique
+  email       String    @unique
+  password    String
   socket      String?
-
-  // status
-  isOnline    Boolean   @default(false) //todo: fully implement
+  isOnline    Boolean   @default(false)
   isInGame    Boolean   @default(false)
   isInQueue   Boolean   @default(false)
   isBad       Boolean   @default(false)
-
-  // social
   friends     Int[]
   blocked     Int[]
   pending     Int[]
-
-  // stats
+  channels    Channel[] @relation("UserChannels") // Implicit many-to-many relation
   games       Game[]    @relation("PlayerGames")
   gamesWon    Game[]    @relation("GameWinner")
   gamesPlayed Int       @default(0)
@@ -44,18 +37,13 @@ model User {
 }
 
 model Channel {
-
-  id        Int		 @id @default(autoincrement())
-  name      String @unique
+  id        Int     @id @default(autoincrement())
+  name      String  @unique
   password  String?
   admin     String?
   private   Boolean
-  //users
-  users	  String[]
-  banned  String[]
-  // kicked   Int[]
-  // invited  Int[]
-
+  users     User[]  @relation("UserChannels")
+  banned    String[]
   messages  String[]
 }
 
