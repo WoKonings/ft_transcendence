@@ -1,35 +1,31 @@
 <template>
   <div>
     <div v-if="!isCompleteProfileNeeded"> 
-      <h1>{{ message }}</h1>
+      <!-- <h1>{{ message }}</h1> -->
       <form v-if="!isLoggedIn" @submit.prevent="createUser">
-          <h2>Create Account</h2>
-          <input v-model="newUser.username" placeholder="Username" required />
-          <input v-model="newUser.email" placeholder="Email" required />
-          <input v-model="newUser.password" type="password" placeholder="Password" required />
-          <button type="submit">Create User</button>
+        <h2>Create Account</h2>
+        <input v-model="newUser.username" placeholder="Username" required />
+        <input v-model="newUser.email" placeholder="Email" required />
+        <input v-model="newUser.password" type="password" placeholder="Password" required />
+        <button type="submit">Create User</button>
       </form>
   
       <form v-if="!isLoggedIn" @submit.prevent="loginUser">
-          <h2>Login</h2>
-          <input v-model="loginDetails.username" type="username" placeholder="username" required />
-          <input v-model="loginDetails.password" type="password" placeholder="Password" required />
-          <button type="submit">Login</button>
+        <h2>Login</h2>
+        <input v-model="loginDetails.username" type="username" placeholder="username" required />
+        <input v-model="loginDetails.password" type="password" placeholder="Password" required />
+        <button type="submit">Login</button>
       </form>
   
-      <h2>Login with 42</h2>
       <button @click="login42" v-if="!isLoggedIn">Login with 42</button>
     </div>
 
     <CompleteUser v-if="isCompleteProfileNeeded && !isLoggedIn" @completeProfile="handleCompleteProfile" />
 
     <div v-if="isLoggedIn && currentUser">
-        <h2>Welcome, {{ currentUser.username }}</h2>
-        <button @click="logoutUser">Logout</button>
-        <button @click="deleteAccount">Delete Account</button>
-        <button @click="toggleGame">
-        {{ showGame ? 'Stop playing Pong' : 'Play Pong' }}
-        </button>
+      <h2>Welcome, {{ currentUser.username }}</h2>
+      <button @click="logoutUser">Logout</button>
+      <button @click="deleteAccount">Delete Account</button>
     </div>
 
     <div class="main-container">
@@ -37,7 +33,7 @@
         <ChatBox v-if="isLoggedIn && currentUser" />
         </div>
         <div class="pong-game-container">
-          <PongGame v-if="isLoggedIn && showGame" />
+          <PongGame v-if="isLoggedIn && currentUser" />
         </div>
         <div class="sidebar">
           <!-- <div class=""></div> -->
@@ -70,7 +66,7 @@ import router from '@/router/router';
 
 const store = useStore();
 
-const message = ref('User Authentication');
+// const message = ref('User Authentication');
 const newUser = ref({
   username: '',
   email: '',
@@ -86,7 +82,7 @@ const socket = ref(null);
 const isLoggedIn = computed(() => store.state.isLoggedIn);
 const isCompleteProfileNeeded = ref(false);
 const currentUser = computed(() => store.state.currentUser);
-const showGame = computed(() => store.state.showGame);
+// const showGame = computed(() => store.state.showGame);
 
 const createUser = async () => {
   error.value = '';
@@ -139,6 +135,7 @@ const handleCallback = async () => {
     isCompleteProfileNeeded.value = false;
   }
 };
+
 const handleCompleteProfile = async (username) => {
   console.log('completing profile?')
   const access_token = localStorage.getItem('access_token');
@@ -257,16 +254,6 @@ const initializeSocket = () => {
   socket.value.on('connected', (message) => {
     console.log(message);
   });
-};
-
-const toggleGame = () => {
-  if (!showGame.value) {
-    socket.value.emit('joinGame', {
-      userId: currentUser.value.id,
-      username: currentUser.value.username,
-    });
-  }
-  store.dispatch('toggleShowGame', !showGame.value);
 };
 
 onMounted(() => {

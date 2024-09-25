@@ -1,5 +1,6 @@
 <template>
-  <div class="game-container">
+  <div v-if="gameStarted" class="game-container">
+    <!-- Main Game UI -->
     <div class="scoreboard">
       <div class="score">{{ player1Score }}</div>
       <div class="score">{{ player2Score }}</div>
@@ -8,342 +9,343 @@
     <div id="endScreen" class="end-screen">
       <div id="endScreenMessage" class="end-screen-message"></div>
     </div>
-    <div v-if="waitingForOpponent" class="waiting-overlay">
-      Waiting for opponent...
+  </div>
+
+  <!-- Display "Queue for Pong" Button if Not Waiting and Game Not Started -->
+  <div v-if="!waitingForOpponent && !gameStarted" class="queue-container">
+    <button @click="queueForPong" class="queue-button">Queue for Pong</button>
+  </div>
+
+  <!-- Display Waiting for Opponent with Spinner and Cancel Button if Waiting -->
+  <div v-if="waitingForOpponent && !gameStarted" class="waiting-overlay">
+    Waiting for opponent...
+    <div class="half-circle-spinner">
+      <div class="circle circle-1"></div>
+      <div class="circle circle-2"></div>
     </div>
+    <button @click="stopGame" class="cancel-button">Cancel Queue</button>
   </div>
 </template>
 
-<script>
-  import { ref, onMounted, onBeforeUnmount } from 'vue';
-  import { useStore } from 'vuex';
-  import * as THREE from 'three';
-  import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer';
-  import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass';
-  import { AfterimagePass } from 'three/examples/jsm/postprocessing/AfterimagePass';
+<script setup>
+import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue';
+import { useStore } from 'vuex';
+import * as THREE from 'three';
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer';
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass';
+import { AfterimagePass } from 'three/examples/jsm/postprocessing/AfterimagePass';
 
-export default {
-  setup() {
-    const store = useStore();
-    const socket = store.state.socket;
-    const currentUser = store.state.currentUser;
+const store = useStore();
+const socket = store.state.socket;
+const currentUser = store.state.currentUser;
 
-    const container = ref(null);
-    let scene, camera, renderer, composer;
-    let player1, player2; //as username
-    let paddle1, paddle2, ball;
-    let playerPosition = { y: 0 };
-    let waitingForOpponent = ref(true);
-    const player1Score = ref(0);
-    const player2Score = ref(0);
+const container = ref(null);
+let scene, camera, renderer, composer;
+let player1, player2; //as username
+let paddle1, paddle2, ball;
+let playerPosition = { y: 0 };
+const waitingForOpponent = ref(false);
+const gameStarted = ref(false);
+const player1Score = ref(0);
+const player2Score = ref(0);
 
-    //particle shit
-    let particleGeometry, particleMaterial, particles, particleCount = 100;
-    let particlePositions = [];
-    let particleLifetimes = [];
-    let particleVelocities = [];
+// Particle system variables
+let particleGeometry, particleMaterial, particles;
+const particleCount = 100;
+let particlePositions = [];
+let particleLifetimes = [];
+let particleVelocities = [];
 
-
-    const initParticleSystem = () => {
-      // Particle Geometry and Material
-      particleGeometry = new THREE.BufferGeometry();
-      particleMaterial = new THREE.PointsMaterial({
-        color: 0xff00ff, // Bright pink for the trail
-        size: 0.3,       // Size of each particle
-        transparent: true,
-        opacity: 1.0,
-      });
-
-      // Create a pool of particles
-      particlePositions = new Float32Array(particleCount * 3); // Each particle has 3 coordinates (x, y, z)
-      particleLifetimes = new Float32Array(particleCount);     // Lifetimes for each particle
-      particleVelocities = new Float32Array(particleCount * 3); // Velocities for each particle
-
-      particleGeometry.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
-      particles = new THREE.Points(particleGeometry, particleMaterial);
-      scene.add(particles);
-
-      // Initialize particle lifetimes and velocities
-      for (let i = 0; i < particleCount; i++) {
-        particleLifetimes[i] = 0;
-        particleVelocities[i * 3] = (Math.random() - 0.5) * 0.1;     // Random X velocity
-        particleVelocities[i * 3 + 1] = (Math.random() - 0.5) * 0.1; // Random Y velocity
-        particleVelocities[i * 3 + 2] = -0.1;                        // Initial Z velocity
-      }
-    };
-
-    // Update particles in the animate loop
-    const updateParticles = () => {
-    // Update particle positions based on lifetimes and velocities
-      for (let i = 0; i < particleCount; i++) {
-        if (particleLifetimes[i] > 0) {
-          particleLifetimes[i] -= 0.02; // Decrease the lifetime
-          particlePositions[i * 3] += particleVelocities[i * 3];     // Move in X direction
-          particlePositions[i * 3 + 1] += particleVelocities[i * 3 + 1]; // Move in Y direction
-          particlePositions[i * 3 + 2] += particleVelocities[i * 3 + 2]; // Move in Z direction
-
-          // Optionally adjust opacity to create a fading effect
-          particleMaterial.opacity = Math.max(0, particleLifetimes[i]);
-        }
-      }
-      // Update particle positions
-      particles.geometry.attributes.position.needsUpdate = true;
-    };
-
-    // Emit particles from the ball's position
-    const emitParticle = (x, y) => {
-      for (let i = 0; i < particleCount; i++) {
-        if (particleLifetimes[i] <= 0) {
-          particlePositions[i * 3] = x;
-          particlePositions[i * 3 + 1] = y;
-          particlePositions[i * 3 + 2] = 0; // Initial z position of the particle
-          particleLifetimes[i] = 1.0; // Reset lifetime for the new particle
-
-          // Randomize velocity slightly each time a particle is emitted
-          particleVelocities[i * 3] = (Math.random() - 0.5) * 0.2;     // Random X velocity
-          particleVelocities[i * 3 + 1] = (Math.random() - 0.5) * 0.2; // Random Y velocity
-          particleVelocities[i * 3 + 2] = -0.1;                        // Z velocity for trail effect
-          break; // Only emit one particle per frame
-        }
-      }
-    };
-
-    const initThreeJS = () => {
-      scene = new THREE.Scene();
-
-      // Background color and arena grid
-      // const arenaTexture = new THREE.TextureLoader().load('./src/components/assets/neon.jpg'); // Add your texture path
-      // const arenaTexture = new THREE.TextureLoader().load('/neon.jpg'); // Add your texture path
-      // scene.background = arenaTexture;
-      // const arenaMaterial = new THREE.MeshBasicMaterial({ map: arenaTexture });
-      // const arenaGeometry = new THREE.PlaneGeometry(40, 30);
-      // const arena = new THREE.Mesh(arenaGeometry, arenaMaterial);
-      // arena.rotation.x = -Math.PI / 2;
-      // arena.position.y = -10;
-      // scene.add(arena);
-
-      // Set up camera
-      camera = new THREE.PerspectiveCamera(
-        75,
-        800 / 600,
-        0.1,
-        1000
-      );
-      camera.position.z = 20;
-      camera.position.y = 0;
-
-      // Set up renderer
-      renderer = new THREE.WebGLRenderer({ antialias: true });
-      renderer.setSize(800, 600);
-      container.value.appendChild(renderer.domElement);
-
-      // Post-processing setup for ball trail
-      composer = new EffectComposer(renderer);
-      composer.addPass(new RenderPass(scene, camera));
-      const afterimagePass = new AfterimagePass(0.9); // Adjust this value for trail length
-      composer.addPass(afterimagePass);
-
-      // Lighting
-      const ambientLight = new THREE.AmbientLight(0x404040);
-      scene.add(ambientLight);
-
-      const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
-      directionalLight.position.set(1, 1, 1).normalize();
-      scene.add(directionalLight);
-
-      // Neon blue paddles
-      const paddleGeometry = new THREE.BoxGeometry(1, 4, 1);
-      const paddleMaterial = new THREE.MeshPhongMaterial({
-        color: 0x00ffff, // Neon blue
-        emissive: 0x0077ff, // Glowing effect
-        emissiveIntensity: 1,
-        shininess: 100
-      });
-
-      paddle1 = new THREE.Mesh(paddleGeometry, paddleMaterial);
-      paddle1.position.x = -14;
-      scene.add(paddle1);
-
-      paddle2 = new THREE.Mesh(paddleGeometry, paddleMaterial);
-      paddle2.position.x = 14;
-      scene.add(paddle2);
-
-      // Purple ball with shading
-      const ballGeometry = new THREE.SphereGeometry(0.5, 32, 32);
-      const ballMaterial = new THREE.MeshPhongMaterial({
-        color: 0xff00ff, // Pink
-        emissive: 0x550055,
-        emissiveIntensity: 0.5,
-        shininess: 100
-      });
-
-      // Ball geometry and material with shading
-      // const ballGeometry = new THREE.SphereGeometry(0.5, 32, 32);
-      // const ballMaterial = new THREE.MeshPhongMaterial({ color: 0xff00ff }); // Bright pink
-
-
-      ball = new THREE.Mesh(ballGeometry, ballMaterial);
-      ball.position.set(0, 0, 0);
-      scene.add(ball);
-
-      window.addEventListener('resize', onWindowResize);
-      animate();
-    };
-
-    const animate = () => {
-      requestAnimationFrame(animate);
-      composer.render();
-    };
-
-    const onWindowResize = () => {
-      renderer.setSize(800, 600);
-      camera.aspect = 800 / 600;
-      camera.updateProjectionMatrix();
-    };
-
-    const startGame = () => {
-      if (!socket) {
-        console.error('Socket is not defined');
-        return;
-      }
-
-      socket.on('connect', () => {
-        console.log('Connected to WebSocket server');
-      });
-
-    //   socket.emit('joinGame', {
-    //     userId: currentUser.id,
-    //     username: currentUser.username,
-    //   });
-
-      socket.on('gameJoined', (whichPlayer) => {
-        if (whichPlayer == 1) {
-          player1 = currentUser.username;
-        } else if (whichPlayer == 2) {
-          player2 = currentUser.username;
-        }
-      });
-
-      socket.on('update', (gameState) => {
-          updateGameObjects(gameState);
-      });
-
-      socket.on('gameWon', () => {
-        showEndScreen('You won!');
-      });
-
-      socket.on('gameLost', () => {
-        showEndScreen('You lost!');
-      });
-
-      socket.on('playerScored', (username) => {
-        if (username == currentUser.username) {
-          player1Score.value += 1;
-        } else {
-          player2Score.value += 1;
-        }
-      });
-
-      socket.on('opponentLeft', (username) => {
-        console.log(`${username} left, game is now paused`);
-        if (player1 == username) {
-          player1 = null;
-        } else if (player2 == username) {
-          player2 = null;
-        }
-        waitingForOpponent.value = true;
-      });
-
-      socket.on('opponentJoined', (username) => {
-        console.log(`${username} joined, game is now starting`);
-        if (!player1) {
-          player1 = username;
-        } else if (!player2) {
-          player2 = username;
-        }
-        waitingForOpponent.value = false;
-      });
-
-      window.addEventListener('mousemove', handleMouseMove);
-    };
-
-    const stopGame = () => {
-      if (socket) {
-        socket.emit('leaveGame', {
-          userId: currentUser.id,
-          username: currentUser.username,
-        });
-        window.removeEventListener('mousemove', handleMouseMove);
-      }
-    };
-
-    const handleMouseMove = (event) => {
-      const rect = container.value.getBoundingClientRect();
-      playerPosition.y = (rect.bottom - event.clientY) / (rect.bottom - rect.top) * 30 - 15;
-      console.log('moving!');
-      if (socket) {
-        socket.emit('playerMove', {
-          userId: currentUser.id,
-          y: playerPosition.y,
-        });
-      }
-    };
-
-    const showEndScreen = (message) => {
-      const endScreen = document.getElementById('endScreen');
-      const endScreenMessage = document.getElementById('endScreenMessage');
-      endScreenMessage.textContent = message;
-      endScreen.style.display = 'flex';  // Make it visible
-    }
-
-    // const hideEndScreen = () => {
-    //   const endScreen = document.getElementById('endScreen');
-    //   endScreen.style.display = 'none';  // Hide it
-    // }
-
-    const updateGameObjects = (gameState) => {
-      if (!gameState || !gameState.paddle1 || !gameState.paddle2 || !gameState.ball) {
-        return;
-      }
-      paddle1.position.y = gameState.paddle1.y;
-      paddle1.position.x = gameState.paddle1.x;
-      paddle2.position.y = gameState.paddle2.y;
-      paddle2.position.x = gameState.paddle2.x;
-      // console.log(`pad1: ${paddle1.position.y}, ${paddle2.position.x}`);
-      // console.log(`pad2: ${paddle2.position.y}, ${paddle2.position.x}`);
-      ball.position.x = gameState.ball.x;
-      ball.position.y = gameState.ball.y;
-      player1Score.value = gameState.score.playerOne;
-      player2Score.value = gameState.score.playerTwo;
-      // console.log (`score: p1 ${player1Score.value} p2: ${player2Score.value}`);
-      emitParticle(ball.position.x, ball.position.y);
-      updateParticles();
-    };
-
-    onMounted(() => {
-      initThreeJS();
-      initParticleSystem();
-      startGame();
-    });
-
-    onBeforeUnmount(() => {
-      stopGame();
-      if (renderer) {
-        renderer.dispose();
-      }
-      window.removeEventListener('resize', onWindowResize);
-    });
-
-    return {
-      container,
-      waitingForOpponent,
-      player1,
-      player2,
-      player1Score,
-      player2Score,
-    };
-  },
+const initGame = () => {
+  initThreeJS();
+  initParticleSystem();
+  window.addEventListener('mousemove', handleMouseMove);
 };
+
+const initThreeJS = () => {
+  if (!container.value) {
+    console.error('Container is not available');
+    return;
+  }
+
+  scene = new THREE.Scene();
+
+  camera = new THREE.PerspectiveCamera(75, 800 / 600, 0.1, 1000);
+  camera.position.z = 20;
+  camera.position.y = 0;
+
+  renderer = new THREE.WebGLRenderer({ antialias: true });
+  renderer.setSize(800, 600);
+
+  composer = new EffectComposer(renderer);
+  composer.addPass(new RenderPass(scene, camera));
+  const afterimagePass = new AfterimagePass(0.9);
+  composer.addPass(afterimagePass);
+
+  const ambientLight = new THREE.AmbientLight(0x404040);
+  scene.add(ambientLight);
+
+  const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
+  directionalLight.position.set(1, 1, 1).normalize();
+  scene.add(directionalLight);
+
+  // Initialize game objects
+  const paddleGeometry = new THREE.BoxGeometry(1, 4, 1);
+  const paddleMaterial = new THREE.MeshPhongMaterial({
+    color: 0x00ffff,
+    emissive: 0x0077ff,
+    emissiveIntensity: 1,
+    shininess: 100
+  });
+
+  paddle1 = new THREE.Mesh(paddleGeometry, paddleMaterial);
+  paddle1.position.x = -14;
+  scene.add(paddle1);
+
+  paddle2 = new THREE.Mesh(paddleGeometry, paddleMaterial);
+  paddle2.position.x = 14;
+  scene.add(paddle2);
+
+  const ballGeometry = new THREE.SphereGeometry(0.5, 32, 32);
+  const ballMaterial = new THREE.MeshPhongMaterial({
+    color: 0xff00ff,
+    emissive: 0x550055,
+    emissiveIntensity: 0.5,
+    shininess: 100
+  });
+
+  ball = new THREE.Mesh(ballGeometry, ballMaterial);
+  ball.position.set(0, 0, 0);
+  scene.add(ball);
+
+  // Ensure the container is available before appending
+  nextTick(() => {
+    if (container.value) {
+      container.value.appendChild(renderer.domElement);
+    } else {
+      console.error('Container is still not available after nextTick');
+    }
+  });
+
+  window.addEventListener('resize', onWindowResize);
+  animate();
+};
+
+const initParticleSystem = () => {
+  if (!scene) {
+    console.error('Scene is not initialized');
+    return;
+  }
+
+  particleGeometry = new THREE.BufferGeometry();
+  particleMaterial = new THREE.PointsMaterial({
+    color: 0xff00ff,
+    size: 0.3,
+    transparent: true,
+    opacity: 1.0,
+  });
+
+  particlePositions = new Float32Array(particleCount * 3);
+  particleLifetimes = new Float32Array(particleCount);
+  particleVelocities = new Float32Array(particleCount * 3);
+
+  particleGeometry.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
+  particles = new THREE.Points(particleGeometry, particleMaterial);
+  scene.add(particles);
+
+  for (let i = 0; i < particleCount; i++) {
+    particleLifetimes[i] = 0;
+    particleVelocities[i * 3] = (Math.random() - 0.5) * 0.1;
+    particleVelocities[i * 3 + 1] = (Math.random() - 0.5) * 0.1;
+    particleVelocities[i * 3 + 2] = -0.1;
+  }
+};
+
+const updateParticles = () => {
+  for (let i = 0; i < particleCount; i++) {
+    if (particleLifetimes[i] > 0) {
+      particleLifetimes[i] -= 0.02;
+      particlePositions[i * 3] += particleVelocities[i * 3];
+      particlePositions[i * 3 + 1] += particleVelocities[i * 3 + 1];
+      particlePositions[i * 3 + 2] += particleVelocities[i * 3 + 2];
+      particleMaterial.opacity = Math.max(0, particleLifetimes[i]);
+    }
+  }
+  particles.geometry.attributes.position.needsUpdate = true;
+};
+
+const emitParticle = (x, y) => {
+  for (let i = 0; i < particleCount; i++) {
+    if (particleLifetimes[i] <= 0) {
+      particlePositions[i * 3] = x;
+      particlePositions[i * 3 + 1] = y;
+      particlePositions[i * 3 + 2] = 0;
+      particleLifetimes[i] = 1.0;
+      particleVelocities[i * 3] = (Math.random() - 0.5) * 0.2;
+      particleVelocities[i * 3 + 1] = (Math.random() - 0.5) * 0.2;
+      particleVelocities[i * 3 + 2] = -0.1;
+      break;
+    }
+  }
+};
+
+const animate = () => {
+  requestAnimationFrame(animate);
+  composer.render();
+};
+
+const onWindowResize = () => {
+  renderer.setSize(800, 600);
+  camera.aspect = 800 / 600;
+  camera.updateProjectionMatrix();
+};
+
+const updateGameObjects = (gameState) => {
+  if (!gameState || !gameState.paddle1 || !gameState.paddle2 || !gameState.ball) {
+    console.error('Invalid game state', gameState);
+    return;
+  }
+
+  if (!paddle1 || !paddle2 || !ball) {
+    console.error('Game objects are not initialized');
+    return;
+  }
+
+  paddle1.position.y = gameState.paddle1.y;
+  paddle1.position.x = gameState.paddle1.x;
+  paddle2.position.y = gameState.paddle2.y;
+  paddle2.position.x = gameState.paddle2.x;
+  ball.position.x = gameState.ball.x;
+  ball.position.y = gameState.ball.y;
+  player1Score.value = gameState.score.playerOne;
+  player2Score.value = gameState.score.playerTwo;
+
+  emitParticle(ball.position.x, ball.position.y);
+  updateParticles();
+};
+
+const initSocket = () => {
+  if (!socket) {
+    console.error('Socket is not defined');
+    return;
+  }
+  console.log('socket initialized for pong game!');
+
+  socket.on('gameJoined', (whichPlayer) => {
+    if (whichPlayer == 1) {
+      player1 = currentUser.username;
+    } else if (whichPlayer == 2) {
+      player2 = currentUser.username;
+    }
+  });
+
+  socket.on('update', (gameState) => {
+    if (gameStarted.value) {
+      updateGameObjects(gameState);
+    }
+  });
+
+  socket.on('gameWon', () => {
+    showEndScreen('You won!');
+  });
+
+  socket.on('gameLost', () => {
+    showEndScreen('You lost!');
+  });
+
+  socket.on('playerScored', (username) => {
+    if (username == currentUser.username) {
+      player1Score.value += 1;
+    } else {
+      player2Score.value += 1;
+    }
+  });
+
+  socket.on('opponentLeft', (username) => {
+    console.log(`${username} left, game is now paused`);
+    if (player1 == username) {
+      player1 = null;
+    } else if (player2 == username) {
+      player2 = null;
+    }
+    waitingForOpponent.value = true;
+  });
+
+  socket.on('opponentJoined', (username) => {
+    console.log(`${username} joined, game is now starting`);
+    if (!player1) {
+      player1 = username;
+    } else if (!player2) {
+      player2 = username;
+    }
+    gameStarted.value = true;
+    waitingForOpponent.value = false;
+    
+    // Use nextTick to ensure the DOM has updated
+    nextTick(() => {
+      initGame();
+    });
+  });
+};
+
+const queueForPong = () => {
+  if (socket && !waitingForOpponent.value) {
+    socket.emit('joinGame', {
+      userId: currentUser.id,
+      username: currentUser.username,
+    });
+    waitingForOpponent.value = true;
+    console.log(`sent joinGame from socket: ${socket.id}, with UID: ${currentUser.id}, name: ${currentUser.username}`);
+  } else {
+    console.log('somehow no socket');
+  }
+};
+
+const stopGame = () => {
+  waitingForOpponent.value = false;
+  if (socket) {
+    socket.emit('leaveGame', {
+      userId: currentUser.id,
+      username: currentUser.username,
+    });
+  }
+  if (gameStarted.value) {
+    gameStarted.value = false;
+    window.removeEventListener('mousemove', handleMouseMove);
+    // Additional cleanup if needed
+  }
+};
+
+const handleMouseMove = (event) => {
+  const rect = container.value.getBoundingClientRect();
+  playerPosition.y = (rect.bottom - event.clientY) / (rect.bottom - rect.top) * 30 - 15;
+  if (socket) {
+    socket.emit('playerMove', {
+      userId: currentUser.id,
+      y: playerPosition.y,
+    });
+  }
+};
+
+const showEndScreen = (message) => {
+  const endScreen = document.getElementById('endScreen');
+  const endScreenMessage = document.getElementById('endScreenMessage');
+  endScreenMessage.textContent = message;
+  endScreen.style.display = 'flex';
+};
+
+onMounted(() => {
+  initSocket();
+});
+
+onBeforeUnmount(() => {
+  stopGame();
+  if (renderer) {
+    renderer.dispose();
+  }
+  window.removeEventListener('resize', onWindowResize);
+  window.removeEventListener('mousemove', handleMouseMove);
+});
 </script>
 
 <!-- height: 100vh; -->
@@ -367,17 +369,39 @@ export default {
 }
 
 .waiting-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background-color: rgba(0, 0, 0, 0.8);
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: rgba(0, 0, 0, 0.6); /* Lighter overlay */
+  padding: 20px 40px;
+  border-radius: 10px;
   color: white;
-  display: flex;
-  justify-content: center;
-  align-items: center;
   font-size: 24px;
+  text-align: center;
+  box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.3);
+  z-index: 1000; /* Ensure it stays on top */
+}
+
+.cancel-button {
+  margin-top: 15px;
+  background-color: #ac4040;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  font-size: 18px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.cancel-button:hover {
+  background-color: #ff3333;
+}
+
+.queue-container {
+  text-align: center;
+  padding-top: 50px;
 }
 
 .scoreboard {
@@ -417,4 +441,44 @@ export default {
 	background-color: rgba(0, 0, 0, 0.8);  /* Solid background for the text */
 }
 
+/* spinner loading animation */
+.half-circle-spinner, .half-circle-spinner * {
+  box-sizing: border-box;
+}
+
+.half-circle-spinner {
+  width: 60px;
+  height: 60px;
+  border-radius: 100%;
+  position: relative;
+  margin: 20px auto;
+}
+
+.half-circle-spinner .circle {
+  content: "";
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 100%;
+  border: calc(60px / 10) solid transparent;
+}
+
+.half-circle-spinner .circle.circle-1 {
+  border-top-color: #ff1d5e;
+  animation: half-circle-spinner-animation 1s infinite;
+}
+
+.half-circle-spinner .circle.circle-2 {
+  border-bottom-color: #ff1d5e;
+  animation: half-circle-spinner-animation 1s infinite alternate;
+}
+
+@keyframes half-circle-spinner-animation {
+  0% {
+    transform: rotate(0deg);
+  }
+  100%{
+    transform: rotate(360deg);
+  }
+}
 </style>
