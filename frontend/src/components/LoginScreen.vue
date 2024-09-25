@@ -1,54 +1,170 @@
 <template>
   <div class="login-container">
+    <div ref="mountRef" class="pong-animation"></div>
     <div class="pong-title">
       <img src="/ponglogo.png" alt="PONG" />
     </div>    
     <form class="login-form" @submit.prevent="loginUser">
-      <!-- Removed username and password fields -->
       <button type="submit" class="fancy-login-button">
         <img src="/42logo-trans.png" alt="Login Icon" />
         <span>Login</span>
       </button>
     </form>
-    <div class="pong-animation">
-      <div class="pong-ball"></div>
-      <div class="pong-paddle pong-paddle-left"></div>
-      <div class="pong-paddle pong-paddle-right"></div>
-    </div>
   </div>
 </template>
 
 <script>
+import { ref, onMounted, onBeforeUnmount } from 'vue';
+import * as THREE from 'three';
+import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer';
+import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass';
+import router from '@/router/router';
+
 export default {
-  methods: {
-    loginUser() {
+  setup() {
+    const mountRef = ref(null);
+    let scene, camera, renderer, composer;
+    let paddle1, paddle2, ball;
+    let animationFrameId;
+
+    const init = () => {
+      // Scene setup
+      scene = new THREE.Scene();
+      camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+      renderer.setClearColor(0x000000, 0);
+      renderer.setSize(window.innerWidth, window.innerHeight);
+      mountRef.value.appendChild(renderer.domElement);
+
+      // resize
+      window.addEventListener('resize', () => {
+        camera.aspect = window.innerWidth / window.innerHeight;
+        camera.updateProjectionMatrix();
+        renderer.setSize(window.innerWidth, window.innerHeight);
+      });
+
+      // Camera position
+      camera.position.z = 20;
+
+      composer = new EffectComposer(renderer);
+      const renderPass = new RenderPass(scene, camera);
+      composer.addPass(renderPass);
+
+      // Paddles with white glow effect
+      const paddleGeometry = new THREE.BoxGeometry(1, 4, 1);
+      const paddleMaterial = new THREE.MeshPhongMaterial({
+        color: 0xffffff,              // White paddles
+        emissive: 0xffffff,           // White glow
+        emissiveIntensity: 0.6,       // Adjust glow intensity
+        shininess: 100               // Glossy finish
+      });
+      paddle1 = new THREE.Mesh(paddleGeometry, paddleMaterial);
+      paddle2 = new THREE.Mesh(paddleGeometry, paddleMaterial);
+      paddle1.position.x = -14;
+      paddle2.position.x = 14;
+      scene.add(paddle1);
+      scene.add(paddle2);
+
+      // Ball
+      const ballGeometry = new THREE.SphereGeometry(0.5, 32, 32);
+      // const ballMaterial = new THREE.MeshPhongMaterial({
+      //   color: 0xff00ff,
+      //   emissive: 0x550055,
+      //   emissiveIntensity: 0.5,
+      //   shininess: 100
+      // });
+      ball = new THREE.Mesh(ballGeometry, paddleMaterial);
+      scene.add(ball);
+
+      const pointLight1 = new THREE.PointLight(0x00ffff, 0.5, 10); // Soft blue light
+      pointLight1.position.set(-14, 0, 0);
+      scene.add(pointLight1);
+
+      const pointLight2 = new THREE.PointLight(0x00ffff, 0.5, 10); // Soft blue light
+      pointLight2.position.set(14, 0, 0);
+      scene.add(pointLight2);
+
+      // Lighting
+      // const ambientLight = new THREE.AmbientLight(0x404040);
+      // scene.add(ambientLight);
+      const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
+      directionalLight.position.set(1, 1, 1).normalize();
+      scene.add(directionalLight);
+    };
+
+    const animate = () => {
+      // console.log("Animating...");
+      animationFrameId = requestAnimationFrame(animate);
+
+      // Animate ball
+      ball.position.x = Math.sin(Date.now() * 0.002) * 13;
+      ball.position.y = Math.cos(Date.now() * 0.003) * 9;
+
+      // Animate paddles
+      paddle1.position.y = Math.sin(Date.now() * 0.001) * 8;
+      paddle2.position.y = Math.sin(Date.now() * 0.001 + Math.PI) * 8;
+
+      renderer.render(scene, camera);
+    };
+
+    onMounted(() => {
+      init();
+      if (mountRef.value) {
+        console.log("Renderer mounted successfully");
+      } else {
+        console.error("Mount ref not found");
+      }
+      animate();
+    });
+
+    onBeforeUnmount(() => {
+      cancelAnimationFrame(animationFrameId);
+      if (mountRef.value) {
+        mountRef.value.removeChild(renderer.domElement);
+      }
+    });
+
+    //todo: switch logic.
+    const loginUser = () => {
       console.log('Login clicked');
-    }
+      router.push('/')
+    };
+
+    return {
+      mountRef,
+      loginUser
+    };
   }
 };
 </script>
 
 <style scoped>
-/* Fixing Scroll and Background Issue */
-body, html {
-  margin: 0;
-  padding: 0;
-  height: 100%;
-  overflow: hidden; /* Disable scrolling */
-}
-
 .login-container {
+  position: relative;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   height: 100vh;
   background-color: black;
-  position: relative;
+  overflow: hidden;
 }
 
+.pong-animation {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
 
-/* Updated Button Styling */
+/* Existing styles for .pong-title, .login-form, and .fancy-login-button */
+.login-form {
+  position: relative; /* Add this to allow z-index to work */
+  z-index: 2; /* Ensure it's above .pong-animation */
+}
+
 .fancy-login-button {
   display: flex;
   align-items: center;
@@ -75,83 +191,6 @@ body, html {
 }
 
 .fancy-login-button:hover img {
-  filter: invert(1); /* Invert icon colors on hover */
-}
-
-/* Pong Animation */
-.pong-animation {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  pointer-events: none;
-  background-color: transparent;
-  z-index: -1;
-}
-
-.pong-ball, .pong-paddle {
-  background-color: #ffffff; /* White visibility */
-}
-
-.pong-ball {
-  width: 20px;
-  height: 20px;
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  border-radius: 50%;
-  animation: pongBallMove 2s infinite linear;
-}
-
-.pong-paddle {
-  width: 10px;
-  height: 100px;
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-}
-
-.pong-paddle-left {
-  left: 30px;
-  animation: pongPaddleMove 3s infinite ease-in-out;
-}
-
-.pong-paddle-right {
-  right: 30px;
-  animation: pongPaddleMove 3s infinite ease-in-out reverse;
-}
-
-@keyframes pongBallMove {
-  0% {
-    top: 50%;
-    left: 50%;
-  }
-  25% {
-    top: 10%;
-    left: 90%;
-  }
-  50% {
-    top: 90%;
-    left: 90%;
-  }
-  75% {
-    top: 10%;
-    left: 10%;
-  }
-  100% {
-    top: 50%;
-    left: 50%;
-  }
-}
-
-@keyframes pongPaddleMove {
-  0%, 100% {
-    top: 20%;
-  }
-  50% {
-    top: 80%;
-  }
+  filter: invert(1);
 }
 </style>
