@@ -2,6 +2,7 @@
   <div class="user-profile-page" v-if="isLoggedIn == true">
     <!-- Action Buttons -->
     <div class="profile-actions">
+      <button class="action-button" @click="goToDashboard">Go back</button>
       <button class="action-button" @click="changeUsername">Change Username</button>
       <button class="action-button" @click="changeAvatar">Change Avatar</button>
       <button class="action-button delete" @click="deleteAccount">Delete Account</button>
@@ -96,6 +97,10 @@ const matchHistory = ref([]);
 // Fetch the current user from Vuex
 const currentUser = computed(() => store.state.currentUser);
 const isLoggedIn = computed(() => store.state.isLoggedIn);
+
+const goToDashboard = () => {
+  router.push('/');
+}
 
 // Function to handle username change
 const changeUsername = async () => {
