@@ -13,127 +13,146 @@
   </div>
 </template>
 
-<script>
-import { ref, onMounted, onBeforeUnmount } from 'vue';
+<script setup>
+import { ref, onMounted, onBeforeUnmount, computed } from 'vue';
+import { useStore } from 'vuex';
 import * as THREE from 'three';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass';
 import router from '@/router/router';
 
-export default {
-  setup() {
-    const mountRef = ref(null);
-    let scene, camera, renderer, composer;
-    let paddle1, paddle2, ball;
-    let animationFrameId;
+const store = useStore();
+const isLoggedIn = computed(() => store.state.isLoggedIn);
 
-    const init = () => {
-      // Scene setup
-      scene = new THREE.Scene();
-      camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-      renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-      renderer.setClearColor(0x000000, 0);
-      renderer.setSize(window.innerWidth, window.innerHeight);
-      mountRef.value.appendChild(renderer.domElement);
+const mountRef = ref(null);
+let scene, camera, renderer, composer;
+let paddle1, paddle2, ball;
+let animationFrameId;
 
-      // resize
-      window.addEventListener('resize', () => {
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth, window.innerHeight);
-      });
+const init = () => {
+  // Scene setup
+  scene = new THREE.Scene();
+  camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+  renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  renderer.setClearColor(0x000000, 0);
+  renderer.setSize(window.innerWidth, window.innerHeight);
+  mountRef.value.appendChild(renderer.domElement);
 
-      // Camera position
-      camera.position.z = 20;
+  // resize
+  window.addEventListener('resize', () => {
+    camera.aspect = window.innerWidth / window.innerHeight;
+    camera.updateProjectionMatrix();
+    renderer.setSize(window.innerWidth, window.innerHeight);
+  });
 
-      composer = new EffectComposer(renderer);
-      const renderPass = new RenderPass(scene, camera);
-      composer.addPass(renderPass);
+  // Camera position
+  camera.position.z = 20;
 
-      // Paddles with white glow effect
-      const paddleGeometry = new THREE.BoxGeometry(1, 4, 1);
-      const paddleMaterial = new THREE.MeshPhongMaterial({
-        color: 0xffffff,              // White paddles
-        emissive: 0xffffff,           // White glow
-        emissiveIntensity: 0.6,       // Adjust glow intensity
-        shininess: 100               // Glossy finish
-      });
-      paddle1 = new THREE.Mesh(paddleGeometry, paddleMaterial);
-      paddle2 = new THREE.Mesh(paddleGeometry, paddleMaterial);
-      paddle1.position.x = -14;
-      paddle2.position.x = 14;
-      scene.add(paddle1);
-      scene.add(paddle2);
+  composer = new EffectComposer(renderer);
+  const renderPass = new RenderPass(scene, camera);
+  composer.addPass(renderPass);
 
-      // Ball
-      const ballGeometry = new THREE.SphereGeometry(0.5, 32, 32);
-      // const ballMaterial = new THREE.MeshPhongMaterial({
-      //   color: 0xff00ff,
-      //   emissive: 0x550055,
-      //   emissiveIntensity: 0.5,
-      //   shininess: 100
-      // });
-      ball = new THREE.Mesh(ballGeometry, paddleMaterial);
-      scene.add(ball);
+  // Paddles with white glow effect
+  const paddleGeometry = new THREE.BoxGeometry(1, 4, 1);
+  const paddleMaterial = new THREE.MeshPhongMaterial({
+    color: 0xffffff,              // White paddles
+    emissive: 0xffffff,           // White glow
+    emissiveIntensity: 0.6,       // Adjust glow intensity
+    shininess: 100               // Glossy finish
+  });
+  paddle1 = new THREE.Mesh(paddleGeometry, paddleMaterial);
+  paddle2 = new THREE.Mesh(paddleGeometry, paddleMaterial);
+  paddle1.position.x = -14;
+  paddle2.position.x = 14;
+  scene.add(paddle1);
+  scene.add(paddle2);
 
-      const pointLight1 = new THREE.PointLight(0x00ffff, 0.5, 10); // Soft blue light
-      pointLight1.position.set(-14, 0, 0);
-      scene.add(pointLight1);
+  // Ball
+  const ballGeometry = new THREE.SphereGeometry(0.5, 32, 32);
+  // const ballMaterial = new THREE.MeshPhongMaterial({
+  //   color: 0xff00ff,
+  //   emissive: 0x550055,
+  //   emissiveIntensity: 0.5,
+  //   shininess: 100
+  // });
+  ball = new THREE.Mesh(ballGeometry, paddleMaterial);
+  scene.add(ball);
 
-      const pointLight2 = new THREE.PointLight(0x00ffff, 0.5, 10); // Soft blue light
-      pointLight2.position.set(14, 0, 0);
-      scene.add(pointLight2);
+  const pointLight1 = new THREE.PointLight(0x00ffff, 0.5, 10); // Soft blue light
+  pointLight1.position.set(-14, 0, 0);
+  scene.add(pointLight1);
 
-      // Lighting
-      // const ambientLight = new THREE.AmbientLight(0x404040);
-      // scene.add(ambientLight);
-      const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
-      directionalLight.position.set(1, 1, 1).normalize();
-      scene.add(directionalLight);
-    };
+  const pointLight2 = new THREE.PointLight(0x00ffff, 0.5, 10); // Soft blue light
+  pointLight2.position.set(14, 0, 0);
+  scene.add(pointLight2);
 
-    const animate = () => {
-      // console.log("Animating...");
-      animationFrameId = requestAnimationFrame(animate);
+  // Lighting
+  // const ambientLight = new THREE.AmbientLight(0x404040);
+  // scene.add(ambientLight);
+  const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
+  directionalLight.position.set(1, 1, 1).normalize();
+  scene.add(directionalLight);
+};
 
-      // Animate ball
-      ball.position.x = Math.sin(Date.now() * 0.002) * 13;
-      ball.position.y = Math.cos(Date.now() * 0.003) * 9;
+const animate = () => {
+  animationFrameId = requestAnimationFrame(animate);
 
-      // Animate paddles
-      paddle1.position.y = Math.sin(Date.now() * 0.001) * 8;
-      paddle2.position.y = Math.sin(Date.now() * 0.001 + Math.PI) * 8;
+  // Animate ball
+  ball.position.x = Math.sin(Date.now() * 0.002) * 13;
+  ball.position.y = Math.cos(Date.now() * 0.003) * 9;
 
-      renderer.render(scene, camera);
-    };
+  // Animate paddles
+  paddle1.position.y = Math.sin(Date.now() * 0.001) * 8;
+  paddle2.position.y = Math.sin(Date.now() * 0.001 + Math.PI) * 8;
 
-    onMounted(() => {
-      init();
-      if (mountRef.value) {
-        console.log("Renderer mounted successfully");
-      } else {
-        console.error("Mount ref not found");
-      }
-      animate();
-    });
+  renderer.render(scene, camera);
+};
 
-    onBeforeUnmount(() => {
-      cancelAnimationFrame(animationFrameId);
-      if (mountRef.value) {
-        mountRef.value.removeChild(renderer.domElement);
-      }
-    });
+onMounted(() => {
+  if (isLoggedIn.value == true) {
+    console.log('ALREADY LGOGGEGED IN !');
+    router.push('/');
+  } else {
+    console.log(`loginstatus: ${isLoggedIn.value}`)
+  }
+  init();
+  handleCallback();
+  animate();
+});
 
-    //todo: switch logic.
-    const loginUser = () => {
-      console.log('Login clicked');
-      router.push('/')
-    };
+onBeforeUnmount(() => {
+  cancelAnimationFrame(animationFrameId);
+  if (mountRef.value) {
+    mountRef.value.removeChild(renderer.domElement);
+  }
+});
 
-    return {
-      mountRef,
-      loginUser
-    };
+//todo: switch logic
+const loginUser = async () => {
+  console.log('Login clicked');
+  window.location.href = 'http://localhost:3000/auth/42';
+  // router.push('/')
+};
+
+const handleCallback = async () => {
+  const route = router.currentRoute.value;
+  const token = route.query.token;
+
+  if (token) {
+    localStorage.setItem('access_token', token);
+
+    if (route.path === '/choose-username') {
+      // isCompleteProfileNeeded.value = true;
+    } else {
+      console.log('should be logging in');
+      // Clear query params from the URL without reloading the page
+      router.replace({ path: route.path, query: {} });
+      router.push('/');
+      // fetchMe();
+      // initializeSocket();
+    }
+  } else {
+    // isCompleteProfileNeeded.value = false;
   }
 };
 </script>

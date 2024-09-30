@@ -79,8 +79,8 @@ const loginDetails = ref({
 const error = ref('');
 const socket = ref(null);
 
-const isLoggedIn = computed(() => store.state.isLoggedIn);
 const isCompleteProfileNeeded = ref(false);
+const isLoggedIn = computed(() => store.state.isLoggedIn);
 const currentUser = computed(() => store.state.currentUser);
 // const showGame = computed(() => store.state.showGame);
 
@@ -257,8 +257,12 @@ const initializeSocket = () => {
 };
 
 onMounted(() => {
+  //todo: re-enable
+  // if (!isLoggedIn.value)
+  //   router.push('/login');
   handleCallback();
-  // Any initialization that needs to happen on component mount
+  fetchMe();
+  initializeSocket();
 });
 </script>
 

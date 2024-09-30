@@ -26,12 +26,12 @@ export class GameState {
 
 	updatePlayerPosition(userId: string, y: number) {
 		if (userId == this.playerOne) {
-			if (y < -13) y = -13;
-			if (y > 13) y = 13;
+			if (y < -14) y = -14;
+			if (y > 14) y = 14;
 			this.paddle1.y = y;
 		} else if (userId == this.playerTwo) {
-			if (y < -13) y = -13;
-			if (y > 13) y = 13;
+			if (y < -14) y = -14;
+			if (y > 14) y = 14;
 			this.paddle2.y = y;
 		}
 	}

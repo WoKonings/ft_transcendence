@@ -1,5 +1,5 @@
 <template>
-  <div class="user-profile-page">
+  <div class="user-profile-page" v-if="isLoggedIn == true">
     <!-- Action Buttons -->
     <div class="profile-actions">
       <button class="action-button" @click="changeUsername">Change Username</button>
@@ -8,7 +8,7 @@
     </div>
 
     <!-- Profile Information Section -->
-    <div class="profile-header">
+    <div class="profile-header" v-if="currentUser && currentUser.username">
       <div class="profile-picture">
         <img :src="`https://robohash.org/${currentUser.username}?set=set4`" :alt="`${currentUser.username}'s avatar`" />
       </div>
@@ -27,7 +27,8 @@
       </div>
       <div class="info-row">
         <span class="info-label">Games Played:</span>
-        <span class="info-value">{{ currentUser.gamesPlayed }}</span>
+        <!-- <span class="info-value">{{ currentUser.gamesPlayed }}</span> -->
+        <span class="info-value">{{ matchHistory.length }}</span>
       </div>
       <div class="info-row">
         <span class="info-label">Wins:</span>
@@ -46,12 +47,18 @@
         <div v-for="match in matchHistory" :key="match.id" class="match-entry">
           <div class="player">
             <img
+              v-if="match && match.players"
               :src="`https://robohash.org/${match.players[0].username}?set=set4`"
               :alt="`Player One - ${match.players[0].username}`"
               class="player-pic"
             />
             <div class="player-name">{{ match.players[0].username }}</div>
             <div class="score">{{ match.playerScores[0] }}</div>
+            <div class="elo-change">
+              <span :class="match.playerEloChanges[0] > 0 ? 'elo-gain' : 'elo-loss'">
+                {{ match.playerEloChanges[0] > 0 ? '+' : '' }}{{ match.playerEloChanges[0] }}
+              </span>
+            </div>
           </div>
           <div class="vs-section">
             <span class="vs-text">VS</span>
@@ -65,6 +72,11 @@
             />
             <div class="player-name">{{ match.players[1].username }}</div>
             <div class="score">{{ match.playerScores[1] }}</div>
+            <div class="elo-change">
+              <span :class="match.playerEloChanges[1] > 0 ? 'elo-gain' : 'elo-loss'">
+                {{ match.playerEloChanges[1] > 0 ? '+' : '' }}{{ match.playerEloChanges[1] }}
+              </span>
+            </div>
           </div>
         </div>
       </div>
@@ -73,7 +85,8 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue';
+import router from '@/router/router';
+import { ref, computed, onMounted } from 'vue';
 import { useStore } from 'vuex';
 
 const store = useStore();
@@ -82,6 +95,7 @@ const matchHistory = ref([]);
 
 // Fetch the current user from Vuex
 const currentUser = computed(() => store.state.currentUser);
+const isLoggedIn = computed(() => store.state.isLoggedIn);
 
 // Function to handle username change
 const changeUsername = async () => {
@@ -128,7 +142,7 @@ const changeAvatar = async () => {
         store.commit('setCurrentUser', updatedUser); // Update Vuex store with the new avatar
         alert('Avatar updated successfully!');
       } else {
-        throw new Error('Failed to update avatar');
+        // throw new Error('Failed to update avatar');
       }
     } catch (error) {
       console.error('Error updating avatar:', error);
@@ -158,6 +172,38 @@ const deleteAccount = async () => {
     }
   }
 };
+
+onMounted(async () => {
+  if (!isLoggedIn.value) { 
+    console.log ( "NOT LOG");
+    router.push('/login');
+    return;
+  }
+  console.log('current user!: ', currentUser.value);
+  console.log('current username: ', currentUser.value.username);
+  // loading.value = true;
+  try {
+    // Fetch the user profile
+    // const userResponse = await fetch(`http://localhost:3000/user/search/${currentUser.value.username}`);
+    // if (!userResponse.ok) {
+    //   throw new Error('Failed to fetch user profile');
+    // }
+    // let userProfile = await userResponse.json();
+
+    // Fetch the match history
+    const matchResponse = await fetch(`http://localhost:3000/game/${currentUser.value.id}`);
+    if (!matchResponse.ok) {
+      console.log('failed to fetch match history');
+      // throw new Error('Failed to fetch match history');
+    }
+    matchHistory.value = await matchResponse.json();
+    matchHistory.value.sort((a, b) => new Date(b.endTime) - new Date(a.endTime));
+    console.log ('fetched match history!: ', matchHistory);
+    // loading.value = false
+  } catch (error) {
+    console.error(error);
+  }
+});
 </script>
 
 <style scoped>
@@ -304,5 +350,18 @@ const deleteAccount = async () => {
 .match-date {
   font-size: 12px;
   color: #6b7280;
+}
+
+.elo-change {
+  font-size: 14px;
+  margin-top: 5px;
+}
+
+.elo-gain {
+  color: green;
+}
+
+.elo-loss {
+  color: red;
 }
 </style>

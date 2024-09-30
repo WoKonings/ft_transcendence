@@ -1,7 +1,5 @@
 <template>
   <div id="app">
-
-    <!-- The component for the current route will render here -->
     <router-view />
   </div>
 </template>
