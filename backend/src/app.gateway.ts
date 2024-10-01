@@ -4,6 +4,7 @@ import { Injectable, UseGuards } from '@nestjs/common';
 import { AuthGuard } from './auth/auth.guard';
 import { PrismaService } from './prisma.service';
 import { JwtService } from '@nestjs/jwt';
+import e from 'express';
 
 @WebSocketGateway({ cors: true })
 @UseGuards(AuthGuard)
@@ -21,7 +22,7 @@ export class AppGateway implements OnGatewayInit, OnGatewayConnection, OnGateway
     console.log('WebSocket server initialized');
   }
 
-  @UseGuards(AuthGuard) // Automatically use this guard for authentication
+  @UseGuards(AuthGuard)
   async handleConnection(client: Socket) {
     try {
       const token = client.handshake.auth.token as string;
@@ -29,9 +30,27 @@ export class AppGateway implements OnGatewayInit, OnGatewayConnection, OnGateway
 
       // console.log(`test: ${decoded.sub}`);
 
+      // see if user is already logged in
+      const userAlreadyLoggedIn = await this.prisma.user.findUnique({
+        where: { username: decoded.username },
+        select: { isOnline: true, socket: true },
+      })
+      if (userAlreadyLoggedIn.isOnline == true) {
+        console.log (`User: ${decoded.username} is already online!`);
+        const userSocket = this.server.sockets.sockets.get(userAlreadyLoggedIn.socket);
+        if (userSocket) {
+          console.log('found old socket, disconnecting');
+          userSocket.emit('loginElsewhere', { message: 'You have logged in on another instance. You are being logged out here.'});
+          userSocket.disconnect();
+        } else {
+          console.log('could not find old socket');
+        }
+      }
+
+
       // Store the socket.id in the database
       await this.prisma.user.update({
-        where: { username: decoded.username},
+        where: { username: decoded.username },
         data: { socket: client.id, isOnline: true }
       })
 

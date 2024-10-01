@@ -128,8 +128,8 @@ const handleCallback = async () => {
       console.log('should be logging in');
       // Clear query params from the URL without reloading the page
       router.replace({ path: route.path, query: {} });
-      fetchMe();
-      initializeSocket();
+      // fetchMe();
+      // initializeSocket();
     }
   } else {
     isCompleteProfileNeeded.value = false;
@@ -206,14 +206,17 @@ const fetchMe = async () => {
     store.dispatch('logIn', data.user);
   } catch {
     console.error('error fetching user profile');
+
   }
 }
 
 const logoutUser = () => {
-  socket.value.emit('logOut', { id: currentUser.value.id})
-  
-  localStorage.setItem('access_token', null);
-  store.dispatch('logOut');
+  if (currentUser.value){
+    socket.value.emit('logOut', { id: currentUser.value.id})
+    
+    localStorage.setItem('access_token', null);
+    store.dispatch('logOut');
+  }
 };
 
 const deleteAccount = async () => {
@@ -239,12 +242,12 @@ const deleteAccount = async () => {
   }
 };
 
-const initializeSocket = () => {
+const initializeSocket = async () => {
   const token = localStorage.getItem('access_token');
   if (!token) return;
 
   if (socket.value == null) {
-    socket.value = io('http://localhost:3000', {
+    socket.value = await io('http://localhost:3000', {
       auth: { token },
     }); 
     store.commit('SET_SOCKET', socket.value);
@@ -254,9 +257,20 @@ const initializeSocket = () => {
   socket.value.on('connected', (message) => {
     console.log(message);
   });
+
+  socket.value.on('loginElsewhere', (message) => {
+    console.log(message);
+    logoutUser();
+  });
 };
 
 onMounted(() => {
+  const access_token = localStorage.getItem('access_token');
+  if (access_token && !isLoggedIn.value) {
+    console.log("should request re-login");
+    localStorage.removeItem('access_token');
+    console.log('WIPED ACCESS TOKEN!');
+  }
   //todo: re-enable
   // if (!isLoggedIn.value)
   //   router.push('/login');
