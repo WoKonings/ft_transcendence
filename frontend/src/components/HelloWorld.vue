@@ -104,6 +104,7 @@ const createUser = async () => {
     localStorage.setItem('access_token', data.access_token);
     console.log(`Received access token: ${data.access_token}`);
     store.dispatch('logIn', data.user);
+    fetchMe();
     initializeSocket();
   } catch (error) {
     console.error('Error creating user:', error);
@@ -128,8 +129,8 @@ const handleCallback = async () => {
       console.log('should be logging in');
       // Clear query params from the URL without reloading the page
       router.replace({ path: route.path, query: {} });
-      // fetchMe();
-      // initializeSocket();
+      fetchMe();
+      initializeSocket();
     }
   } else {
     isCompleteProfileNeeded.value = false;
@@ -152,6 +153,7 @@ const handleCompleteProfile = async (username) => {
     // Once complete, hide the CompleteUser component and redirect
     isCompleteProfileNeeded.value = false;
     store.dispatch('logIn', data.user);
+    fetchMe();
     initializeSocket();
 
     // router.push('/dashboard'); // Uncomment if using Vue Router
@@ -180,7 +182,8 @@ const loginUser = async () => {
     const data = await response.json();
     localStorage.setItem('access_token', data.access_token);
     console.log(`Received access token: ${data.access_token}`);
-    store.dispatch('logIn', data.user);
+    // store.dispatch('logIn', data.user);
+    fetchMe();
     initializeSocket();
   } catch (error) {
     console.error('Error logging in:', error);
@@ -214,7 +217,9 @@ const logoutUser = () => {
   if (currentUser.value){
     socket.value.emit('logOut', { id: currentUser.value.id})
     
-    localStorage.setItem('access_token', null);
+    localStorage.removeItem('access_token');
+
+    // localStorage.setItem('access_token', null);
     store.dispatch('logOut');
   }
 };
@@ -275,8 +280,8 @@ onMounted(() => {
   // if (!isLoggedIn.value)
   //   router.push('/login');
   handleCallback();
-  fetchMe();
-  initializeSocket();
+  // fetchMe();
+  // initializeSocket();
 });
 </script>
 

@@ -1,14 +1,15 @@
-import { BadRequestException, Injectable, NotFoundException, UseGuards } from '@nestjs/common';
+import { BadRequestException, forwardRef, Inject, Injectable, NotFoundException, UseGuards } from '@nestjs/common';
+import { UserGateway } from './user.gateway';
 import { PrismaService } from '../prisma.service';
 import { Prisma, User, Channel } from '@prisma/client';
 import { AuthGuard } from '@nestjs/passport';
-import { GetFriendsDto } from './dto/get-friends.dto';
-import { userInfo } from 'os';
-import { TreeLevelColumn } from 'typeorm';
 
 @Injectable()
 export class UserService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService, 
+    @Inject(forwardRef(() => UserGateway)) private readonly userGateway: UserGateway,
+  ) {} // Inject the gateway) {}
 
   async createUser(data: Prisma.UserCreateInput): Promise<User> {
     try {
@@ -72,6 +73,10 @@ export class UserService {
           }
         }
       })
+      // notify both users of new friend
+      this.userGateway.emitToSocketByUserId(userId, 'newFriend', targetUser);
+      this.userGateway.emitToSocketByUserId(targetId, 'newFriend', user);
+      // this.userGateway.emitToSocketByUserId(user.id, 'newFriend', user);
       return { message: `You are now friends with ${targetUser.username} ` };
     }
 
@@ -90,7 +95,8 @@ export class UserService {
         },
       },
     });
-
+    this.userGateway.emitToSocketByUserId(targetId, 'newFriendRequest', user);
+    // this.userGateway.emitToSocketByUserId(userId, 'newFriendRequest', targetUser);
     return { message: 'Friend request sent' };
   }
 
@@ -125,6 +131,8 @@ export class UserService {
         }
       }
     });
+    this.userGateway.emitToSocketByUserId(targetId, 'removedFriend', user);
+    this.userGateway.emitToSocketByUserId(userId, 'removedFriend', target);
     return { message: `Removed ${target.username} succesfully` };
 	}
 

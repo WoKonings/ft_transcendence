@@ -13,7 +13,8 @@ import { GameService } from './game.service';
       PrismaModule,
       forwardRef(() => UserModule ),
     ],
-  providers: [GameGateway, GameState, JwtService, UserService, GameService], // Provide GameState
-  exports: [GameState], controllers: [GameController], // Export GameState to be used in other modules if necessary
+  providers: [GameGateway, GameState, JwtService, GameService], // Provide GameState
+  exports: [GameState], 
+  controllers: [GameController], // Export GameState to be used in other modules if necessary
 })
 export class GameModule {}

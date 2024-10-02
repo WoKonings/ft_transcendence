@@ -139,6 +139,14 @@ const initializeSocketListeners = () => {
       pendingFriendRequests.value.push(data);
     });
 
+    socket.value.on('newFriend', (data) => {
+      friends.value.push(data);
+    });
+
+    socket.value.on('removedFriend', (data) => {
+      friends.value = friends.value.filter(friend => friend.id !== data.userId && friend.username !== data.username);
+    });
+
     socket.value.on('gameInvite', (data) => {
       invites.value.push(data);
       inviteSenders.value.add(data.sender);

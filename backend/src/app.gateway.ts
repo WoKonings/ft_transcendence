@@ -104,6 +104,8 @@ export class AppGateway implements OnGatewayInit, OnGatewayConnection, OnGateway
     }
   }
 
+
+
   // Handle "joinGame" event from client
   @SubscribeMessage('logOut')
   async handleLogOut(client: Socket, userId: number): Promise<void> {
