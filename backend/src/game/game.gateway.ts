@@ -332,7 +332,6 @@ async handleInviteGame(client: Socket, data: InviteGameDto): Promise<void> {
     if (dy < 0)
       dy = -speed;
 
-    console.log ('updating player movement!');
     if (gameSession.player_one.userId == userId)
       gameSession.gameState.paddle1.dy = dy;
     else if (gameSession.player_two.userId == userId)

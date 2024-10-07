@@ -283,8 +283,6 @@ onMounted(() => {
   // if (!isLoggedIn.value)
   //   router.push('/login');
   handleCallback();
-  // fetchMe();
-  // initializeSocket();
 });
 </script>
 

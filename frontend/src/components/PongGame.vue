@@ -6,15 +6,16 @@
       <div class="score">{{ player2Score }}</div>
     </div>
     <div class="pong-game" ref="container"></div>
-    <div id="endScreen" class="end-screen">
-      <div id="endScreenMessage" class="end-screen-message"></div>
+    <div v-if="showEnd && endScreenMessage" class="end-screen">
+      <div class="end-screen-message"> {{ endScreenMessage }}</div>
+      <button @click="exitGame()" class="button">Ok</button>
     </div>
   </div>
 
-  <!-- Display "Queue for Pong" Button if Not Waiting and Game Not Started -->
+  <!-- Display "Queue for Pong" Buttons if Not Waiting and Game Not Started -->
   <div v-if="!waitingForOpponent && !gameStarted" class="queue-container">
-    <button @click="queueForPong" class="queue-button">Queue for Pong</button>
-    <button @click="queueForPong" class="queue-button">Queue for Big Pong</button>
+    <button @click="queueForPong('classic')" class="queue-button">Queue for Pong</button>
+    <button @click="queueForPong('flashy')" class="queue-button">Queue for Flashy Pong</button>
   </div>
 
   <!-- Display Waiting for Opponent with Spinner and Cancel Button if Waiting -->
@@ -49,6 +50,9 @@ const waitingForOpponent = ref(false);
 const gameStarted = ref(false);
 const player1Score = ref(0);
 const player2Score = ref(0);
+const gameMode = ref('classic'); // New reactive property for game mode
+const showEnd = ref(false);
+const endScreenMessage = ref('xd');
 
 // Particle system variables
 let particleGeometry, particleMaterial, particles;
@@ -73,7 +77,7 @@ const initThreeJS = () => {
 
   scene = new THREE.Scene();
 
-  camera = new THREE.PerspectiveCamera(75, 800 / 600, 0.1, 1000);
+  camera = new THREE.PerspectiveCamera(80, 800 / 600, 0.1, 1000);
   camera.position.z = 20;
   camera.position.y = 0;
 
@@ -82,8 +86,12 @@ const initThreeJS = () => {
 
   composer = new EffectComposer(renderer);
   composer.addPass(new RenderPass(scene, camera));
-  const afterimagePass = new AfterimagePass(0.9);
-  composer.addPass(afterimagePass);
+  if (gameMode.value === 'flashy') {
+    const afterimagePass = new AfterimagePass(0.9);
+    composer.addPass(afterimagePass);
+  }
+  // const afterimagePass = new AfterimagePass(0.9);
+  // composer.addPass(afterimagePass);
 
   const ambientLight = new THREE.AmbientLight(0x404040);
   scene.add(ambientLight);
@@ -95,8 +103,8 @@ const initThreeJS = () => {
   // Initialize game objects
   const paddleGeometry = new THREE.BoxGeometry(1, 4, 1);
   const paddleMaterial = new THREE.MeshPhongMaterial({
-    color: 0x00ffff,
-    emissive: 0x0077ff,
+    color: (gameMode.value === 'flashy') ? 0xFFA500 : 0xFFFFFF,
+    emissive: (gameMode.value === 'flashy') ? 0x0077ff: 0xFFFFFF,
     emissiveIntensity: 1,
     shininess: 100
   });
@@ -111,9 +119,9 @@ const initThreeJS = () => {
 
   const ballGeometry = new THREE.SphereGeometry(0.5, 32, 32);
   const ballMaterial = new THREE.MeshPhongMaterial({
-    color: 0xff00ff,
-    emissive: 0x550055,
-    emissiveIntensity: 0.5,
+    color: (gameMode.value === 'flashy') ? 0xff00ff : 0xFFFFFF,
+    emissive: (gameMode.value === 'flashy') ? 0x550055 : 0xFFFFFF,
+    emissiveIntensity: 1,
     shininess: 100
   });
 
@@ -140,6 +148,8 @@ const initParticleSystem = () => {
     return;
   }
 
+  if (gameMode.value != 'flashy')
+    return;
   particleGeometry = new THREE.BufferGeometry();
   particleMaterial = new THREE.PointsMaterial({
     color: 0xff00ff,
@@ -165,6 +175,9 @@ const initParticleSystem = () => {
 };
 
 const updateParticles = () => {
+  if (gameMode.value != 'flashy')
+    return;
+
   for (let i = 0; i < particleCount; i++) {
     if (particleLifetimes[i] > 0) {
       particleLifetimes[i] -= 0.02;
@@ -178,6 +191,9 @@ const updateParticles = () => {
 };
 
 const emitParticle = (x, y) => {
+  if (gameMode.value != 'flashy')
+    return;
+
   for (let i = 0; i < particleCount; i++) {
     if (particleLifetimes[i] <= 0) {
       particlePositions[i * 3] = x;
@@ -213,17 +229,24 @@ const updateGameObjects = (gameState) => {
     console.error('Game objects are not initialized');
     return;
   }
-
+  
+  if (player1Score.value + player2Score.value != gameState.score.playerOne + gameState.score.playerTwo) {
+    console.log("player1Score:", player1Score.value, "player2Score:", player2Score.value, "gameState.score.playerOne:", gameState.score.playerOne, "gameState.score.PlayerTwo:", gameState.score.PlayerTwo);
+    for (let i = 0; i < 50; i++) {
+      emitParticle(ball.position.x, ball.position.y);
+    }
+  }
   paddle1.position.y = gameState.paddle1.y;
   paddle1.position.x = gameState.paddle1.x;
   paddle2.position.y = gameState.paddle2.y;
   paddle2.position.x = gameState.paddle2.x;
   ball.position.x = gameState.ball.x;
   ball.position.y = gameState.ball.y;
+
   player1Score.value = gameState.score.playerOne;
   player2Score.value = gameState.score.playerTwo;
 
-  emitParticle(ball.position.x, ball.position.y);
+  // emitParticle(ball.position.x, ball.position.y);
   updateParticles();
 };
 
@@ -249,11 +272,13 @@ const initSocket = () => {
   });
 
   socket.on('gameWon', () => {
-    showEndScreen('You won!');
+    showEnd.value = true;
+    endScreenMessage.value = 'You won!';
   });
 
   socket.on('gameLost', () => {
-    showEndScreen('You lost!');
+    showEnd.value = true;
+    endScreenMessage.value = 'You lost.';
   });
 
   socket.on('playerScored', (username) => {
@@ -284,21 +309,22 @@ const initSocket = () => {
     gameStarted.value = true;
     waitingForOpponent.value = false;
     
-    // Use nextTick to ensure the DOM has updated
     nextTick(() => {
       initGame();
     });
   });
 };
 
-const queueForPong = () => {
+const queueForPong = (mode) => {
   if (socket && !waitingForOpponent.value) {
+    gameMode.value = mode; // Set the game mode
     socket.emit('joinGame', {
       userId: currentUser.id,
       username: currentUser.username,
+      // gameMode: mode // Send the game mode to the server
     });
     waitingForOpponent.value = true;
-    console.log(`sent joinGame from socket: ${socket.id}, with UID: ${currentUser.id}, name: ${currentUser.username}`);
+    console.log(`sent joinGame from socket: ${socket.id}, with UID: ${currentUser.id}, name: ${currentUser.username}, mode: ${mode}`);
   } else {
     console.log('somehow no socket');
   }
@@ -315,7 +341,6 @@ const stopGame = () => {
   if (gameStarted.value) {
     gameStarted.value = false;
     // window.removeEventListener('mousemove', handleMouseMove);
-    // Additional cleanup if needed
   }
 };
 
@@ -334,33 +359,32 @@ let moving = false;
 
 const handlePlayerMove = (event) => {
   if ((event.key === 'w' || event.key === 'ArrowUp') && moving == false) {
-    console.log('moving up');
+    // console.log('moving up');
     moving = true;
     socket.emit('playerMoveKBM', { userId: currentUser.id, dy: 1 });
   } else if ((event.key === 's' || event.key === 'ArrowDown') && moving == false) {
-    console.log('moving down');
+    // console.log('moving down');
     moving = true;
     socket.emit('playerMoveKBM', { userId: currentUser.id, dy: -1 });
   }
 }
 const handleStopPlayerMove = (event) => {
   if ((event.key === 'w' || event.key === 'ArrowUp') && moving == true) {
-    console.log('stopped moving up');
+    // console.log('stopped moving up');
     moving = false;
     socket.emit('playerMoveKBM', { userId: currentUser.id, dy: 0 });
   } else if ((event.key === 's' || event.key === 'ArrowDown') && moving == true) {
-    console.log('stopped moving down');
+    // console.log('stopped moving down');
     moving = false;
     socket.emit('playerMoveKBM', { userId: currentUser.id, dy: 0 });
   }
 }
 
-const showEndScreen = (message) => {
-  const endScreen = document.getElementById('endScreen');
-  const endScreenMessage = document.getElementById('endScreenMessage');
-  endScreenMessage.textContent = message;
-  endScreen.style.display = 'flex';
-};
+const exitGame = () => {
+  showEnd.value = false;
+  endScreenMessage.value = null;
+  stopGame();
+}
 
 onMounted(() => {
   initSocket();
@@ -408,7 +432,7 @@ onBeforeUnmount(() => {
   overflow: hidden;
   position: relative;
   margin: 0 auto;
-  border: 2px solid #00ffff; /* Neon blue border */
+  /*border: 2px solid #00ffff; /* Neon blue border */
 }
 
 .waiting-overlay {
@@ -462,7 +486,7 @@ onBeforeUnmount(() => {
 }
 
 .end-screen {
-	display: none;  /* Hidden by default */
+	display: flex;  /* Hidden by default */
 	position: absolute;
 	top: 0;
 	left: 0;
