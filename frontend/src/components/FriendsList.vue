@@ -1,7 +1,7 @@
 <template>
   <div class="user-list">
+    <h2>Friends</h2>
     <div class="header">
-      <h2>Friends List</h2>
       <button v-if="pendingFriendRequests.length > 0" class="notification" @click="viewPendingRequests">
         {{ pendingFriendRequests.length }} Pending Requests
       </button>
@@ -9,12 +9,14 @@
         {{ invites.length }} Game Invites
       </button>
     </div>
-    <div v-for="friend in friends" :key="friend.id" 
+    <div v-for="friend in sortedFriends" :key="friend.id" 
+         class="user"
          @click="selectUser(friend)"
          :class="{ 'highlight': isInviteSender(friend.id) }">
       <div class="avatar">
-        <img :src="friend.avatar || 'https://via.placeholder.com/40'" alt="Avatar" />
+        <img :src="friend.avatar ? `http://localhost:3000${friend.avatar}` : `https://robohash.org/${friend.username}?set=set4`" :alt="`${friend.username}`" />
       </div>
+      <div class="status-indicator" :class="getStatusClass(friend)"></div>
       <div class="username">{{ friend.username }}</div>
     </div>
 
@@ -25,13 +27,15 @@
         <button @click="sendMessage(selectedUser)">Send Message</button>
         <button @click="viewProfile(selectedUser)">Profile</button>
         <button @click="removeFriend(selectedUser)">Remove Friend</button>
+        <button @click="todo" v-if="isInviteSender(selectedUser.id)">Accept Invite</button>
+        <button @click="todo" v-if="isInviteSender(selectedUser.id)">Decline Invite</button>
       </div>
     </div>
-          <ViewProfile
-          :selectedUser="selectedUser"
-          :isVisible="isProfileVisible"
-          @close="isProfileVisible = false"
-        />
+    <ViewProfile
+      :selectedUser="selectedUser"
+      :isVisible="isProfileVisible"
+      @close="isProfileVisible = false"
+    />
     </div>
 
 
@@ -134,25 +138,63 @@ const fetchPendingRequests = async () => {
 };
 
 const initializeSocketListeners = () => {
-  if (socket.value) {
-    socket.value.on('newFriendRequest', (data) => {
-      pendingFriendRequests.value.push(data);
+  if (!socket.value) {
+    console.error ('NO SOCKET FOR FRIENDSLIST!');
+  }
+  socket.value.on('newFriendRequest', (data) => {
+    pendingFriendRequests.value.push(data);
+  });
+
+  socket.value.on('newFriend', (data) => {
+    friends.value.push(data);
+  });
+
+  socket.value.on('removedFriend', (data) => {
+    friends.value = friends.value.filter(friend => friend.id !== data.userId && friend.username !== data.username);
+  });
+
+  socket.value.on('gameInvite', (data) => {
+    invites.value.push(data);
+    inviteSenders.value.add(data.sender);
+  });
+
+  socket.value.on('userStatusUpdate', (data) => {
+    updateUserStatus(data.username, data.userId, data.isOnline, data.isInGame, data.isInQueue, data.avatar);
+  });
+};
+
+const updateUserStatus = (username, userId, isOnline, isInGame, isInQueue, avatar) => {
+  console.log(`${username} has changed status on friends: online? ${isOnline} ingame? ${isInGame} inqueue? ${isInQueue}`);
+	const friend = friends.value.find(u => u.username === username);
+	if (friend) {
+    if (isOnline != null)
+      friend.isOnline = isOnline;
+    if (isInGame != null)
+      friend.isInGame = isInGame;
+    if (isInQueue != null)
+      friend.isInQueue = isInQueue;
+		// Trigger reactivity
+		friends.value = [...friends.value];
+	} else {
+    friends.value.push({
+      id: userId,
+      username: username,
+      avatar: avatar,
+      isOnline: isOnline,
+      isInGame: isInGame,
+      isInQueue: isInQueue,
     });
 
-    socket.value.on('newFriend', (data) => {
-      friends.value.push(data);
-    });
-
-    socket.value.on('removedFriend', (data) => {
-      friends.value = friends.value.filter(friend => friend.id !== data.userId && friend.username !== data.username);
-    });
-
-    socket.value.on('gameInvite', (data) => {
-      invites.value.push(data);
-      inviteSenders.value.add(data.sender);
-    });
   }
 };
+
+const sortedFriends = computed(() => {
+  return [...friends.value].sort((a, b) => {
+    if (a.isOnline && !b.isOnline) return -1;
+    if (!a.isOnline && b.isOnline) return 1;
+    return 0;
+  });
+});
 
 const viewPendingRequests = () => {
   showPendingRequestsModal.value = true;
@@ -301,6 +343,14 @@ const isInviteSender = (friendId) => {
   return inviteSenders.value.has(friends.value.find(f => f.id === friendId)?.username);
 };
 
+const getStatusClass = (friend) => {
+  if (friend.isOnline == false) return 'status-offline';
+  if (friend.isInGame) return 'status-in-game';
+  if (friend.isInQueue) return 'status-in-queue';
+  if (friend.isOnline) return 'status-online';
+  return 'status-offline';
+};
+
 onMounted(() => {
   fetchFriends();
   fetchPendingRequests();
@@ -310,36 +360,39 @@ onMounted(() => {
 
 <style scoped>
 .user-list {
-  width: 100%;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  padding: 16px;
-  background-color: #f2f2f2;
+	width: 100%;
+	border: 1px solid #ccc;
+	border-radius: 8px;
+	padding: 16px;
+	background-color: #f2f2f2;
 }
 
 .header {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
   margin-bottom: 16px;
 }
 
 .user {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 8px;
-  border-bottom: 1px solid #ddd;
-  transition: background-color 0.2s;
+	display: flex;
+	align-items: center;
+	gap: 16px;
+	padding: 8px;
+	border-bottom: 1px solid #ddd;
+	cursor: pointer;
+	transition: background-color 0.2s;
+	position: relative; /* Allow absolute positioning of status indicator */
+  border-radius: 10px;
 }
 
 .user.highlight {
-  background-color: #e0ffea;
+  background-color: #077a2c;
   animation: blink 1s step-start infinite;
+  border-radius: 10px;
 }
 
 .user:hover {
   background-color: #e0e0e0;
+  border-radius: 10px;
 }
 
 .avatar {
@@ -356,9 +409,8 @@ onMounted(() => {
 }
 
 .username {
-  font-size: 14px;
-  font-weight: bold;
-  flex-grow: 1;
+	font-size: 14px;
+	font-weight: bold;
 }
 
 .actions {
@@ -412,6 +464,32 @@ onMounted(() => {
   cursor: pointer;
   font-size: 14px;
   transition: background-color 0.2s;
+}
+
+.status-indicator {
+	width: 12px;
+	height: 12px;
+	border-radius: 50%;
+	border: 2px solid #fff;
+	position: absolute;
+	bottom: 5px;
+  left: 35px;
+}
+
+.status-online {
+	background-color: #4CAF50;
+}
+
+.status-offline {
+	background-color: #9e9e9e;
+}
+
+.status-in-queue {
+	background-color: #FFC107;
+}
+
+.status-in-game {
+	background-color: #2196F3;
 }
 
 .request-info {

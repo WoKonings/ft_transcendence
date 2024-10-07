@@ -39,4 +39,8 @@ export class UserGateway {
       userSocket.emit(event, data);  // Emit to the socket
     }
   }
+
+  async emitUserStatusUpdate(userId: number, data: any) {
+    this.server.emit('userStatusUpdate', data);
+  }
 }

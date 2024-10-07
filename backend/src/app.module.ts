@@ -15,10 +15,17 @@ import { JwtStrategy } from './auth/jwt.strategy';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { Socket } from 'socket.io';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { join } from 'path';
 
 
 @Module({
-  imports: [UserModule,
+  imports: [
+      ServeStaticModule.forRoot({
+        rootPath: join(__dirname, '..', 'uploads'),
+        serveRoot: '/uploads',
+      }),
+      UserModule,
       AuthModule, 
       PrismaModule, 
       PassportModule.register({ defaultStrategy: 'jwt'}), 

@@ -1,9 +1,17 @@
-import { Controller, UseGuards, Delete, Get, Post, Body, Param, HttpException, HttpStatus } from '@nestjs/common';
+import { Controller, UseGuards, Delete, Get, Post, Body, Param, HttpException, HttpStatus, UseInterceptors, UploadedFile, Req } from '@nestjs/common';
 import { UserService } from './user.service';
 import { AuthGuard } from '../auth/auth.guard';
 import { CreateUserDto } from './dto/create-user.dto';
 import { AddFriendDto } from './dto/add-friend.dto';
 import { GetFriendsDto } from './dto/get-friends.dto';
+
+// file storage
+import { FileInterceptor } from '@nestjs/platform-express';
+import { extname } from 'path';
+import { diskStorage } from 'multer';
+import { promises as fs } from 'fs';
+import { imageSize } from 'image-size';
+
 
 @Controller('user')
 export class UserController {
@@ -72,4 +80,52 @@ export class UserController {
 	async deleteUser(@Param('id') id: string) {
 		return this.userService.deleteUser(Number(id));
 	}
+
+  @UseGuards(AuthGuard)
+  @Post('upload-avatar')
+  @UseInterceptors(FileInterceptor('file', {
+    storage: diskStorage({
+      destination: './uploads/avatars',
+      filename: (req, file, callback) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        const ext = extname(file.originalname);
+        callback(null, `${uniqueSuffix}${ext}`);
+      },
+    }),
+    fileFilter: (req, file, callback) => {
+      const fileExtension = extname(file.originalname).toLowerCase();
+      if (!['.png', '.jpg', '.jpeg', '.gif'].includes(fileExtension)) {
+        return callback(new Error('Only image files are allowed!'), false);
+      }
+      callback(null, true);
+    },
+  }))
+  async uploadAvatar(@UploadedFile() file: Express.Multer.File, @Req() req: Request) {
+    const userPayload = req['user'];
+
+    // Validate image dimensions
+    const dimensions = imageSize(file.path);
+    if (dimensions.width < 40 || dimensions.height < 40 || dimensions.width > 2048 || dimensions.height > 2048) {
+        await fs.unlink(file.path); // Delete the invalid file
+        throw new Error('Image dimensions must be between 40x40 and 2048x2048 pixels.');
+    }
+
+    // Fetch the current user to check for an existing avatar
+    const user = await this.userService.getUserById(userPayload.id);
+
+    // If the user already has an avatar, delete the old file from the server
+    if (user.avatar) {
+      const oldAvatarPath = `./uploads/avatars/${user.avatar.split('/').pop()}`;
+      try {
+        await fs.unlink(oldAvatarPath);
+        console.log(`Deleted old avatar: ${oldAvatarPath}`);
+      } catch (error) {
+        console.error(`Error deleting old avatar: ${error.message}`);
+      }
+    }
+
+    console.log(`CHANGING AVATAR FOR ${userPayload.id} / ${user.username}`);
+    await this.userService.updateAvatar(userPayload.id, file.filename);
+    return { message: 'Avatar uploaded successfully' };
+  }
 }

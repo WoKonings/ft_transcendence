@@ -1,7 +1,10 @@
 <template>
   <div class="user-profile-badge" @click="goToProfile">
-    <img :src="userProfilePicture" alt="User Avatar" class="profile-picture" />
-    <span class="username">{{ userProfile.username }}</span>
+    <!-- <img :src="userProfilePicture" alt="User Avatar" class="profile-picture" /> -->
+     <div class="profile-picture">
+       <img :src="currentUser.avatar ? `http://localhost:3000${currentUser.avatar}` : `https://robohash.org/${currentUser.username}?set=set4`" :alt="`${currentUser.username}`" />
+     </div>
+    <span class="username">{{ currentUser.username }}</span>
   </div>
 </template>
 
@@ -13,10 +16,10 @@ import { useRouter } from 'vue-router';
 const store = useStore();
 const router = useRouter();
 
-const userProfile = computed(() => store.state.currentUser);
+const currentUser = computed(() => store.state.currentUser);
 
 // Placeholder for profile picture; replace with real URL later
-const userProfilePicture = computed(() => store.state.currentUser.profilePicture || 'default-avatar.png');
+// const userProfilePicture = computed(() => store.state.currentUser.profilePicture || 'default-avatar.png');
 
 const goToProfile = () => {
   router.push('/profile');
@@ -38,16 +41,24 @@ const goToProfile = () => {
   right: 20px; /* Adjust right spacing */
 }
 
+.profile-picture {
+	width: 40px;
+	height: 40px;
+	border-radius: 50%;
+	margin-right: 10px;
+	overflow: hidden;
+}
+
+.profile-picture img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+
 .user-profile-badge:hover {
   background-color: #ddd;
 }
 
-.profile-picture {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  margin-right: 10px;
-}
 
 .username {
   font-weight: bold;

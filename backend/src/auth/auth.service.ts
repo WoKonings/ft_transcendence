@@ -145,6 +145,7 @@ async handle42Login(code: string): Promise<{ access_token: string; user: any | n
         id: user.id,
         username: user.username,
         email: user.email,
+        avatar: user.avatar,
       }
 		};
 	}

@@ -33,8 +33,10 @@ model User {
   games       Game[]    @relation("PlayerGames")
   gamesWon    Game[]    @relation("GameWinner")
   gamesPlayed Int       @default(0)
+  gameWins    Int       @default(0)
   createdAt   DateTime  @default(now())
   elo         Int       @default(600)
+  avatar      String?
 }
 
 model Channel {

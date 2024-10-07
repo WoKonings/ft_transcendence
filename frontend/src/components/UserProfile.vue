@@ -4,14 +4,21 @@
     <div class="profile-actions">
       <button class="action-button" @click="goToDashboard">Go back</button>
       <button class="action-button" @click="changeUsername">Change Username</button>
-      <button class="action-button" @click="changeAvatar">Change Avatar</button>
+      <!-- Updated Avatar Button -->
+      <button class="action-button" @click="openFilePicker">Change Avatar</button>
+      <input type="file" ref="fileInput" @change="uploadAvatar" accept="image/*" style="display:none" />
+      <!-- <div class="upload-container" @dragover.prevent @drop.prevent="handleDrop" @click="triggerFilePicker">
+        <p>Drag and drop a file here, or click to select a file.</p>
+        <input type="file" ref="fileInput" @change="handleFileSelect" accept="image/*" style="display:none" />
+      </div> -->
       <button class="action-button delete" @click="deleteAccount">Delete Account</button>
     </div>
 
     <!-- Profile Information Section -->
     <div class="profile-header" v-if="currentUser && currentUser.username">
       <div class="profile-picture">
-        <img :src="`https://robohash.org/${currentUser.username}?set=set4`" :alt="`${currentUser.username}'s avatar`" />
+        <img :src="currentUser.avatar ? `http://localhost:3000${currentUser.avatar}` : `https://robohash.org/${currentUser.username}?set=set4`" :alt="`${currentUser.username}'s avatar`" />
+        <!-- <img :src="`http://localhost:3000${currentUser.avatar}` || `https://robohash.org/${currentUser.username}?set=set4`" :alt="`${currentUser.username}'s avatar`" /> -->
       </div>
       <h2>{{ currentUser.username }}</h2>
     </div>
@@ -86,17 +93,17 @@
 </template>
 
 <script setup>
-import router from '@/router/router';
 import { ref, computed, onMounted } from 'vue';
 import { useStore } from 'vuex';
+import router from '@/router/router';
 
 const store = useStore();
-const loading = ref(false);
-const matchHistory = ref([]);
-
-// Fetch the current user from Vuex
+const socket = computed(() => store.state.socket);
 const currentUser = computed(() => store.state.currentUser);
 const isLoggedIn = computed(() => store.state.isLoggedIn);
+
+const loading = ref(false);
+const matchHistory = ref([]);
 
 const goToDashboard = () => {
   router.push('/');
@@ -129,31 +136,43 @@ const changeUsername = async () => {
   }
 };
 
-// Function to handle avatar change
-const changeAvatar = async () => {
-  const avatarUrl = prompt('Enter the URL of your new avatar:');
-  if (avatarUrl) {
-    try {
-      const response = await fetch(`http://localhost:3000/user/update-avatar`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ avatarUrl }),
-      });
+const fileInput = ref(null);
 
-      if (response.ok) {
-        const updatedUser = await response.json();
-        store.commit('setCurrentUser', updatedUser); // Update Vuex store with the new avatar
-        alert('Avatar updated successfully!');
-      } else {
-        // throw new Error('Failed to update avatar');
-      }
-    } catch (error) {
-      console.error('Error updating avatar:', error);
-      alert('An error occurred while updating your avatar.');
-    }
-  }
+const openFilePicker = () => {
+  fileInput.value.click(); // Open file picker when clicking "Change Avatar" button
+};
+
+const uploadAvatar = async (event) => {
+	const file = event.target.files[0]; // Get the selected file
+
+	if (file) {
+		try {
+			const formData = new FormData();
+			formData.append('file', file);
+
+			// Send the file to your backend
+			const response = await fetch('http://localhost:3000/user/upload-avatar', {
+				method: 'POST',
+				headers: {
+					Authorization: `Bearer ${localStorage.getItem('access_token')}`,
+				},
+				body: formData, id: currentUser.value.id
+			});
+
+			if (response.ok) {
+				// const data = await response.json();
+				alert('Avatar uploaded successfully!');
+
+				// No need to manually commit or update currentUser directly.
+				// The socket will handle this through 'userStatusUpdate'
+			} else {
+				alert('Failed to update avatar.');
+			}
+		} catch (error) {
+			console.error('Error uploading avatar:', error);
+			alert('An error occurred while uploading your avatar.');
+		}
+	}
 };
 
 // Function to handle account deletion
@@ -186,6 +205,7 @@ onMounted(async () => {
   }
   console.log('current user!: ', currentUser.value);
   console.log('current username: ', currentUser.value.username);
+  console.log('current avatar: ', currentUser.value.avatar);
   // loading.value = true;
   try {
     // Fetch the user profile
@@ -208,6 +228,16 @@ onMounted(async () => {
   } catch (error) {
     console.error(error);
   }
+
+  socket.value.on('userStatusUpdate', (data) => {
+    console.log('Received status update!');
+		if (data.userId === currentUser.value.id) {
+      if (data.avatar != null) {
+        currentUser.value.avatar = data.avatar;
+        console.log('Updated current user avatar:', data.avatar);
+      }
+		}
+	});
 });
 </script>
 

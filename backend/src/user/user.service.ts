@@ -186,6 +186,7 @@ export class UserService {
         isInGame: true,
         isInQueue: true,
         isOnline: true,
+        avatar: true,
       },
 	});
   
@@ -193,36 +194,36 @@ export class UserService {
   }
 
   async getFriends(userId: number) {
-	// Fetch the user with their friends' IDs
-	const user = await this.prisma.user.findUnique({
-		where: { id: userId },
-		select: { friends: true },
-	});
+    // Fetch the user with their friends' IDs
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { friends: true },
+    });
 
-	if (!user) {
-		throw new BadRequestException('User not found');
-	}
-  console.log (`fetching friends for user: ${userId}`);
-	// Retrieve each friend's information
-	const friendsList = await Promise.all(
-		user.friends.map(async (friendId) => {
-			const friend = await this.prisma.user.findUnique({
-				where: { id: friendId },
-				select: {
-					id: true,
-					username: true,
-					isOnline: true,
-					isInGame: true,
-					isInQueue: true,
-					// avatar: true,
-				},
-			});
-			return friend;
-		}),
-	);
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+    console.log (`fetching friends for user: ${userId}`);
+    // Retrieve each friend's information
+    const friendsList = await Promise.all(
+      user.friends.map(async (friendId) => {
+        const friend = await this.prisma.user.findUnique({
+          where: { id: friendId },
+          select: {
+            id: true,
+            username: true,
+            isOnline: true,
+            isInGame: true,
+            isInQueue: true,
+            avatar: true,
+          },
+        });
+        return friend;
+      }),
+    );
 
-	return friendsList;
-}
+    return friendsList;
+  }
 
 async getIncomingPendingFriends(userId: number) {
 	// Fetch the user with their friends' IDs
@@ -312,8 +313,7 @@ async getIncomingPendingFriends(userId: number) {
         },
       });
     }
-
-
+    // disconnect user from all channels they were in.
     for (const channels in user.channels) {
       console.log(`channel: ${channels}`);
       await this.prisma.channel.update({
@@ -327,9 +327,19 @@ async getIncomingPendingFriends(userId: number) {
       });
     }
  
-
     return this.prisma.user.delete({
       where: { id },
     });
+  }
+
+  async updateAvatar(userId: number, filename: string): Promise<void> {
+    const avatarPath = `/uploads/avatars/${filename}`;
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { avatar: avatarPath },
+    });
+    this.userGateway.emitToSocketByUserId(userId, 'userStatusUpdate', { userId, avatar: avatarPath });
+    this.userGateway.emitUserStatusUpdate(userId, { avatar: avatarPath });
+    console.log ('avatar should update');
   }
 }

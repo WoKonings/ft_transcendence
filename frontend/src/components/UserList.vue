@@ -1,21 +1,18 @@
 <template>
 	<div class="user-list">
-    <h2>User List</h2>
+    <h2>Users</h2>
     <div 
       v-for="user in sortedUsers" 
       :key="user.id" 
       class="user" 
       @click="selectUser(user)"
     >
-      <div class="avatar">
-        <img :src="user.avatar || 'https://via.placeholder.com/40'" alt="Avatar" />
-      </div>
-      <div 
-        class="status-indicator" 
-        :class="getStatusClass(user)"
-      ></div>
-      <div class="username">{{ user.username }}</div>
+    <div class="avatar">
+      <img :src="user.avatar ? `http://localhost:3000${user.avatar}` : `https://robohash.org/${user.username}?set=set4`" :alt="`${user.username}`" />
     </div>
+    <div class="status-indicator" :class="getStatusClass(user)"></div>
+    <div class="username">{{ user.username }}</div>
+  </div>
 
 		<div v-if="selectedUser" class="options-overlay" @click="closeOptions">
 			<div class="options" @click.stop>
@@ -87,13 +84,13 @@ const updateUserStatus = (username, userId, isOnline, isInGame, isInQueue, avata
 		users.value = [...users.value];
 	} else {
     users.value.push({
-        id: userId,
-        username: username,
-        avatar: avatar || 'https://via.placeholder.com/40',
-        isOnline: isOnline,
-        isInGame: isInGame,
-        isInQueue: isInQueue,
-      });
+      id: userId,
+      username: username,
+      avatar: avatar,
+      isOnline: isOnline,
+      isInGame: isInGame,
+      isInQueue: isInQueue,
+    });
   }
 };
 
@@ -103,7 +100,7 @@ const updateList = (data) => {
     .map(user => ({
       id: user.id,
       username: user.username,
-      avatar: user.avatar || 'https://via.placeholder.com/40',
+      avatar: user.avatar,
       isOnline: user.isOnline,
       isInGame: user.isInGame,
       isInQueue: user.isInQueue,
@@ -211,10 +208,14 @@ onMounted(() => {
 	cursor: pointer;
 	transition: background-color 0.2s;
 	position: relative; /* Allow absolute positioning of status indicator */
+  border-radius: 10px;
+
 }
 
 .user:hover {
 	background-color: #e0e0e0;
+  border-radius: 10px;
+
 }
 
 .avatar {
