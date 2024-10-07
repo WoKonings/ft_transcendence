@@ -14,6 +14,7 @@
   <!-- Display "Queue for Pong" Button if Not Waiting and Game Not Started -->
   <div v-if="!waitingForOpponent && !gameStarted" class="queue-container">
     <button @click="queueForPong" class="queue-button">Queue for Pong</button>
+    <button @click="queueForPong" class="queue-button">Queue for Big Pong</button>
   </div>
 
   <!-- Display Waiting for Opponent with Spinner and Cancel Button if Waiting -->
@@ -43,7 +44,7 @@ const container = ref(null);
 let scene, camera, renderer, composer;
 let player1, player2; //as username
 let paddle1, paddle2, ball;
-let playerPosition = { y: 0 };
+// let playerPosition = { y: 0 };
 const waitingForOpponent = ref(false);
 const gameStarted = ref(false);
 const player1Score = ref(0);
@@ -59,7 +60,9 @@ let particleVelocities = [];
 const initGame = () => {
   initThreeJS();
   initParticleSystem();
-  window.addEventListener('mousemove', handleMouseMove);
+  // window.addEventListener('mousemove', handleMouseMove);
+  window.addEventListener('keydown', handlePlayerMove);
+  window.addEventListener('keyup', handleStopPlayerMove);
 };
 
 const initThreeJS = () => {
@@ -311,21 +314,46 @@ const stopGame = () => {
   }
   if (gameStarted.value) {
     gameStarted.value = false;
-    window.removeEventListener('mousemove', handleMouseMove);
+    // window.removeEventListener('mousemove', handleMouseMove);
     // Additional cleanup if needed
   }
 };
 
-const handleMouseMove = (event) => {
-  const rect = container.value.getBoundingClientRect();
-  playerPosition.y = (rect.bottom - event.clientY) / (rect.bottom - rect.top) * 30 - 15;
-  if (socket) {
-    socket.emit('playerMove', {
-      userId: currentUser.id,
-      y: playerPosition.y,
-    });
+// const handleMouseMove = (event) => {
+//   const rect = container.value.getBoundingClientRect();
+//   playerPosition.y = (rect.bottom - event.clientY) / (rect.bottom - rect.top) * 30 - 15;
+//   if (socket) {
+//     socket.emit('playerMove', {
+//       userId: currentUser.id,
+//       y: playerPosition.y,
+//     });
+//   }
+// };
+
+let moving = false;
+
+const handlePlayerMove = (event) => {
+  if ((event.key === 'w' || event.key === 'ArrowUp') && moving == false) {
+    console.log('moving up');
+    moving = true;
+    socket.emit('playerMoveKBM', { userId: currentUser.id, dy: 1 });
+  } else if ((event.key === 's' || event.key === 'ArrowDown') && moving == false) {
+    console.log('moving down');
+    moving = true;
+    socket.emit('playerMoveKBM', { userId: currentUser.id, dy: -1 });
   }
-};
+}
+const handleStopPlayerMove = (event) => {
+  if ((event.key === 'w' || event.key === 'ArrowUp') && moving == true) {
+    console.log('stopped moving up');
+    moving = false;
+    socket.emit('playerMoveKBM', { userId: currentUser.id, dy: 0 });
+  } else if ((event.key === 's' || event.key === 'ArrowDown') && moving == true) {
+    console.log('stopped moving down');
+    moving = false;
+    socket.emit('playerMoveKBM', { userId: currentUser.id, dy: 0 });
+  }
+}
 
 const showEndScreen = (message) => {
   const endScreen = document.getElementById('endScreen');
@@ -344,7 +372,9 @@ onBeforeUnmount(() => {
     renderer.dispose();
   }
   window.removeEventListener('resize', onWindowResize);
-  window.removeEventListener('mousemove', handleMouseMove);
+  // window.removeEventListener('mousemove', handleMouseMove);
+  window.removeEventListener('keydown', handlePlayerMove);
+  window.removeEventListener('keyup', handlePlayerMove);
 });
 </script>
 
@@ -357,6 +387,19 @@ onBeforeUnmount(() => {
 	justify-content: center;
 	position: relative;
 	background-color: #1a1a1a;
+}
+
+.queue-button {
+  padding: 10px 20px;
+  margin: 0 10px;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  position: relative;
+  justify-content: center;
 }
 
 .pong-game {

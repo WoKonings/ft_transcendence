@@ -1,5 +1,5 @@
 <template>
-  <div class="user-list">
+  <div class="user-list" :style="{ maxHeight: '40vh' }">
     <h2>Friends</h2>
     <div class="header">
       <button v-if="pendingFriendRequests.length > 0" class="notification" @click="viewPendingRequests">
@@ -34,10 +34,8 @@
     <ViewProfile
       :selectedUser="selectedUser"
       :isVisible="isProfileVisible"
-      @close="isProfileVisible = false"
-    />
+      @close="isProfileVisible = false" />
     </div>
-
 
     <!-- Error Message -->
     <p v-if="error" style="color: red">{{ error }}</p>
@@ -159,12 +157,13 @@ const initializeSocketListeners = () => {
   });
 
   socket.value.on('userStatusUpdate', (data) => {
-    updateUserStatus(data.username, data.userId, data.isOnline, data.isInGame, data.isInQueue, data.avatar);
+    if (friends.value.some(friend => friend.id === data.userId))
+      updateUserStatus(data.username, data.userId, data.isOnline, data.isInGame, data.isInQueue, data.avatar);
   });
 };
 
 const updateUserStatus = (username, userId, isOnline, isInGame, isInQueue, avatar) => {
-  console.log(`${username} has changed status on friends: online? ${isOnline} ingame? ${isInGame} inqueue? ${isInQueue}`);
+  console.log(`friend: ${username} / ${userId} has changed status on friends: online? ${isOnline} ingame? ${isInGame} inqueue? ${isInQueue}`);
 	const friend = friends.value.find(u => u.username === username);
 	if (friend) {
     if (isOnline != null)
@@ -361,11 +360,29 @@ onMounted(() => {
 <style scoped>
 .user-list {
 	width: 100%;
+  max-width: 100%;
 	border: 1px solid #ccc;
 	border-radius: 8px;
-	padding: 16px;
+	padding: 10px;
 	background-color: #f2f2f2;
+  overflow-y: auto; /* Enable scrolling for the content area */
 }
+
+.user-list-content {
+  overflow-y: auto;
+  max-width: 1%;
+  max-height: 40vh;
+}
+
+.user-list-scrollbar {
+  /* Adjust styles for the scrollbar element (using your preferred library) */
+  width: 10px;
+  height: 100%;
+  background-color: #ddd;
+  position: absolute;
+  right: 0;
+}
+
 
 .header {
   display: flex;
@@ -409,8 +426,11 @@ onMounted(() => {
 }
 
 .username {
-	font-size: 14px;
-	font-weight: bold;
+  font-size: 14px;
+  font-weight: bold;
+  overflow: hidden; /* Hide overflow text */
+  text-overflow: ellipsis; /* Show ellipsis for truncated text */
+  max-width: 90px; /* Set a maximum width for the username */
 }
 
 .actions {

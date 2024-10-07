@@ -182,7 +182,6 @@ const loginUser = async () => {
     const data = await response.json();
     localStorage.setItem('access_token', data.access_token);
     console.log(`Received access token: ${data.access_token}`);
-    // store.dispatch('logIn', data.user);
     fetchMe();
     initializeSocket();
   } catch (error) {
@@ -215,12 +214,13 @@ const fetchMe = async () => {
 
 const logoutUser = () => {
   if (currentUser.value){
-    socket.value.emit('logOut', { id: currentUser.value.id})
+    // if (socket.value)
+    //   socket.value.emit('logOut', { id: currentUser.value.id})
     
     localStorage.removeItem('access_token');
 
-    // localStorage.setItem('access_token', null);
     store.dispatch('logOut');
+    socket.value = null;
   }
 };
 
@@ -252,6 +252,7 @@ const initializeSocket = async () => {
   if (!token) return;
 
   if (socket.value == null) {
+    console.log('requesting new socket');
     socket.value = await io('http://localhost:3000', {
       auth: { token },
     }); 
@@ -259,6 +260,8 @@ const initializeSocket = async () => {
     console.log('established socket');
   }
 
+  if (socket.value == null)
+    return;
   socket.value.on('connected', (message) => {
     console.log(message);
   });

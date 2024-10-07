@@ -31,7 +31,7 @@
       </div>
       <div class="info-row">
         <span class="info-label">Joined:</span>
-        <span class="info-value">{{ new Date(currentUser.createdAt).toLocaleDateString() }}</span>
+        <span class="info-value">{{ new Date(userProfile.createdAt).toLocaleDateString() }}</span>
       </div>
       <div class="info-row">
         <span class="info-label">Games Played:</span>
@@ -40,11 +40,15 @@
       </div>
       <div class="info-row">
         <span class="info-label">Wins:</span>
-        <span class="info-value">{{ currentUser.gamesWon }}</span>
+        <span class="info-value">{{ userProfile.gameWins }}</span>
       </div>
       <div class="info-row">
         <span class="info-label">Losses:</span>
-        <span class="info-value">{{ currentUser.gamesPlayed - currentUser.gamesWon }}</span>
+        <span class="info-value">{{ userProfile.gamesPlayed - userProfile.gameWins }}</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Elo:</span>
+        <span class="info-value">{{ userProfile.elo }}</span>
       </div>
     </div>
 
@@ -101,6 +105,7 @@ const store = useStore();
 const socket = computed(() => store.state.socket);
 const currentUser = computed(() => store.state.currentUser);
 const isLoggedIn = computed(() => store.state.isLoggedIn);
+const userProfile = ref({});
 
 const loading = ref(false);
 const matchHistory = ref([]);
@@ -209,11 +214,11 @@ onMounted(async () => {
   // loading.value = true;
   try {
     // Fetch the user profile
-    // const userResponse = await fetch(`http://localhost:3000/user/search/${currentUser.value.username}`);
-    // if (!userResponse.ok) {
-    //   throw new Error('Failed to fetch user profile');
-    // }
-    // let userProfile = await userResponse.json();
+    const userResponse = await fetch(`http://localhost:3000/user/search/${currentUser.value.username}`);
+    if (!userResponse.ok) {
+      throw new Error('Failed to fetch user profile');
+    }
+    userProfile.value = await userResponse.json();
 
     // Fetch the match history
     const matchResponse = await fetch(`http://localhost:3000/game/${currentUser.value.id}`);
@@ -331,6 +336,7 @@ onMounted(async () => {
 
 .match-history {
   margin-top: 20px;
+  width: 20%;
 }
 
 .match-history-content {

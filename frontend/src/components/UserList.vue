@@ -1,32 +1,30 @@
 <template>
-	<div class="user-list">
+  <div class="user-list" :style="{ maxHeight: '40vh' }">
     <h2>Users</h2>
-    <div 
-      v-for="user in sortedUsers" 
-      :key="user.id" 
-      class="user" 
-      @click="selectUser(user)"
-    >
-    <div class="avatar">
-      <img :src="user.avatar ? `http://localhost:3000${user.avatar}` : `https://robohash.org/${user.username}?set=set4`" :alt="`${user.username}`" />
+    <div v-for="user in sortedUsers" :key="user.id" class="user" @click="selectUser(user)">
+      <div class="avatar">
+        <img :src="user.avatar ? `http://localhost:3000${user.avatar}` : `https://robohash.org/${user.username}?set=set4`" :alt="`${user.username}`" />
+      </div>
+      <div class="status-indicator" :class="getStatusClass(user)"></div>
+      <div class="username">{{ user.username }}</div>
     </div>
-    <div class="status-indicator" :class="getStatusClass(user)"></div>
-    <div class="username">{{ user.username }}</div>
-  </div>
 
-		<div v-if="selectedUser" class="options-overlay" @click="closeOptions">
-			<div class="options" @click.stop>
-				<button @click="addAsFriend(selectedUser)">Add as Friend</button>
-				<button @click="sendMessage(selectedUser)">Send Message</button>
-				<button @click="viewProfile(selectedUser)">Profile</button>
-			</div>
-		</div>
-		<ViewProfile
-			:selectedUser="selectedUser"
-			:isVisible="isProfileVisible"
-			@close="isProfileVisible = false"
-		/>
-	</div>
+    <div v-if="users.length" class="user-list-scrollbar">
+      </div>
+
+    <div v-if="selectedUser" class="options-overlay" @click="closeOptions">
+      <div class="options" @click.stop>
+        <button @click="addAsFriend(selectedUser)">Add as Friend</button>
+        <button @click="sendMessage(selectedUser)">Send Message</button>
+        <button @click="viewProfile(selectedUser)">Profile</button>
+      </div>
+    </div>
+    <ViewProfile
+      :selectedUser="selectedUser"
+      :isVisible="isProfileVisible"
+      @close="isProfileVisible = false"
+    />
+  </div>
 </template>
 
 <script setup>
@@ -42,6 +40,8 @@ const users = ref([]);
 const error = ref('');
 const selectedUser = ref(null);
 const isProfileVisible = ref(false); // State to manage profile visibility
+
+// const maxUsers = 10; // Set the maximum number of users to display
 
 const getUsers = () => {
   error.value = '';
@@ -71,7 +71,7 @@ const getUsers = () => {
 
 //todo: add avatar
 const updateUserStatus = (username, userId, isOnline, isInGame, isInQueue, avatar) => {
-  console.log(`${username} has changed status: online? ${isOnline} ingame? ${isInGame} inqueue? ${isInQueue}`);
+  console.log(`user: ${username} / ${userId} has changed status: online? ${isOnline} ingame? ${isInGame} inqueue? ${isInQueue}`);
 	const user = users.value.find(u => u.username === username);
 	if (user) {
     if (isOnline != null)
@@ -192,11 +192,28 @@ onMounted(() => {
 
 <style scoped>
 .user-list {
-	width: 100%;
-	border: 1px solid #ccc;
-	border-radius: 8px;
-	padding: 16px;
-	background-color: #f2f2f2;
+  width: 100%;
+  max-width: 100%;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  padding: 10px;
+  background-color: #f2f2f2;
+  overflow-y: auto; /* Enable scrolling for the content area */
+}
+
+.user-list-content {
+  overflow-y: auto;
+  max-width: 1%;
+  max-height: 40vh;
+}
+
+.user-list-scrollbar {
+  /* Adjust styles for the scrollbar element (using your preferred library) */
+  width: 10px;
+  height: 100%;
+  background-color: #ddd;
+  position: absolute;
+  right: 0;
 }
 
 .user {
@@ -215,7 +232,6 @@ onMounted(() => {
 .user:hover {
 	background-color: #e0e0e0;
   border-radius: 10px;
-
 }
 
 .avatar {
@@ -260,6 +276,9 @@ onMounted(() => {
 .username {
 	font-size: 14px;
 	font-weight: bold;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 90px;
 }
 
 .options-overlay {

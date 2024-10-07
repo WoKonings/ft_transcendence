@@ -29,10 +29,10 @@
       </div>
       <div v-if="loading" class="loading">Loading...</div>
       <div v-else class="profile-info">
-        <div class="info-row">
+        <!-- <div class="info-row">
           <span class="info-label">Email:</span>
           <span class="info-value">{{ userProfile.email }}</span>
-        </div>
+        </div> -->
         <div class="info-row">
           <span class="info-label">Joined:</span>
           <span class="info-value">{{ new Date(userProfile.createdAt).toLocaleDateString() }}</span>
@@ -43,11 +43,15 @@
         </div>
         <div class="info-row">
           <span class="info-label">Wins:</span>
-          <span class="info-value">{{ userProfile.gamesWon }}</span>
+          <span class="info-value">{{ userProfile.gameWins }}</span>
         </div>
         <div class="info-row">
           <span class="info-label">Losses:</span>
-          <span class="info-value">{{ userProfile.gamesPlayed - userProfile.gamesWon }}</span>
+          <span class="info-value">{{ userProfile.gamesPlayed - userProfile.gameWins }}</span>
+        </div>
+        <div class="info-row">
+          <span class="info-label">Elo:</span>
+          <span class="info-value">{{ userProfile.elo }}</span>
         </div>
       </div>
 
@@ -103,7 +107,6 @@ export default {
   props: {
     selectedUser: {
       type: Object,
-      required: true,
       default: null,
     },
     isVisible: {

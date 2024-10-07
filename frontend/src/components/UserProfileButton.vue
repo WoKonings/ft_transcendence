@@ -34,11 +34,12 @@ const goToProfile = () => {
   background-color: #f4f4f4; /* Example background, adjust as per your theme */
   padding: 10px;
   width: 12%;
+  height: 4%;
   border-radius: 10px;
   transition: background-color 0.3s ease;
   position: absolute; /* Absolute positioning */
-  top: 20px; /* Adjust top spacing */
-  right: 20px; /* Adjust right spacing */
+  right: 1%; /* Adjust right spacing */
+  top: 1%;
 }
 
 .profile-picture {

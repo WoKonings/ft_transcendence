@@ -7,5 +7,5 @@ export class PlayerMoveDto {
   
 	@IsNotEmpty()
 	@IsNumber()
-	readonly y: number;
-  }
+	readonly dy: number;
+}

@@ -36,10 +36,28 @@ export class GameState {
 		}
 	}
 
+	updatePlayerPositionKBM() {
+    this.paddle1.y += this.paddle1.dy;
+    if (this.paddle1.y < -14) 
+      this.paddle1.y = -14;
+    if (this.paddle1.y > 14) 
+      this.paddle1.y = 14;
+
+    this.paddle2.y += this.paddle2.dy;
+    if (this.paddle2.y < -14) 
+      this.paddle2.y = -14;
+    if (this.paddle2.y > 14) 
+      this.paddle2.y = 14;
+
+	}
+
 	update() {
 		const currentTime = Date.now();
 		const deltaTime = currentTime - this.lastUpdateTime;
 		this.lastUpdateTime = currentTime;
+
+    // Update player positions
+    this.updatePlayerPositionKBM();
 
 		// Update ball position
 		this.ball.x += this.ball.dx;
@@ -55,33 +73,6 @@ export class GameState {
 			this.ball.dy *= -1;
 			this.bounceCooldown = 150;
 		}
-
-    // // Ball collision with paddles
-    // if (
-    //   this.ball.dx < 0 &&
-    //   this.ball.x - this.ball.radius <= this.paddle1.x + this.paddle1.width &&
-    //   this.ball.x + this.ball.radius >= this.paddle1.x &&
-    //   this.ball.y + this.ball.radius >= this.paddle1.y - this.paddle1.height / 2 &&
-    //   this.ball.y - this.ball.radius <= this.paddle1.y + this.paddle1.height / 2 &&
-    //   this.bounceCooldown <= 0
-    // ) {
-    //   this.ball.dx *= -1.1;
-    //   this.bounceCooldown = 150;
-    //   // Adjust ball position to prevent sticking
-    //   // this.ball.x = this.paddle1.x + this.paddle1.width + this.ball.radius;
-    // } else if (
-    //   this.ball.dx > 0 && 
-    //   this.ball.x + this.ball.radius >= this.paddle2.x &&
-    //   this.ball.x - this.ball.radius <= this.paddle2.x + this.paddle2.width &&
-    //   this.ball.y + this.ball.radius >= this.paddle2.y - this.paddle2.height / 2 &&
-    //   this.ball.y - this.ball.radius <= this.paddle2.y + this.paddle2.height / 2 &&
-    //   this.bounceCooldown <= 0
-    // ) {
-    //   this.ball.dx *= -1.1;
-    //   this.bounceCooldown = 150;
-    //   // Adjust ball position to prevent sticking
-    //   // this.ball.x = this.paddle2.x - this.ball.radius;
-    // }
 
     // Ball collision with paddles
     if (

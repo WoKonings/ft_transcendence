@@ -76,11 +76,13 @@ export class GameGateway {
 
     if (game.player_one && game.player_one.userId === userId) {
       console.log('player one bailed');
+      this.handleGameOver(game.player_two, game.player_one, game);
       if (game.player_two)
         game.player_two.socket.emit('opponentLeft', game.player_one.username);
       game.player_one = null;
       game.gameState.playerOne = null;
     } else if (game.player_two && game.player_two.userId === userId) {
+      this.handleGameOver(game.player_one, game.player_two, game);
       console.log('player two bailed');
       if (game.player_one)
         game.player_one.socket.emit('opponentLeft', game.player_two.username);
@@ -88,10 +90,10 @@ export class GameGateway {
       game.gameState.playerTwo = null;
     }
     game.paused = true;
-    console.log('The game is now paused');
+    console.log('The game is now FORFEITED');
+    this.gameSessions.delete(game.gameId);
     if (!game.player_one && !game.player_two) {
       console.log('Both players are gone. Deleting game instance');
-      this.gameSessions.delete(game.gameId);
     }
   }
         
@@ -233,16 +235,14 @@ async handleInviteGame(client: Socket, data: InviteGameDto): Promise<void> {
         userId: userId,
         // isOnline: true,
         isInGame: true,
-        // isInQueue: false,
-        // avatar: 
+        isInQueue: false,
       })
       session.player_two.socket.broadcast.emit('userStatusUpdate', {
         username: username,
         userId: userId,
         // isOnline: true,
         isInGame: true,
-        // isInQueue: false,
-        // avatar: 
+        isInQueue: false,
       })
     }
     await this.userService.setIsInGame(Number(userId), true);
@@ -297,9 +297,24 @@ async handleInviteGame(client: Socket, data: InviteGameDto): Promise<void> {
     return undefined;
   }
         
-  @SubscribeMessage('playerMove')
-  handlePlayerMove(client: Socket, data: PlayerMoveDto): void {
-    const { userId, y } = data;
+  // @SubscribeMessage('playerMove')
+  // handlePlayerMove(client: Socket, data: PlayerMoveDto): void {
+  //   const { userId, y } = data;
+  //   if (!userId) {
+  //     console.log('No userId provided for playerMove');
+  //     return;
+  //   }
+
+  //   const gameSession = this.getGameSessionForUser(userId);
+  //   if (!gameSession) {
+  //     return;
+  //   }
+  //   gameSession.gameState.updatePlayerPosition(userId, y);
+  // }
+  
+  @SubscribeMessage('playerMoveKBM')
+  handlePlayerMoveUp(client: Socket, data: PlayerMoveDto): void {
+    let { userId, dy } = data;
     if (!userId) {
       console.log('No userId provided for playerMove');
       return;
@@ -309,9 +324,22 @@ async handleInviteGame(client: Socket, data: InviteGameDto): Promise<void> {
     if (!gameSession) {
       return;
     }
-    gameSession.gameState.updatePlayerPosition(userId, y);
+
+    const speed = 0.5;
+    // set speed value depending on player direction
+    if (dy > 0)
+      dy = speed;
+    if (dy < 0)
+      dy = -speed;
+
+    console.log ('updating player movement!');
+    if (gameSession.player_one.userId == userId)
+      gameSession.gameState.paddle1.dy = dy;
+    else if (gameSession.player_two.userId == userId)
+      gameSession.gameState.paddle2.dy = dy;
   }
-  
+
+
   // finds if the userId (as a string) is in a game, and returns the session if they are.
   private getGameSessionForUser(userId: string): GameSession | undefined {
     const user_Id = userId;
@@ -367,7 +395,7 @@ async handleInviteGame(client: Socket, data: InviteGameDto): Promise<void> {
         where: { id: Number(winner.userId) },
         data: {
           gamesPlayed: { increment: 1 },
-          // gamesWon: { increment: 1 },
+          gameWins: { increment: 1 },
           elo: { increment: eloChange }, // Increase Elo for the winner
         },
       });
