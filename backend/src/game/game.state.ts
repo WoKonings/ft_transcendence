@@ -14,8 +14,8 @@ export class GameState {
 
 	constructor() {
 		this.resetBall();
-		this.paddle1 = { x: -14, y: 0, width: 1, height: 4, dy: 0.5 };
-		this.paddle2 = { x: 14, y: 0, width: 1, height: 4, dy: 0.5 };
+		this.paddle1 = { x: -14, y: 0, width: 1, height: 4, dy: 0 };
+		this.paddle2 = { x: 14, y: 0, width: 1, height: 4, dy: 0 };
 		this.score = { playerOne: 0, playerTwo: 0 };
 		this.playerOne = null;
 		this.playerTwo = null;
@@ -62,7 +62,10 @@ export class GameState {
 		this.ball.y += this.ball.dy;
 
 		// Ball collision with top and bottom screen boundaries
-		if ((this.ball.y - this.ball.radius < -16 || this.ball.y + this.ball.radius > 16)) {
+    if (this.ball.y + this.ball.radius > 16 &&  this.ball.dy > 0) {
+			this.ball.dy *= -1;
+		}
+    if (this.ball.y - this.ball.radius < -16 &&  this.ball.dy < 0) {
 			this.ball.dy *= -1;
 		}
 
@@ -98,7 +101,6 @@ export class GameState {
     ) {
       // Collision with right paddle (paddle2)
       this.ball.dx *= -1.1;
-      // this.bounceCooldown = 150;
       // Adjust ball position to prevent sticking
       this.ball.x = this.paddle2.x - this.ball.radius;
       
