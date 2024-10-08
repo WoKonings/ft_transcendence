@@ -34,12 +34,12 @@ const goToProfile = () => {
   background-color: #f4f4f4; /* Example background, adjust as per your theme */
   padding: 10px;
   width: 12%;
+  min-width: 200px;
   height: 4%;
   border-radius: 10px;
+  box-shadow: 1px 1px 20px rgba(128, 40, 40, 0.829);
   transition: background-color 0.3s ease;
-  position: absolute; /* Absolute positioning */
-  right: 1%; /* Adjust right spacing */
-  top: 1%;
+  margin-bottom: 20px;
 }
 
 .profile-picture {
@@ -59,7 +59,6 @@ const goToProfile = () => {
 .user-profile-badge:hover {
   background-color: #ddd;
 }
-
 
 .username {
   font-weight: bold;

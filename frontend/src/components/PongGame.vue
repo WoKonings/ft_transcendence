@@ -1,6 +1,7 @@
 <template>
   <div v-if="gameStarted" class="game-container">
-    <!-- Main Game UI -->
+  <!-- <div class="game-container"> -->
+      <!-- Main Game UI -->
     <div class="scoreboard">
       <div class="score">{{ player1Score }}</div>
       <div class="score">{{ player2Score }}</div>
@@ -11,6 +12,8 @@
       <button @click="exitGame()" class="button">Ok</button>
     </div>
   </div>
+  
+  <PongGameAgainstAI v-else-if="!waitingForOpponent" />
 
   <!-- Display "Queue for Pong" Buttons if Not Waiting and Game Not Started -->
   <div v-if="!waitingForOpponent && !gameStarted" class="queue-container">
@@ -36,6 +39,7 @@ import * as THREE from 'three';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass';
 import { AfterimagePass } from 'three/examples/jsm/postprocessing/AfterimagePass';
+import PongGameAgainstAI from './PongGameAgainstAI.vue';
 
 const store = useStore();
 const socket = store.state.socket;
@@ -76,13 +80,19 @@ const initThreeJS = () => {
   }
 
   scene = new THREE.Scene();
+  const windowWidth = window.innerWidth;
+  const windowHeight = window.innerHeight;
+  const Width = windowWidth * 0.6;
+  const Height = windowHeight * 0.6;
 
-  camera = new THREE.PerspectiveCamera(80, 800 / 600, 0.1, 1000);
+  camera = new THREE.PerspectiveCamera(80, Width / Height, 0.1, 1000);
   camera.position.z = 20;
   camera.position.y = 0;
 
   renderer = new THREE.WebGLRenderer({ antialias: true });
-  renderer.setSize(800, 600);
+
+  renderer.setSize(Width, Height);
+  // renderer.setSize(800, 600);
 
   composer = new EffectComposer(renderer);
   composer.addPass(new RenderPass(scene, camera));
@@ -128,6 +138,31 @@ const initThreeJS = () => {
   ball = new THREE.Mesh(ballGeometry, ballMaterial);
   ball.position.set(0, 0, 0);
   scene.add(ball);
+
+  // Create the midline geometry
+  const midlineGeometry = new THREE.BoxGeometry(0.2, 32, 1);
+  const midlineMaterial = new THREE.MeshPhongMaterial({
+    color: 0xffffff
+  });
+  const midline = new THREE.Mesh(midlineGeometry, midlineMaterial);
+  midline.position.set(0, 0, 0);
+  scene.add(midline);
+
+  // Create the top and bottom lines
+  const topLineGeometry = new THREE.BoxGeometry(40, 0.2, 1);
+  const bottomLineGeometry = topLineGeometry.clone();
+  const lineMaterial = new THREE.MeshPhongMaterial({
+    color: 0xffffff
+  });
+  const topLine = new THREE.Mesh(topLineGeometry, lineMaterial);
+  const bottomLine = new THREE.Mesh(bottomLineGeometry, lineMaterial);
+  topLine.position.set(0, 16, 0);
+  bottomLine.position.set(0, -16, 0);
+  scene.add(topLine);
+  scene.add(bottomLine);
+
+
+
 
   // Ensure the container is available before appending
   nextTick(() => {
@@ -214,9 +249,21 @@ const animate = () => {
 };
 
 const onWindowResize = () => {
-  renderer.setSize(800, 600);
-  camera.aspect = 800 / 600;
+  const windowWidth = window.innerWidth;
+  const windowHeight = window.innerHeight;
+
+  // Calculate 60% of the window dimensions
+  const newWidth = windowWidth * 0.6;
+  const newHeight = windowHeight * 0.5;
+
+  // Set the renderer size and camera aspect
+  renderer.setSize(newWidth, newHeight);
+  camera.aspect = newWidth / newHeight;
   camera.updateProjectionMatrix();
+
+  // renderer.setSize(800, 600);
+  // camera.aspect = 800 / 600;
+  // camera.updateProjectionMatrix();
 };
 
 const updateGameObjects = (gameState) => {
@@ -324,6 +371,8 @@ const queueForPong = (mode) => {
       // gameMode: mode // Send the game mode to the server
     });
     waitingForOpponent.value = true;
+    endScreenMessage.value = null;
+    showEnd.value = false;
     console.log(`sent joinGame from socket: ${socket.id}, with UID: ${currentUser.id}, name: ${currentUser.username}, mode: ${mode}`);
   } else {
     console.log('somehow no socket');
@@ -405,35 +454,32 @@ onBeforeUnmount(() => {
 <!-- height: 100vh; -->
 <style scoped>
 .game-container {
-	display: flex;
-	flex-direction: column;
-	align-items: center;
-	justify-content: center;
-	position: relative;
-	background-color: #1a1a1a;
-}
-
-.queue-button {
-  padding: 10px 20px;
-  margin: 0 10px;
-  background-color: #4CAF50;
-  color: white;
-  border: none;
-  border-radius: 5px;
-  cursor: pointer;
-  transition: background-color 0.3s;
-  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   justify-content: center;
+  position: relative;
+  background-color: #1a1a1a;
+  width: 60vw;
+  height: 80vh;
+  margin: 0 auto;
+  border-radius: 8px;
 }
 
 .pong-game {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+/*.pong-game {
   width: 800px;
   height: 600px;
   overflow: hidden;
   position: relative;
   margin: 0 auto;
-  /*border: 2px solid #00ffff; /* Neon blue border */
-}
+} */
 
 .waiting-overlay {
   position: fixed;
@@ -467,8 +513,27 @@ onBeforeUnmount(() => {
 }
 
 .queue-container {
-  text-align: center;
-  padding-top: 50px;
+  display: flex;
+	flex-direction: column;
+	align-items: center; /* Center horizontally */
+	justify-content: center; /* Center vertically */
+	padding-top: 20vh; /* Adjust to your preference */
+}
+
+.queue-button {
+	padding: 20px;
+	width: 14vw;
+	margin-bottom: 20px;
+	background-color: #4CAF50;
+	transition: background-color 0.3s;
+	border: none;
+	border-radius: 8px;
+	cursor: pointer;
+	font-size: 1em;
+}
+
+.queue-button:hover {
+	background-color: #3a8d3e; /* Brightened on hover */
 }
 
 .scoreboard {

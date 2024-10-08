@@ -9,18 +9,16 @@ export class GameState {
   score: { playerOne: number, playerTwo: number };
   playerOne: string | null;
   playerTwo: string | null;
-  bounceCooldown: number;
   lastUpdateTime: number;
 
 
 	constructor() {
 		this.resetBall();
-		this.paddle1 = { x: -14, y: 0, width: 1, height: 4, dy: 0 };
-		this.paddle2 = { x: 14, y: 0, width: 1, height: 4, dy: 0 };
+		this.paddle1 = { x: -14, y: 0, width: 1, height: 4, dy: 0.5 };
+		this.paddle2 = { x: 14, y: 0, width: 1, height: 4, dy: 0.5 };
 		this.score = { playerOne: 0, playerTwo: 0 };
 		this.playerOne = null;
 		this.playerTwo = null;
-		this.bounceCooldown = 0;
 		this.lastUpdateTime = Date.now();
 	}
 
@@ -63,15 +61,9 @@ export class GameState {
 		this.ball.x += this.ball.dx;
 		this.ball.y += this.ball.dy;
 
-		// Update cooldown timer
-		if (this.bounceCooldown > 0) {
-			this.bounceCooldown -= deltaTime;
-		}
-
 		// Ball collision with top and bottom screen boundaries
-		if (this.bounceCooldown <= 0 && (this.ball.y - this.ball.radius < -16 || this.ball.y + this.ball.radius > 16)) {
+		if ((this.ball.y - this.ball.radius < -16 || this.ball.y + this.ball.radius > 16)) {
 			this.ball.dy *= -1;
-			this.bounceCooldown = 150;
 		}
 
     // Ball collision with paddles
@@ -80,14 +72,13 @@ export class GameState {
       this.ball.x - this.ball.radius <= this.paddle1.x + this.paddle1.width &&
       this.ball.x + this.ball.radius >= this.paddle1.x &&
       this.ball.y + this.ball.radius >= this.paddle1.y - this.paddle1.height / 2 &&
-      this.ball.y - this.ball.radius <= this.paddle1.y + this.paddle1.height / 2 &&
-      this.bounceCooldown <= 0
+      this.ball.y - this.ball.radius <= this.paddle1.y + this.paddle1.height / 2
     ) {
       // Collision with left paddle (paddle1)
       this.ball.dx *= -1.1;
-      this.bounceCooldown = 150;
+      
       // Adjust ball position to prevent sticking
-      this.ball.x = this.paddle1.x + this.paddle1.width + this.ball.radius;
+      // this.ball.x = this.paddle1.x + this.paddle1.width + this.ball.radius;
       
       // Calculate dynamic angle for left paddle collision
       let relativeIntersectY = this.ball.y - this.paddle1.y;
@@ -103,12 +94,11 @@ export class GameState {
       this.ball.x + this.ball.radius >= this.paddle2.x &&
       this.ball.x - this.ball.radius <= this.paddle2.x + this.paddle2.width &&
       this.ball.y + this.ball.radius >= this.paddle2.y - this.paddle2.height / 2 &&
-      this.ball.y - this.ball.radius <= this.paddle2.y + this.paddle2.height / 2 &&
-      this.bounceCooldown <= 0
+      this.ball.y - this.ball.radius <= this.paddle2.y + this.paddle2.height / 2
     ) {
       // Collision with right paddle (paddle2)
       this.ball.dx *= -1.1;
-      this.bounceCooldown = 150;
+      // this.bounceCooldown = 150;
       // Adjust ball position to prevent sticking
       this.ball.x = this.paddle2.x - this.ball.radius;
       

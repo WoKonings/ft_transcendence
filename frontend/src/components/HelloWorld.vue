@@ -1,7 +1,6 @@
 <template>
   <div>
     <div v-if="!isCompleteProfileNeeded"> 
-      <!-- <h1>{{ message }}</h1> -->
       <form v-if="!isLoggedIn" @submit.prevent="createUser">
         <h2>Create Account</h2>
         <input v-model="newUser.username" placeholder="Username" required />
@@ -23,7 +22,6 @@
     <CompleteUser v-if="isCompleteProfileNeeded && !isLoggedIn" @completeProfile="handleCompleteProfile" />
 
     <div v-if="isLoggedIn && currentUser">
-      <h2>Welcome, {{ currentUser.username }}</h2>
       <button @click="logoutUser">Logout</button>
       <button @click="deleteAccount">Delete Account</button>
     </div>
@@ -297,17 +295,18 @@ onMounted(() => {
 }
 
 .chat-box-container {
-  flex: 1;
+  display: flex;
   margin-right: 20px; /* Space between chat and game */
+  justify-items: center;
+  justify-content: center;
   max-width: 300px;
-  height: 100%;
+  height: 200%;
 }
 
 .pong-game-container {
-  flex: 2;
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items:end;
 }
 
 .sidebar {
