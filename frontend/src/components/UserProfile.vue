@@ -3,6 +3,18 @@
     <!-- Action Buttons -->
     <div class="profile-actions">
       <button class="action-button" @click="goToDashboard">Go back</button>
+      <button v-if="!currentUser.twoFactorEnabled" class="action-button" @click="enableTwoFactor">Enable 2FA</button>
+      <button v-else class="action-button" @click="disableTwoFactor">Disable 2FA</button>
+
+    <!-- QR Code Modal -->
+    <div v-if="showQRCode" class="qr-code-modal">
+      <h4>Scan this QR code with your authenticator app</h4>
+      <img :src="qrCodeUrl" alt="2FA QR Code" />
+      <input v-model="verificationCode" placeholder="Enter verification code" />
+      <button @click="verifyAndEnableTwoFactor">Verify and Enable 2FA</button>
+      <button @click="cancelTwoFactor">Cancel</button>
+    </div>
+
       <button class="action-button" @click="changeUsername">Change Username</button>
       <!-- Updated Avatar Button -->
       <button class="action-button" @click="openFilePicker">Change Avatar</button>
@@ -110,9 +122,93 @@ const userProfile = ref({});
 const loading = ref(false);
 const matchHistory = ref([]);
 
+const showQRCode = ref(false);
+const qrCodeUrl = ref('');
+const verificationCode = ref('');
+
+// 2fa vars
+
+
 const goToDashboard = () => {
   router.push('/');
 }
+
+const enableTwoFactor = async () => {
+  try {
+    const token = localStorage.getItem('access_token');
+    const response = await fetch(`http://localhost:3000/auth/2fa/generate`, {
+        method: 'POST',
+        token: verificationCode.value,
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        // body: JSON.stringify({ newUsername }),
+    });
+    const data = await response.json()
+    qrCodeUrl.value = data.qrCode;
+    showQRCode.value = true;
+  } catch (error) {
+    console.error('Error generating 2FA:', error);
+    // Handle error (e.g., show an error message to the user)
+  }
+}
+
+const verifyAndEnableTwoFactor = async () => {
+  try {
+    const token = localStorage.getItem('access_token');
+    const response = await fetch(`http://localhost:3000/auth/2fa/verify`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ token: verificationCode.value }),
+      });
+    if (!response.ok)
+      console.error( 'wtf bad');
+    currentUser.value.twoFactorEnabled = true;
+    showQRCode.value = false;
+    verificationCode.value = '';
+    // Optionally, update the user in the store
+    // store.commit('updateUser', { ...currentUser.value });
+    // Notify the user of successful 2FA enablement
+  } catch (error) {
+    console.error('Error verifying 2FA:', error);
+    // Handle error (e.g., show an error message to the user)
+  }
+};
+
+const disableTwoFactor = async () => {
+  try {
+    const token = localStorage.getItem('access_token');
+    const response = await fetch(`http://localhost:3000/auth/2fa/disable`, {
+        method: 'POST',
+        token: verificationCode.value,
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        // body: JSON.stringify({ newUsername }),
+      });
+    if (!response.ok)
+      console.error( 'wtf bad');
+    currentUser.value.twoFactorEnabled = false;
+    console.log(response.json().message);
+    // Optionally, update the user in the store
+    // store.commit('updateUser', { ...currentUser.value });
+    // Notify the user of successful 2FA disablement
+  } catch (error) {
+    console.error('Error disabling 2FA:', error);
+    // Handle error (e.g., show an error message to the user)
+  }
+};
+
+const cancelTwoFactor = () => {
+  showQRCode.value = false;
+  verificationCode.value = '';
+};
+
 
 // Function to handle username change
 const changeUsername = async () => {
@@ -404,5 +500,18 @@ onMounted(async () => {
 
 .elo-loss {
   color: red;
+}
+
+/* 2fa */
+.qr-code-modal {
+  /* Style your modal here */
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 </style>

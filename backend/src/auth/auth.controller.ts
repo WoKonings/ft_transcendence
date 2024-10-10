@@ -9,10 +9,12 @@ import {
   Request,
   Req,
   Res,
-  UseGuards
+  UseGuards,
+  UnauthorizedException
 } from '@nestjs/common';
 import axios from 'axios';
 import { Response } from 'express';
+import { TwoFAuthGuard } from './auth.2fa-guard';
 import { AuthGuard } from './auth.guard';
 import { AuthService } from './auth.service';
 import { UserService } from '../user/user.service';
@@ -31,7 +33,7 @@ export class AuthController {
   @Post('login')
   async signIn(@Body() signInDto: SignInDto) {
     console.log(`Attempting to log in: password = ${signInDto.password} && username = ${signInDto.username}`); // debug log, remove later
-    return this.authService.signIn(signInDto.username, signInDto.password);
+    return this.authService.signIn(signInDto.username, signInDto.password, false);
   }
 
   @UseGuards(AuthGuard)
@@ -42,6 +44,7 @@ export class AuthController {
       id: user.id,
       username: user.username,
       email: user.email,
+      avatar: user.avatar,
     };
   }
 
@@ -95,5 +98,65 @@ export class AuthController {
   @UseGuards(AuthGuard)
   async getUserProfile(@Req() req: Request) {
     return await this.authService.getUserProfile(req);
+  }
+
+
+  // 2FA implementation //
+
+  @UseGuards(AuthGuard)
+  @Post('2fa/generate')
+  async generateTwoFactorAuth(@Req() req) {
+    console.log ( "generating 2fa qr code");
+    const { otpauthUrl, base32 } = await this.authService.generateSecret(req.user.id);
+    const qrCode = await this.authService.generateQrCode(otpauthUrl);
+    // console.log(`qr: ${qrCode}`);
+    return { qrCode, secret: base32 };
+  }
+
+  @UseGuards(AuthGuard)
+  @Post('2fa/verify')
+  async verifyTwoFactorAuth(@Req() req, @Body('token') token: string) {
+    // trim all spaces, in case user interprets the token wrong.
+    token.replace(' ', '');
+
+    console.log('token to verify: ', token);
+    const isValid = await this.authService.verifyToken(req.user.id, token);
+    if (isValid) {
+      console.log ('enabled 2fa');
+      await this.authService.enableTwoFactor(req.user.id);
+      return { message: '2FA enabled successfully' };
+    }
+    console.log ('failed to enable 2fa');
+    return { message: 'Invalid token' };
+  }
+
+  @UseGuards(AuthGuard)
+  @Post('2fa/disable')
+  async disableTwoFactorAuth(@Req() req) {
+    await this.authService.disableTwoFactor(req.user.id);
+    console.log ('disabled 2fa');
+    return { message: '2FA disabled successfully' };
+  }
+
+  @UseGuards(TwoFAuthGuard)
+  @Post('2fa/authenticate')
+  async authenticateWithTwoFactor(@Body() body: { username: string, password: string, token: string }) {
+    // const user = await this.authService.verifyUser(body.username, body.password);
+    const user = await this.userService.getUserForAuth(body.username);
+    console.log ('authenitcating 2fa');
+    if (!user) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+    
+    console.log ('authing frfr 2fa');
+    if (user.twoFactorEnabled) {
+      const isValid = await this.authService.verifyToken(user.id, body.token);
+      if (!isValid) {
+        console.log('token issue')
+        throw new UnauthorizedException('Invalid 2FA token');
+      }
+    }
+    console.log('2FA AUTH SUCCESS!!');
+    return this.authService.signIn(user.username, body.password, true);
   }
 }

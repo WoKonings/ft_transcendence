@@ -10,7 +10,7 @@ import { Request } from 'express';
 import { WsException } from '@nestjs/websockets';
 
 @Injectable()
-export class AuthGuard implements CanActivate {
+export class TwoFAuthGuard implements CanActivate {
 	constructor(private jwtService: JwtService) {}
 
 	async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -26,9 +26,6 @@ export class AuthGuard implements CanActivate {
 				const payload = await this.jwtService.verifyAsync(token, {
 					secret: jwtConstants.secret,
 				});
-        if (payload.pre_auth) {
-          throw new UnauthorizedException('Full authentication required');
-        }
 				request['user'] = payload;
 			} catch {
 				throw new UnauthorizedException();
@@ -45,9 +42,6 @@ export class AuthGuard implements CanActivate {
 				const payload = await this.jwtService.verifyAsync(token, {
 					secret: jwtConstants.secret,
 				});
-        if (payload.pre_auth) {
-          throw new WsException('Full authentication required');
-        }
 				client['user'] = payload; // Attach the user to the WebSocket client object
 			} catch {
 				throw new WsException('Unauthorized');

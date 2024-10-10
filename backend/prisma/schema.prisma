@@ -21,22 +21,27 @@ model User {
   username    String    @unique
   email       String    @unique
   password    String           
+  avatar      String?
+  twoFactorSecret    String?
+  twoFactorEnabled   Boolean   @default(false)
+  createdAt   DateTime  @default(now())
   socket      String?
+
   isOnline    Boolean   @default(false)
   isInGame    Boolean   @default(false)
   isInQueue   Boolean   @default(false)
   isBad       Boolean   @default(false)
+
   friends     Int[]
   blocked     Int[]
   pending     Int[]
   channels    Channel[] @relation("UserChannels") // Implicit many-to-many relation
+
   games       Game[]    @relation("PlayerGames")
   gamesWon    Game[]    @relation("GameWinner")
   gamesPlayed Int       @default(0)
   gameWins    Int       @default(0)
-  createdAt   DateTime  @default(now())
   elo         Int       @default(600)
-  avatar      String?
 }
 
 model Channel {

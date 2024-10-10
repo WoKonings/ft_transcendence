@@ -13,13 +13,13 @@
     </div>
   </div>
   
-  <PongGameAgainstAI v-else-if="!waitingForOpponent" />
+  <PongGameAgainstAI v-if="!gameStarted" />
 
   <!-- Display "Queue for Pong" Buttons if Not Waiting and Game Not Started -->
-  <div v-if="!waitingForOpponent && !gameStarted" class="queue-container">
+  <!-- <div v-if="!waitingForOpponent && !gameStarted" class="queue-container">
     <button @click="queueForPong('classic')" class="queue-button">Queue for Pong</button>
     <button @click="queueForPong('flashy')" class="queue-button">Queue for Flashy Pong</button>
-  </div>
+  </div> -->
 
   <!-- Display Waiting for Opponent with Spinner and Cancel Button if Waiting -->
   <div v-if="waitingForOpponent && !gameStarted" class="waiting-overlay">
@@ -33,7 +33,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount, nextTick } from 'vue';
+import { ref, onMounted, onBeforeUnmount, nextTick, computed } from 'vue';
 import { useStore } from 'vuex';
 import * as THREE from 'three';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer';
@@ -42,8 +42,9 @@ import { AfterimagePass } from 'three/examples/jsm/postprocessing/AfterimagePass
 import PongGameAgainstAI from './PongGameAgainstAI.vue';
 
 const store = useStore();
-const socket = store.state.socket;
-const currentUser = store.state.currentUser;
+const socket = computed(() => store.state.socket);
+const currentUser = computed(() => store.state.currentUser);
+// const inQueue = computed(() => store.state.inQueue);
 
 const container = ref(null);
 let scene, camera, renderer, composer;
@@ -156,7 +157,7 @@ const initThreeJS = () => {
   });
   const topLine = new THREE.Mesh(topLineGeometry, lineMaterial);
   const bottomLine = new THREE.Mesh(bottomLineGeometry, lineMaterial);
-  topLine.position.set(0, 16, 0);
+  topLine.position.set(0, 16.1, 0);
   bottomLine.position.set(0, -16, 0);
   scene.add(topLine);
   scene.add(bottomLine);
@@ -298,45 +299,45 @@ const updateGameObjects = (gameState) => {
 };
 
 const initSocket = () => {
-  if (!socket) {
+  if (!socket.value) {
     console.error('Socket is not defined');
     return;
   }
   console.log('socket initialized for pong game!');
 
-  socket.on('gameJoined', (whichPlayer) => {
+  socket.value.on('gameJoined', (whichPlayer) => {
     if (whichPlayer == 1) {
-      player1 = currentUser.username;
+      player1 = currentUser.value.username;
     } else if (whichPlayer == 2) {
-      player2 = currentUser.username;
+      player2 = currentUser.value.username;
     }
   });
 
-  socket.on('update', (gameState) => {
+  socket.value.on('update', (gameState) => {
     if (gameStarted.value) {
       updateGameObjects(gameState);
     }
   });
 
-  socket.on('gameWon', () => {
+  socket.value.on('gameWon', () => {
     showEnd.value = true;
     endScreenMessage.value = 'You won!';
   });
 
-  socket.on('gameLost', () => {
+  socket.value.on('gameLost', () => {
     showEnd.value = true;
     endScreenMessage.value = 'You lost.';
   });
 
-  socket.on('playerScored', (username) => {
-    if (username == currentUser.username) {
+  socket.value.on('playerScored', (username) => {
+    if (username == currentUser.value.username) {
       player1Score.value += 1;
     } else {
       player2Score.value += 1;
     }
   });
 
-  socket.on('opponentLeft', (username) => {
+  socket.value.on('opponentLeft', (username) => {
     console.log(`${username} left, game is now paused`);
     if (player1 == username) {
       player1 = null;
@@ -346,7 +347,7 @@ const initSocket = () => {
     waitingForOpponent.value = true;
   });
 
-  socket.on('opponentJoined', (username) => {
+  socket.value.on('opponentJoined', (username) => {
     console.log(`${username} joined, game is now starting`);
     if (!player1) {
       player1 = username;
@@ -362,29 +363,29 @@ const initSocket = () => {
   });
 };
 
-const queueForPong = (mode) => {
-  if (socket && !waitingForOpponent.value) {
-    gameMode.value = mode; // Set the game mode
-    socket.emit('joinGame', {
-      userId: currentUser.id,
-      username: currentUser.username,
-      // gameMode: mode // Send the game mode to the server
-    });
-    waitingForOpponent.value = true;
-    endScreenMessage.value = null;
-    showEnd.value = false;
-    console.log(`sent joinGame from socket: ${socket.id}, with UID: ${currentUser.id}, name: ${currentUser.username}, mode: ${mode}`);
-  } else {
-    console.log('somehow no socket');
-  }
-};
+// const queueForPong = (mode) => {
+//   if (socket && !waitingForOpponent.value) {
+//     gameMode.value = mode; // Set the game mode
+//     socket.value.emit('joinGame', {
+//       userId: currentUser.value.id,
+//       username: currentUser.value.username,
+//       // gameMode: mode // Send the game mode to the server
+//     });
+//     waitingForOpponent.value = true;
+//     endScreenMessage.value = null;
+//     showEnd.value = false;
+//     console.log(`sent joinGame from socket.value: ${socket.id}, with UID: ${currentUser.id}, name: ${currentUser.username}, mode: ${mode}`);
+//   } else {
+//     console.log('somehow no socket.value');
+//   }
+// };
 
 const stopGame = () => {
   waitingForOpponent.value = false;
-  if (socket) {
-    socket.emit('leaveGame', {
-      userId: currentUser.id,
-      username: currentUser.username,
+  if (socket.value) {
+    socket.value.emit('leaveGame', {
+      userId: currentUser.value.id,
+      username: currentUser.value.username,
     });
   }
   if (gameStarted.value) {
@@ -397,8 +398,8 @@ const stopGame = () => {
 //   const rect = container.value.getBoundingClientRect();
 //   playerPosition.y = (rect.bottom - event.clientY) / (rect.bottom - rect.top) * 30 - 15;
 //   if (socket) {
-//     socket.emit('playerMove', {
-//       userId: currentUser.id,
+//     socket.value.emit('playerMove', {
+//       userId: currentUser.value.id,
 //       y: playerPosition.y,
 //     });
 //   }
@@ -410,22 +411,22 @@ const handlePlayerMove = (event) => {
   if ((event.key === 'w' || event.key === 'ArrowUp') && moving == false) {
     // console.log('moving up');
     moving = true;
-    socket.emit('playerMoveKBM', { userId: currentUser.id, dy: 1 });
+    socket.value.emit('playerMoveKBM', { userId: currentUser.value.id, dy: 1 });
   } else if ((event.key === 's' || event.key === 'ArrowDown') && moving == false) {
     // console.log('moving down');
     moving = true;
-    socket.emit('playerMoveKBM', { userId: currentUser.id, dy: -1 });
+    socket.value.emit('playerMoveKBM', { userId: currentUser.value.id, dy: -1 });
   }
 }
 const handleStopPlayerMove = (event) => {
   if ((event.key === 'w' || event.key === 'ArrowUp') && moving == true) {
     // console.log('stopped moving up');
     moving = false;
-    socket.emit('playerMoveKBM', { userId: currentUser.id, dy: 0 });
+    socket.value.emit('playerMoveKBM', { userId: currentUser.value.id, dy: 0 });
   } else if ((event.key === 's' || event.key === 'ArrowDown') && moving == true) {
     // console.log('stopped moving down');
     moving = false;
-    socket.emit('playerMoveKBM', { userId: currentUser.id, dy: 0 });
+    socket.value.emit('playerMoveKBM', { userId: currentUser.value.id, dy: 0 });
   }
 }
 
@@ -461,13 +462,13 @@ onBeforeUnmount(() => {
   position: relative;
   background-color: #1a1a1a;
   width: 60vw;
-  height: 80vh;
+  height: 90vh;
   margin: 0 auto;
   border-radius: 8px;
 }
 
 .pong-game {
-  width: 100%;
+  width: 10%;
   height: 100%;
   position: relative;
   overflow: hidden;

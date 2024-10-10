@@ -5,19 +5,34 @@
       <div class="score"> AI: {{ aiScore }}</div>
     </div>
     <div class="pong-game" ref="container"></div>
-    <div v-if="showEnd" class="end-screen">
-      <div class="end-screen-message">{{ endScreenMessage }}</div>
-      <button @click="restartGame" class="button">Play Again</button>
+    <button v-if="!waitingForOpponent" @click="queueForPong()" class="queue-button">Queue for Pong</button>
+    <!-- <button v-if="!waitingForOpponent" @click="queueForPong('flashy')" class="queue-button">Queue for Flashy Pong</button> -->
+    <button v-if="!waitingForOpponent" @click="resetPong()" class="queue-button">Reset Score</button>
+    <div v-if="!playerHasMovedPaddle">Use W/S or Up and Down arrow keys to move your paddle!</div>
+    <div v-if="waitingForOpponent" class="waiting-overlay">
+      Waiting for opponent...
+      <div class="half-circle-spinner">
+        <div class="circle circle-1"></div>
+        <div class="circle circle-2"></div>
+      </div>
+      <button @click="stopQueue" class="cancel-button">Cancel Queue</button>
     </div>
   </div>
+
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount, nextTick, watch } from 'vue';
+import { ref, onMounted, onBeforeUnmount, nextTick, computed } from 'vue';
 import * as THREE from 'three';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass';
+import { useStore } from 'vuex';
 // import { AfterimagePass } from 'three/examples/jsm/postprocessing/AfterimagePass';
+
+const store = useStore();
+const socket = computed(() => store.state.socket);
+const currentUser = computed(() => store.state.currentUser);
+const inQueue = computed(() => store.state.inQueue);
 
 const container = ref(null);
 let scene, camera, renderer, composer;
@@ -25,37 +40,19 @@ let playerPaddle, aiPaddle, ball;
 
 const playerScore = ref(0);
 const aiScore = ref(0);
-const showEnd = ref(false);
-const endScreenMessage = ref('');
-const inputInstructions = ref('Use W/S or Up/Down arrow keys to move');
 const playerHasMovedPaddle = ref(false);
+const waitingForOpponent = ref(false);
 
 // Game state
 let ballVelocity = { x: 0.2, y: 0.1 };
 const paddleSpeed = 0.5;
 let playerMovement = 0;
-let aiTargetY = 0;
+// let aiTargetY = 0;
 
 const initGame = () => {
   initThreeJS();
   window.addEventListener('keydown', handlePlayerMove);
   window.addEventListener('keyup', handleStopPlayerMove);
-
-  const instructionsElement = document.createElement('div');
-  instructionsElement.style.position = 'absolute';
-  instructionsElement.style.bottom = '20px';
-  instructionsElement.style.width = '100%';
-  instructionsElement.style.textAlign = 'center';
-  instructionsElement.style.color = 'white';
-  container.value.appendChild(instructionsElement);
-
-  // Update instructions text
-  const updateInstructions = () => {
-    instructionsElement.textContent = inputInstructions.value;
-  };
-  
-  watch(inputInstructions, updateInstructions);
-  updateInstructions();
 };
 
 const initThreeJS = () => {
@@ -102,14 +99,13 @@ const initThreeJS = () => {
   directionalLight.position.set(1, 1, 1).normalize();
   scene.add(directionalLight);
 
-
-// Create the midline geometry
-const midlineGeometry = new THREE.BoxGeometry(0.2, 32, 1);
+  // Create the midline geometry
+  const midlineGeometry = new THREE.BoxGeometry(0.25, 32.5, 1);
   const midlineMaterial = new THREE.MeshPhongMaterial({
     color: 0xffffff
   });
   const midline = new THREE.Mesh(midlineGeometry, midlineMaterial);
-  midline.position.set(0, 0, 0);
+  midline.position.set(0, 0, -1);
   scene.add(midline);
 
   // Create the top and bottom lines
@@ -140,9 +136,10 @@ const FPS = 60;
 const frameInterval = 1000 / FPS;
 let lastFrameTime = 0;
 let deltaTime = 0;
+let animationFrameId;
 
 const animate = (currentTime) => {
-  requestAnimationFrame(animate);
+  animationFrameId = requestAnimationFrame(animate);
 
   // Calculate time elapsed since last frame
   const elapsed = currentTime - lastFrameTime;
@@ -158,13 +155,15 @@ const animate = (currentTime) => {
   }
 };
 
+const colorMilestones = [0xFFFFFF, 0xF5F5DC, 0xFFFF00, 0xFFA500, 0xFF0000, 0x800080]; // White, Beige, Yellow, Orange, Red, Purple
+
 const updateGameState = () => {
   // Move the ball
   ball.position.x += ballVelocity.x;
   ball.position.y += ballVelocity.y;
 
   // Ball collision with top and bottom
-  if (ball.position.y + 0.5 > 16 || ball.position.y - 0.5 < -16) {
+  if ((ball.position.y + 0.5 > 16 && ballVelocity.y > 0) || (ball.position.y - 0.5 < -16 && ballVelocity.y < 0)) {
     ballVelocity.y *= -1;
   }
 
@@ -216,6 +215,7 @@ const updateGameState = () => {
   } else if (ball.position.x > 20) {
     playerScore.value++;
     resetBall();
+    checkAndUpdateAiPaddleColor();
   }
 
   // Move player paddle.
@@ -229,12 +229,39 @@ const updateGameState = () => {
   if (!playerHasMovedPaddle.value) {
     playerAIMovement(deltaTime);
   }
+};
 
-  // Check for game end
-  if (playerScore.value >= 11 || aiScore.value >= 11) {
-    endGame();
+const checkAndUpdateAiPaddleColor = () => {
+  // Determine the new color based on the player's score milestone
+  const milestone = Math.floor(playerScore.value / 1); // For 5, 10, 15, etc.
+  
+  if (milestone < colorMilestones.length) {
+    console.log('new milestone!');
+    const newColor = colorMilestones[milestone];
+
+    // Create new material for the AI paddle
+    const newMaterial = new THREE.MeshPhongMaterial({
+      color: newColor,
+      emissive: newColor,
+      emissiveIntensity: 0.8,
+      shininess: 100,
+    });
+
+    // Apply the new material to the AI paddle
+    aiPaddle.material = newMaterial;
+    aiPaddle.material.needsUpdate = true;
   }
 };
+
+const resetPong = () => {
+  aiPaddle.position.y = 0;
+  playerPaddle.position.y = 0;
+  resetBall();
+  aiScore.value = 0;
+  playerScore.value = 0;
+  playerHasMovedPaddle.value = false;
+  checkAndUpdateAiPaddleColor();
+}
 
 const resetBall = () => {
   ball.position.set(0, 0, 0);
@@ -296,26 +323,26 @@ const aiMovement = (deltaTime) => {
   if (ballVelocity.x !== lastBallDX && ballVelocity.x > 0) {
     // Ball direction has changed (e.g., after a bounce), so pick a new offset
     aiCurrentOffset = generateRandomOffset();
-    console.log('new offset: ', aiCurrentOffset);
+    // console.log('new offset: ', aiCurrentOffset);
     lastBallDX = ballVelocity.x;  // Update the last known dx
   }
 
   // Predict where the ball will be when it reaches the AI paddle
-  aiTargetY = predictBallPosition(aiPaddle);
+  let aiTargetY = predictBallPosition(aiPaddle)
 
   // Apply the current offset to the AI's target position
   aiTargetY += aiCurrentOffset;
 
   // Calculate AI speed based on score difference (more difficulty with increasing score)
   const scoreDifference = Math.max(0, playerScore.value - aiScore.value);
-  const baseSpeed = 0.05;
+  const baseSpeed = 0.08;
   const speedIncrease = 0.01 * scoreDifference;
   const aiSpeed = (baseSpeed + speedIncrease) * deltaTime * 60;
 
   // Move AI paddle towards the (offset) predicted Y position
   const direction = Math.sign(aiTargetY - aiPaddle.position.y);
 
-  // if (aiPaddle.position.y - direction > 0.2 || aiPaddle.position.y - direction < -0.2)
+  if (aiPaddle.position.y - aiTargetY > 0.2 || aiPaddle.position.y - aiTargetY < -0.2)
     aiPaddle.position.y += direction * aiSpeed;
 
   // Keep AI paddle within bounds
@@ -328,7 +355,10 @@ const playerAIMovement = (deltaTime) => {
   let   target = predictBallPosition(playerPaddle);
   const playerAISpeed = 0.10 * deltaTime * 60;
   const direction = Math.sign(target - playerPaddle.position.y);
-  playerPaddle.position.y += direction * playerAISpeed;
+
+
+  if (playerPaddle.position.y - target > 0.2 || playerPaddle.position.y - target < -0.2)
+    playerPaddle.position.y += direction * playerAISpeed;
 
   // Keep player paddle within bounds
   playerPaddle.position.y = Math.max(Math.min(playerPaddle.position.y, 14), -14);
@@ -363,34 +393,58 @@ const onWindowResize = () => {
   camera.updateProjectionMatrix();
 };
 
-const endGame = () => {
-  showEnd.value = true;
-  endScreenMessage.value = playerScore.value > aiScore.value ? 'You won!' : 'AI won!';
+const queueForPong = () => {
+  if (socket.value) {
+    socket.value.emit('joinGame', {
+      userId: currentUser.value.id,
+      username: currentUser.value.username,
+    });
+    waitingForOpponent.value = true;
+    inQueue.value = true;
+    console.log(`sent joinGame from socket: ${socket.value.id}, with UID: ${currentUser.value.id}, name: ${currentUser.value.username}`);
+  } else {
+    console.log('somehow no socket.value');
+  }
 };
 
-const restartGame = () => {
-  playerScore.value = 0;
-  aiScore.value = 0;
-  showEnd.value = false;
-  resetBall();
-};
+const stopQueue = () => {
+  waitingForOpponent.value = false;
+  if (socket.value) {
+    socket.value.emit('leaveGame', {
+      userId: currentUser.value.id,
+      username: currentUser.value.username,
+    });
+  }
+}
 
 onMounted(() => {
   initGame();
 });
 
 onBeforeUnmount(() => {
+  console.log('DISMOUNTING PONG AI GAME');
+
+  // Cancel the animation loop
+  if (animationFrameId) {
+    cancelAnimationFrame(animationFrameId);
+    console.log('Animation frame canceled');
+  }
+
+  // Dispose of renderer
   if (renderer) {
     renderer.dispose();
   }
+
+  // Remove event listeners
   window.removeEventListener('resize', onWindowResize);
   window.removeEventListener('keydown', handlePlayerMove);
   window.removeEventListener('keyup', handleStopPlayerMove);
+
+  // Clear any other references if necessary
 });
 </script>
 
 <style scoped>
-/* You can reuse most of the styles from the main PongGame component */
 .game-container {
   display: flex;
   flex-direction: column;
@@ -405,10 +459,14 @@ onBeforeUnmount(() => {
 }
 
 .pong-game {
-  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 80%;
   height: 100%;
   position: relative;
   overflow: hidden;
+  margin: 0 auto;
 }
 
 .scoreboard {
@@ -425,4 +483,98 @@ onBeforeUnmount(() => {
 	text-align: center;
 }
 
+/* queue stuff */
+.waiting-overlay {
+  position: relative;
+  background-color: rgba(0, 0, 0, 0.6); /* Lighter overlay */
+  padding: 20px 40px;
+  border-radius: 10px;
+  color: white;
+  font-size: 24px;
+  text-align: center;
+  box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.3);
+  z-index: 1000; /* Ensure it stays on top */
+}
+
+.queue-container {
+  display: flex;
+	flex-direction: column;
+	align-items: center; /* Center horizontally */
+	justify-content: center; /* Center vertically */
+	padding-top: 20vh; /* Adjust to your preference */
+}
+
+.queue-button {
+	padding: 20px;
+	width: 14vw;
+	margin-bottom: 20px;
+	background-color: #4CAF50;
+	transition: background-color 0.3s;
+	border: none;
+	border-radius: 8px;
+	cursor: pointer;
+	font-size: 1em;
+}
+
+.queue-button:hover {
+	background-color: #3a8d3e; /* Brightened on hover */
+}
+
+.cancel-button {
+  margin-top: 15px;
+  background-color: #ac4040;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  font-size: 18px;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.cancel-button:hover {
+  background-color: #ff3333;
+}
+
+
+/* spinner loading animation */
+.half-circle-spinner, .half-circle-spinner * {
+  box-sizing: border-box;
+}
+
+.half-circle-spinner {
+  width: 60px;
+  height: 60px;
+  border-radius: 100%;
+  position: relative;
+  margin: 20px auto;
+}
+
+.half-circle-spinner .circle {
+  content: "";
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 100%;
+  border: calc(60px / 10) solid transparent;
+}
+
+.half-circle-spinner .circle.circle-1 {
+  border-top-color: #ff1d5e;
+  animation: half-circle-spinner-animation 1s infinite;
+}
+
+.half-circle-spinner .circle.circle-2 {
+  border-bottom-color: #ff1d5e;
+  animation: half-circle-spinner-animation 1s infinite alternate;
+}
+
+@keyframes half-circle-spinner-animation {
+  0% {
+    transform: rotate(0deg);
+  }
+  100%{
+    transform: rotate(360deg);
+  }
+}
 </style>
