@@ -103,6 +103,8 @@ export class UserController {
   async uploadAvatar(@UploadedFile() file: Express.Multer.File, @Req() req: Request) {
     const userPayload = req['user'];
 
+    console.log('wtf: ', userPayload);
+
     // Validate image dimensions
     const dimensions = imageSize(file.path);
     if (dimensions.width < 40 || dimensions.height < 40 || dimensions.width > 2048 || dimensions.height > 2048) {
@@ -124,8 +126,8 @@ export class UserController {
       }
     }
 
-    console.log(`CHANGING AVATAR FOR ${userPayload.id} / ${user.username}`);
-    await this.userService.updateAvatar(userPayload.id, file.filename);
+    console.log(`CHANGING AVATAR FOR ${user.id} / ${user.username}`);
+    await this.userService.updateAvatar(user.id, file.filename);
     return { message: 'Avatar uploaded successfully' };
   }
 }

@@ -438,6 +438,7 @@ const exitGame = () => {
 
 onMounted(() => {
   initSocket();
+  initGame();
 });
 
 onBeforeUnmount(() => {
@@ -468,10 +469,14 @@ onBeforeUnmount(() => {
 }
 
 .pong-game {
-  width: 10%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 80%;
   height: 100%;
   position: relative;
   overflow: hidden;
+  margin: 0 auto;
 }
 
 /*.pong-game {

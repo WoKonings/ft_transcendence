@@ -41,6 +41,8 @@ export class UserGateway {
   }
 
   async emitUserStatusUpdate(userId: number, data: any) {
+    // data.userId = userId;
+    data.id = userId;
     this.server.emit('userStatusUpdate', data);
   }
 }

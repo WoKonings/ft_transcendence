@@ -127,6 +127,7 @@ export class AuthController {
       return { message: '2FA enabled successfully' };
     }
     console.log ('failed to enable 2fa');
+    throw new UnauthorizedException('invalid token');
     return { message: 'Invalid token' };
   }
 
