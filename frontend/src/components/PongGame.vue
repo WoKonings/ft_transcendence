@@ -434,7 +434,7 @@ const exitGame = () => {
   showEnd.value = false;
   endScreenMessage.value = null;
   gameStarted.value = false;
-  // stopGame();
+  waitingForOpponent.value = false;
 }
 
 onMounted(() => {

@@ -400,6 +400,10 @@ async handleInviteGame(client: Socket, data: InviteGameDto): Promise<void> {
       console.log('one of the players is missing, cancelling save!');
       return;
     }
+    if (winner.userId == loser.userId || winner.username == loser.username) {
+      console.log('players are the same player...')
+      return;
+    }
     try {
       // const eloChange = this.calculateEloChange(winner, loser);
       const eloChange = 69;
