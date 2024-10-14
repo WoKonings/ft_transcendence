@@ -433,7 +433,8 @@ const handleStopPlayerMove = (event) => {
 const exitGame = () => {
   showEnd.value = false;
   endScreenMessage.value = null;
-  stopGame();
+  gameStarted.value = false;
+  // stopGame();
 }
 
 onMounted(() => {

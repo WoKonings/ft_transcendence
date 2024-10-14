@@ -28,11 +28,11 @@
       <button @click="show2FAInput = false" class="twofa-button">Cancel</button>
       <p v-if="error" class="error-message">{{ error }}</p>
     </div>
-
+<!-- 
     <div v-if="isLoggedIn && currentUser">
       <button @click="logoutUser">Logout</button>
       <button @click="deleteAccount">Delete Account</button>
-    </div>
+    </div> -->
 
     <div class="main-container">
       <div class="chat-box-container">
@@ -297,31 +297,33 @@ const logoutUser = () => {
 
     store.dispatch('logOut');
     socket.value = null;
+
+    router.push('/login');
   }
 };
 
-const deleteAccount = async () => {
-  error.value = '';
-  try {
-    const response = await fetch(`http://localhost:3000/user/${currentUser.value.id}`, {
-      method: 'DELETE',
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
-        'Content-Type': 'application/json'
-      }
-    });
+// const deleteAccount = async () => {
+//   error.value = '';
+//   try {
+//     const response = await fetch(`http://localhost:3000/user/${currentUser.value.id}`, {
+//       method: 'DELETE',
+//       headers: {
+//         'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+//         'Content-Type': 'application/json'
+//       }
+//     });
 
-    if (!response.ok) {
-      const err = await response.json();
-      throw new Error(err.error);
-    }
+//     if (!response.ok) {
+//       const err = await response.json();
+//       throw new Error(err.error);
+//     }
 
-    logoutUser();
-  } catch (error) {
-    console.error('Error deleting account:', error);
-    error.value = error.message;
-  }
-};
+//     logoutUser();
+//   } catch (error) {
+//     console.error('Error deleting account:', error);
+//     error.value = error.message;
+//   }
+// };
 
 const initializeSocket = async () => {
   const token = localStorage.getItem('access_token');

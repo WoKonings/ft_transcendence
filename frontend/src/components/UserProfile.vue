@@ -11,6 +11,7 @@
       <input type="file" ref="fileInput" @change="uploadAvatar" accept="image/*" style="display:none" />
       <button v-if="!currentUser.twoFactorEnabled" class="action-button" @click="enableTwoFactor">Enable 2FA</button>
       <button v-else class="action-button delete" @click="disableTwoFactor">Disable 2FA</button>
+      <button class="action-button delete" @click="logoutUser">Logout</button>
       <button class="action-button delete" @click="deleteAccount">Delete Account</button>
     </div>
 
@@ -283,6 +284,20 @@ const uploadAvatar = async (event) => {
   }
 };
 
+const logoutUser = () => {
+  if (currentUser.value){
+    // if (socket.value)
+    //   socket.value.emit('logOut', { id: currentUser.value.id})
+    
+    localStorage.removeItem('access_token');
+
+    store.dispatch('logOut');
+    socket.value = null;
+
+    router.push('/login');
+  }
+};
+
 // Function to handle account deletion
 const deleteAccount = async () => {
   const confirmation = confirm('Are you sure you want to delete your account? This action cannot be undone.');
@@ -290,16 +305,18 @@ const deleteAccount = async () => {
     return;
   }
   try {
-    const response = await fetch(`http://localhost:3000/user/delete/${currentUser.value.id}`, {
+    const response = await fetch(`http://localhost:3000/user/${currentUser.value.id}`, {
       method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+        'Content-Type': 'application/json'
+      }
     });
-
-    if (response.ok) {
-      alert('Account deleted successfully!');
-      // Add any additional actions, such as logging the user out
-    } else {
+    if (!response.ok) {
       throw new Error('Failed to delete account');
     }
+    alert('Account deleted successfully!');
+    logoutUser();
   } catch (error) {
     console.error('Error deleting account:', error);
     alert('An error occurred while deleting your account.');

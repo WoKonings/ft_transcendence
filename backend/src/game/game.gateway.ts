@@ -9,6 +9,7 @@ import { JoinGameDto } from './dto/join-game.dto';
 import { PlayerMoveDto } from './dto/player-move.dto';
 import { LeaveGameDto } from './dto/leave-game.dto';
 import { InviteGameDto } from './dto/invite-game.dto';
+import { DEFAULT_FACTORY_CLASS_METHOD_KEY } from '@nestjs/common/module-utils/constants';
 
 interface Player {
   username: string;
@@ -72,6 +73,7 @@ export class GameGateway {
       username: username,
       userId: userId,
       isInGame: false,
+      isInQueue: false,
     })
 
     if (game.player_one && game.player_one.userId === userId) {
@@ -123,24 +125,33 @@ export class GameGateway {
       return;
     }
     client.emit('gameJoined', session.player_one.userId === userId ? 1 : 2);
+    this.userService.setIsInQueue(Number(userId), true);
+    client.broadcast.emit('userStatusUpdate', {
+      username: username,
+      userId: userId,
+      isInQueue: true,
+    })
     if (session.player_one && session.player_two) {
       console.log('GAME IS NOW STARTING!');
       session.startTime = Date.now();
       session.player_one.socket.emit('opponentJoined', session.player_two.username);
       session.player_two.socket.emit('opponentJoined', session.player_one.username);
       session.paused = false;
-      session.player_two.socket.broadcast.emit('userStatusUpdate', {
-        username: username,
-        userId: userId,
+      this.userService.setIsInGame(Number(session.player_one.userId), true);
+      session.player_one.socket.broadcast.emit('userStatusUpdate', {
+        username: session.player_one.username,
+        userId: session.player_one.userId,
         isInGame: true,
-      })
+        isInQueue: false,
+      });
+      this.userService.setIsInGame(Number(session.player_two.userId), true);
       session.player_two.socket.broadcast.emit('userStatusUpdate', {
-        username: username,
-        userId: userId,
+        username: session.player_two.username,
+        userId: session.player_two.userId,
         isInGame: true,
-      })
+        isInQueue: false,
+      });
     }
-    this.userService.setIsInGame(Number(userId), true);
   }
 
 @SubscribeMessage('sendGameInvite')
@@ -230,20 +241,20 @@ async handleInviteGame(client: Socket, data: InviteGameDto): Promise<void> {
       session.player_one.socket.emit('opponentJoined', session.player_two.username);
       session.player_two.socket.emit('opponentJoined', session.player_one.username);
       session.paused = false;
-      session.player_two.socket.broadcast.emit('userStatusUpdate', {
-        username: username,
-        userId: userId,
-        // isOnline: true,
+      this.userService.setIsInGame(Number(session.player_one.userId), true);
+      session.player_one.socket.broadcast.emit('userStatusUpdate', {
+        username: session.player_one.username,
+        userId: session.player_one.userId,
         isInGame: true,
         isInQueue: false,
-      })
+      });
+      this.userService.setIsInGame(Number(session.player_two.userId), true);
       session.player_two.socket.broadcast.emit('userStatusUpdate', {
-        username: username,
-        userId: userId,
-        // isOnline: true,
+        username: session.player_two.username,
+        userId: session.player_two.userId,
         isInGame: true,
         isInQueue: false,
-      })
+      });
     }
     await this.userService.setIsInGame(Number(userId), true);
   }
@@ -353,10 +364,10 @@ async handleInviteGame(client: Socket, data: InviteGameDto): Promise<void> {
         return session;
       }
     }
-      // console.log('CANNOT FIND USERS SESSION'); //todo: some way to detect the user is not actually ingame and reset their state?
-      return undefined;
-    }
-    
+    // console.log('CANNOT FIND USERS SESSION'); //todo: some way to detect the user is not actually ingame and reset their state?
+    return undefined;
+  }
+
   startGameLoop() {
     console.log("starting game!");
     if (this.intervalId) {
@@ -385,6 +396,10 @@ async handleInviteGame(client: Socket, data: InviteGameDto): Promise<void> {
 	}
 
   async handleGameOver(winner: Player, loser: Player, gameSession: GameSession) {
+    if (!winner || !loser) {
+      console.log('one of the players is missing, cancelling save!');
+      return;
+    }
     try {
       // const eloChange = this.calculateEloChange(winner, loser);
       const eloChange = 69;
@@ -395,7 +410,9 @@ async handleInviteGame(client: Socket, data: InviteGameDto): Promise<void> {
         data: {
           gamesPlayed: { increment: 1 },
           gameWins: { increment: 1 },
-          elo: { increment: eloChange }, // Increase Elo for the winner
+          elo: { increment: eloChange },
+          isInGame: false,
+          isInQueue: false,
         },
       });
   
@@ -404,7 +421,9 @@ async handleInviteGame(client: Socket, data: InviteGameDto): Promise<void> {
         where: { id: Number(loser.userId) },
         data: {
           gamesPlayed: { increment: 1 },
-          elo: { decrement: eloChange }, // Decrease Elo for the loser
+          elo: { decrement: eloChange },
+          isInGame: false,
+          isInQueue: false,
         },
       });
   
@@ -427,6 +446,22 @@ async handleInviteGame(client: Socket, data: InviteGameDto): Promise<void> {
       //todo: display changes n stuff?
       winner.socket.emit('gameWon');
       loser.socket.emit('gameLost');
+
+      winner.socket.broadcast.emit('userStatusUpdate', {
+        username: winner.username,
+        userId: winner.userId,
+        isInGame: false,
+        isInQueue: false,
+      });
+
+      loser.socket.broadcast.emit('userStatusUpdate', {
+        username: loser.username,
+        userId: loser.userId,
+        isInGame: false,
+        isInQueue: false,
+      });
+      console.log('game is cleaned up');
+      this.gameSessions.delete(gameSession.gameId);
   
     } catch (error) {
       console.error('Error updating game stats:', error);

@@ -270,7 +270,7 @@ async getIncomingPendingFriends(userId: number) {
   }
 
   async getIsInGame(userId: number): Promise<Boolean> {
-    const user = await this.getUserById(userId); // Use await to get the actual user object
+    const user = await this.getUserById(userId);
     if (!user) {
       throw new Error('User not found');
     }
@@ -280,11 +280,21 @@ async getIncomingPendingFriends(userId: number) {
   async setIsInGame(userId: number, bool: boolean): Promise<void> {
     const user = await this.prisma.user.update({
       where: { id: userId },
-      data: { isInGame: bool },
+      data: { isInGame: bool, isInQueue: false },
     });
   
     console.log(`${user.username} is ingame?: ${user.isInGame}`);
   }
+
+  async setIsInQueue(userId: number, bool: boolean): Promise<void> {
+    const user = await this.prisma.user.update({
+      where: { id: userId },
+      data: { isInQueue: bool },
+    });
+  
+    console.log(`${user.username} is inqueue?: ${user.isInQueue}`);
+  }
+
 
   async deleteUser(id: number): Promise<User> {
     const user = await this.getUserById(id);
