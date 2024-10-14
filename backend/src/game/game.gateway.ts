@@ -9,7 +9,6 @@ import { JoinGameDto } from './dto/join-game.dto';
 import { PlayerMoveDto } from './dto/player-move.dto';
 import { LeaveGameDto } from './dto/leave-game.dto';
 import { InviteGameDto } from './dto/invite-game.dto';
-import { DEFAULT_FACTORY_CLASS_METHOD_KEY } from '@nestjs/common/module-utils/constants';
 
 interface Player {
   username: string;
