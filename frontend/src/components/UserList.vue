@@ -45,7 +45,7 @@ const getUsers = () => {
   fetch('http://localhost:3000/user/all', {
     method: 'GET',
     headers: {
-      'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+      'Authorization': `Bearer ${sessionStorage.getItem('access_token')}`,
       'Content-Type': 'application/json',
     },
   })
@@ -130,11 +130,11 @@ const closeOptions = () => {
 const addAsFriend = (user) => {
 	console.log(`Adding ${user.username}, id: ${user.id} as a friend`);
 	console.log(`Current user ID: ${currentUser.value.id}`);
-	// console.log(`token?: ${localStorage.getItem('access_token')}`);
+	// console.log(`token?: ${sessionStorage.getItem('access_token')}`);
 	fetch('http://localhost:3000/user/add', {
 		method: 'POST',
 		headers: {
-			'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+			'Authorization': `Bearer ${sessionStorage.getItem('access_token')}`,
 			'Content-Type': 'application/json',
 		},
 		body: JSON.stringify({

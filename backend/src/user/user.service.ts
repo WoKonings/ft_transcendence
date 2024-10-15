@@ -138,29 +138,19 @@ export class UserService {
 
   async getUserForAuth(usernameOrEmail: string): Promise<User | null> {
     return this.prisma.user.findFirst({
-      where: {
-        OR: [
-          { username: usernameOrEmail },
-          { email: usernameOrEmail },
-        ],
-      },
+      where: { username: usernameOrEmail }
     });
   }
 
   //todo: delete the email part?
-  async getUserByUsernameOrEmail(usernameOrEmail: string): Promise<User | null> {
-    if (usernameOrEmail == null)
+  async getUserByUsername(username: string): Promise<User | null> {
+    if (username == null)
       return null;
     const user = await this.prisma.user.findFirst({
-      where: {
-        OR: [
-          { username: usernameOrEmail },
-          { email: usernameOrEmail },
-        ],
-      },
+      where: { username: username }
     });
     if (!user) {
-      console.log ('not found by UsernameOrEmail')
+      console.log ('not found by Username')
       return null;
     }
     console.log(`found ${user.username}, sock: ${user.socket}`);
@@ -351,5 +341,28 @@ async getIncomingPendingFriends(userId: number) {
     this.userGateway.emitToSocketByUserId(userId, 'userStatusUpdate', { userId, avatar: avatarPath });
     this.userGateway.emitUserStatusUpdate(userId, { avatar: avatarPath });
     console.log ('avatar should update');
+  }
+
+  async updateUsername(userId: number, newUsername: string) {
+    // ensure name is not taken already
+    const user = await this.prisma.user.findUnique({
+      where: { username: newUsername }
+    });
+    if (user) {
+      throw new BadRequestException('Username already taken');
+      console.log ('username already taken');
+      return;
+    }
+
+    // update!
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { username: newUsername }, 
+    });
+
+    // notify users.
+    this.userGateway.emitUserStatusUpdate(userId, { username: newUsername });
+
+    console.log('updated username!');
   }
 }

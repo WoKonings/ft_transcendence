@@ -139,7 +139,7 @@ const loginUser = async () => {
 //   const token = route.query.token;
 //   console.log ('callbakkekre1');
 //   if (token) {
-//     localStorage.setItem('access_token', token);
+//     sessionStorage.setItem('access_token', token);
 
 //     if (route.path === '/choose-username') {
 //       // isCompleteProfileNeeded.value = true;

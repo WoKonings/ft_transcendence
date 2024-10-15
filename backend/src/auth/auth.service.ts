@@ -114,7 +114,7 @@ export class AuthService {
     const { access_token, username } = data;
 
     console.log ('huhe: ', username)
-    const user = await this.userService.getUserByUsernameOrEmail(username);
+    const user = await this.userService.getUserByUsername(username);
     if (user) {
       console.log ('username already exists');
       return ('username already exists');
@@ -128,7 +128,7 @@ export class AuthService {
           username: username
         }
     })
-    const updatedUser = await this.userService.getUserByUsernameOrEmail(username);
+    const updatedUser = await this.userService.getUserByUsername(username);
     return this.generateToken(updatedUser, false);
   }
 

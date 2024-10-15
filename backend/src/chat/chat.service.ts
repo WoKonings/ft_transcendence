@@ -63,7 +63,7 @@ export class ChatService {
 
   // Create a new channel and add the user to it
   async createChannel(channelName: string, username: string, password: string) {
-    const user = await this.userService.getUserByUsernameOrEmail(username);
+    const user = await this.userService.getUserByUsername(username);
 
     if (!user || !channelName) {
       console.log('No username or channel name provided');
@@ -86,7 +86,7 @@ export class ChatService {
 
   // Join an existing channel or create a new one if it doesn't exist
   async joinChannel(channelName: string, username: string, password: string) {
-    const user = await this.userService.getUserByUsernameOrEmail(username);
+    const user = await this.userService.getUserByUsername(username);
 
     if (!user) {
       return { success: false, message: 'Invalid username' };
@@ -126,7 +126,7 @@ export class ChatService {
 
   // Leave a channel
   async leaveChannel(channelName: string, username: string) {
-    const user = await this.userService.getUserByUsernameOrEmail(username);
+    const user = await this.userService.getUserByUsername(username);
     const channel = await this.getChannelByName(channelName);
 
     if (!channel || !user) {

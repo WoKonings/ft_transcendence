@@ -109,7 +109,7 @@ const createUser = async () => {
     }
 
     const data = await response.json();
-    localStorage.setItem('access_token', data.access_token);
+    sessionStorage.setItem('access_token', data.access_token);
     console.log(`Received access token: ${data.access_token}`);
     store.dispatch('logIn', data.user);
     fetchMe();
@@ -125,7 +125,7 @@ const handle2FA = async () => {
   error.value = '';
   console.log (`doing 2FA! with: email: ${loginDetails.value.username}, password: ${loginDetails.value.password}`); 
   try {
-    const token = localStorage.getItem('access_token');
+    const token = sessionStorage.getItem('access_token');
     const response = await fetch('http://localhost:3000/auth/2fa/authenticate', {
       method: 'POST',
       headers: {
@@ -146,8 +146,8 @@ const handle2FA = async () => {
     }
     
     // If 2FA authentication succeeds, store the new access token
-    localStorage.removeItem('access_token');
-    localStorage.setItem('access_token', data.access_token);
+    sessionStorage.removeItem('access_token');
+    sessionStorage.setItem('access_token', data.access_token);
     // loginDetails.value.username = null;
     // loginDetails.value.password = null;
     console.log('2FA authentication succeeded:', data.access_token);
@@ -177,7 +177,7 @@ const handleCallback = async () => {
   const token = route.query.token;
   
   if (token) {
-    localStorage.setItem('access_token', token);
+    sessionStorage.setItem('access_token', token);
     
     if (route.path === '/choose-username') {
       isCompleteProfileNeeded.value = true;
@@ -202,7 +202,7 @@ const handleCallback = async () => {
 
 const handleCompleteProfile = async (username) => {
   console.log('completing profile?')
-  const access_token = localStorage.getItem('access_token');
+  const access_token = sessionStorage.getItem('access_token');
   try {
     const response = await fetch('http://localhost:3000/auth/complete-profile', {
       method: 'POST',
@@ -211,7 +211,7 @@ const handleCompleteProfile = async (username) => {
     });
 
     const data = await response.json();
-    localStorage.setItem('access_token', data.access_token);
+    sessionStorage.setItem('access_token', data.access_token);
 
     // Once complete, hide the CompleteUser component and redirect
     isCompleteProfileNeeded.value = false;
@@ -243,7 +243,7 @@ const loginUser = async () => {
     }
 
     const data = await response.json();
-    localStorage.setItem('access_token', data.access_token);
+    sessionStorage.setItem('access_token', data.access_token);
     
     const decodedToken = JSON.parse(atob(data.access_token.split('.')[1])); // Decoding the JWT payload
     if (decodedToken.pre_auth == true) {
@@ -262,7 +262,7 @@ const loginUser = async () => {
 
 const fetchMe = async () => {
   console.log ('fetching my profile!');
-  const token = localStorage.getItem('access_token');
+  const token = sessionStorage.getItem('access_token');
   const headers = {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json'
@@ -293,7 +293,7 @@ const logoutUser = () => {
     // if (socket.value)
     //   socket.value.emit('logOut', { id: currentUser.value.id})
     
-    localStorage.removeItem('access_token');
+    sessionStorage.removeItem('access_token');
 
     store.dispatch('logOut');
     socket.value = null;
@@ -308,7 +308,7 @@ const logoutUser = () => {
 //     const response = await fetch(`http://localhost:3000/user/${currentUser.value.id}`, {
 //       method: 'DELETE',
 //       headers: {
-//         'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+//         'Authorization': `Bearer ${sessionStorage.getItem('access_token')}`,
 //         'Content-Type': 'application/json'
 //       }
 //     });
@@ -326,7 +326,7 @@ const logoutUser = () => {
 // };
 
 const initializeSocket = async () => {
-  const token = localStorage.getItem('access_token');
+  const token = sessionStorage.getItem('access_token');
   if (!token) return;
 
   if (socket.value == null) {
@@ -351,10 +351,10 @@ const initializeSocket = async () => {
 };
 
 onMounted(() => {
-  const access_token = localStorage.getItem('access_token');
+  const access_token = sessionStorage.getItem('access_token');
   if (access_token && !isLoggedIn.value) {
     console.log("should request re-login");
-    localStorage.removeItem('access_token');
+    sessionStorage.removeItem('access_token');
     console.log('WIPED ACCESS TOKEN!');
   }
   //todo: re-enable

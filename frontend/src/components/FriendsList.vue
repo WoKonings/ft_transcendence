@@ -94,7 +94,7 @@ const fetchFriends = async () => {
     const response = await fetch('http://localhost:3000/user/friends', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+        'Authorization': `Bearer ${sessionStorage.getItem('access_token')}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ userId })
@@ -118,7 +118,7 @@ const fetchPendingRequests = async () => {
     const response = await fetch('http://localhost:3000/user/pending', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+        'Authorization': `Bearer ${sessionStorage.getItem('access_token')}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ userId })
@@ -222,7 +222,7 @@ const acceptRequest = async (requestId) => {
     const response = await fetch('http://localhost:3000/user/add', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+        'Authorization': `Bearer ${sessionStorage.getItem('access_token')}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ targetId: requestId, userId: currentUser.value.id })
@@ -244,7 +244,7 @@ const declineRequest = async (requestId) => {
     const response = await fetch('http://localhost:3000/user/remove', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+        'Authorization': `Bearer ${sessionStorage.getItem('access_token')}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -314,7 +314,7 @@ const removeFriend = async (friend) => {
     const response = await fetch('http://localhost:3000/user/remove', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+        'Authorization': `Bearer ${sessionStorage.getItem('access_token')}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({

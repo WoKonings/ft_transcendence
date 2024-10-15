@@ -70,9 +70,9 @@
           <div class="player">
             <img
               v-if="match && match.players"
-              :src="`https://robohash.org/${match.players[0].username}?set=set4`"
+              :src="match.players[0].avatar ? `http://localhost:3000${match.players[0].avatar}` : `https://robohash.org/${match.players[0].username}?set=set4`"
               :alt="`Player One - ${match.players[0].username}`"
-              class="player-pic"
+              class="profile-picture small"
             />
             <div class="player-name">{{ match.players[0].username }}</div>
             <div class="score">{{ match.playerScores[0] }}</div>
@@ -88,9 +88,9 @@
           </div>
           <div class="player">
             <img
-              :src="`https://robohash.org/${match.players[1].username}?set=set4`"
+              :src="match.players[1].avatar ? `http://localhost:3000${match.players[1].avatar}` : `https://robohash.org/${match.players[1].username}?set=set4`"
               :alt="`Player Two - ${match.players[1].username}`"
-              class="player-pic"
+              class="profile-picture small"
             />
             <div class="player-name">{{ match.players[1].username }}</div>
             <div class="score">{{ match.playerScores[1] }}</div>
@@ -133,7 +133,7 @@ const goToDashboard = () => {
 
 const enableTwoFactor = async () => {
   try {
-    const token = localStorage.getItem('access_token');
+    const token = sessionStorage.getItem('access_token');
     const response = await fetch(`http://localhost:3000/auth/2fa/generate`, {
         method: 'POST',
         token: verificationCode.value,
@@ -154,7 +154,7 @@ const enableTwoFactor = async () => {
 
 const verifyAndEnableTwoFactor = async () => {
   try {
-    const token = localStorage.getItem('access_token');
+    const token = sessionStorage.getItem('access_token');
     const response = await fetch(`http://localhost:3000/auth/2fa/verify`, {
         method: 'POST',
         headers: {
@@ -189,7 +189,7 @@ const disableTwoFactor = async () => {
   }
 
   try {
-    const token = localStorage.getItem('access_token');
+    const token = sessionStorage.getItem('access_token');
     const response = await fetch(`http://localhost:3000/auth/2fa/disable`, {
         method: 'POST',
         token: verificationCode.value,
@@ -224,24 +224,24 @@ const changeUsername = async () => {
     return;
   }
   try {
+    console.log(`requesting new username: ${newUsername}`);
+    const token = sessionStorage.getItem('access_token');
     const response = await fetch(`http://localhost:3000/user/update-username`, {
       method: 'POST',
       headers: {
+        'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ newUsername }),
     });
 
     if (response.ok) {
-      const updatedUser = await response.json();
-      store.commit('setCurrentUser', updatedUser); // Update Vuex store with the new username
       alert('Username updated successfully!');
     } else {
       throw new Error('Failed to update username');
     }
   } catch (error) {
-    console.error('Error updating username:', error);
-    alert('An error occurred while updating your username.');
+    alert(`${error}`);
   }
 };
 
@@ -264,7 +264,7 @@ const uploadAvatar = async (event) => {
     const response = await fetch('http://localhost:3000/user/upload-avatar', {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${localStorage.getItem('access_token')}`,
+        Authorization: `Bearer ${sessionStorage.getItem('access_token')}`,
       },
       body: formData, id: currentUser.value.id
     });
@@ -289,7 +289,7 @@ const logoutUser = () => {
     // if (socket.value)
     //   socket.value.emit('logOut', { id: currentUser.value.id})
     
-    localStorage.removeItem('access_token');
+    sessionStorage.removeItem('access_token');
 
     store.dispatch('logOut');
     socket.value = null;
@@ -308,7 +308,7 @@ const deleteAccount = async () => {
     const response = await fetch(`http://localhost:3000/user/${currentUser.value.id}`, {
       method: 'DELETE',
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+        'Authorization': `Bearer ${sessionStorage.getItem('access_token')}`,
         'Content-Type': 'application/json'
       }
     });
@@ -362,6 +362,26 @@ onMounted(async () => {
         currentUser.value.avatar = data.avatar;
         console.log('Updated current user avatar:', data.avatar);
       }
+    }
+    if (data.username != null) {
+      console.log('updating history?');
+      for (let match of matchHistory.value) {
+        console.log(`id1: ${match.players[0].id} ChID: ${data.userId}`)
+        if (match.players[0].id == data.id) {
+          console.log('ye')
+          match.players[0].username = data.username;
+        }
+        if (match.players[1].id == data.id) {
+          console.log('ye')
+          match.players[1].username = data.username;
+        }
+      }
+
+      if (data.userId == currentUser.value.id) {
+        currentUser.value.username = data.username;
+        console.log('actually changed OUR username')
+      }
+      console.log('Updated username to:', data.username);
 		}
 	});
 });
@@ -418,6 +438,17 @@ onMounted(async () => {
   height: 100px;
   border-radius: 50%;
   overflow: hidden;
+  margin-bottom: 10px;
+}
+
+.small {
+  display: flex;
+  flex-direction: column;
+  object-fit: cover;
+  align-items: center;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
   margin-bottom: 10px;
 }
 
