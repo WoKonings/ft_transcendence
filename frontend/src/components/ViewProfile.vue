@@ -21,18 +21,14 @@
       <div class="profile-header">
         <div class="profile-picture">
           <img
-            :src="`https://robohash.org/${userProfile.username}?set=set4`"
-            :alt="`${userProfile.username}'s profile picture`"
+          :src=" userProfile.avatar ? `http://localhost:3000${userProfile.avatar}` : `https://robohash.org/${userProfile.username}?set=set4`"
+          :alt="`${userProfile.username}'s profile picture`"
           />
         </div>
         <h2>{{ userProfile.username }}</h2>
       </div>
       <div v-if="loading" class="loading">Loading...</div>
       <div v-else class="profile-info">
-        <!-- <div class="info-row">
-          <span class="info-label">Email:</span>
-          <span class="info-value">{{ userProfile.email }}</span>
-        </div> -->
         <div class="info-row">
           <span class="info-label">Joined:</span>
           <span class="info-value">{{ new Date(userProfile.createdAt).toLocaleDateString() }}</span>
@@ -62,9 +58,9 @@
           <div v-for="match in matchHistory" :key="match.id" class="match-entry">
             <div class="player">
               <img
-                :src="`https://robohash.org/${match.players[0].username}?set=set4`"
+                :src=" match.players[0].avatar ? `http://localhost:3000${match.players[0].avatar}` : `https://robohash.org/${match.players[0].username}?set=set4`"
                 :alt="`Player One - ${match.players[0].username}`"
-                class="player-pic"
+                class="profile-picture small"
               />
               <div class="player-name">{{ match.players[0].username }}</div>
               <div class="score">{{ match.playerScores[0] }}</div>
@@ -80,9 +76,9 @@
             </div>
             <div class="player">
               <img
-                :src="`https://robohash.org/${match.players[1].username}?set=set4`"
+                :src=" match.players[1].avatar ? `http://localhost:3000${match.players[1].avatar}` : `https://robohash.org/${match.players[1].username}?set=set4`"
                 :alt="`Player Two - ${match.players[1].username}`"
-                class="player-pic"
+                class="profile-picture small"
               />
               <div class="player-name">{{ match.players[1].username }}</div>
               <div class="score">{{ match.playerScores[1] }}</div>
@@ -219,6 +215,17 @@ export default {
   height: 80px;
   border-radius: 50%;
   overflow: hidden;
+  margin-bottom: 10px;
+}
+
+.small {
+  display: flex;
+  flex-direction: column;
+  object-fit: cover;
+  align-items: center;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
   margin-bottom: 10px;
 }
 

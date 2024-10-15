@@ -439,7 +439,7 @@ const exitGame = () => {
 
 onMounted(() => {
   initSocket();
-  initGame();
+  // initGame();
 });
 
 onBeforeUnmount(() => {
