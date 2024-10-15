@@ -357,32 +357,35 @@ onMounted(async () => {
 
   socket.value.on('userStatusUpdate', (data) => {
     console.log('Received status update!');
-		if (data.userId === currentUser.value.id) {
-      if (data.avatar != null) {
-        currentUser.value.avatar = data.avatar;
-        console.log('Updated current user avatar:', data.avatar);
+		// if (data.userId === currentUser.value.id) {
+    //   if (data.avatar != null) {
+    //     currentUser.value.avatar = data.avatar;
+    //     console.log('Updated current user avatar:', data.avatar);
+    //   }
+    // }
+    console.log('updating history?');
+    for (let match of matchHistory.value) {
+      console.log(`id1: ${match.players[0].id} ChID: ${data.userId}`)
+      if (match.players[0].id == data.id) {
+        if (data.username != null)
+          match.players[0].username = data.username;
+        if (data.avatar != null)
+          match.players[0].avatar = data.avatar;
+      }
+      if (match.players[1].id == data.id) {
+        if (data.username != null)
+          match.players[1].username = data.username;
+        if (data.avatar != null)
+          match.players[1].avatar = data.avatar;
       }
     }
-    if (data.username != null) {
-      console.log('updating history?');
-      for (let match of matchHistory.value) {
-        console.log(`id1: ${match.players[0].id} ChID: ${data.userId}`)
-        if (match.players[0].id == data.id) {
-          console.log('ye')
-          match.players[0].username = data.username;
-        }
-        if (match.players[1].id == data.id) {
-          console.log('ye')
-          match.players[1].username = data.username;
-        }
-      }
 
-      if (data.userId == currentUser.value.id) {
+    if (data.userId == currentUser.value.id) {
+      if (data.username != null)
         currentUser.value.username = data.username;
-        console.log('actually changed OUR username')
-      }
-      console.log('Updated username to:', data.username);
-		}
+      if (data.avatar != null)
+        currentUser.value.avatar = data.avatar;
+    }
 	});
 });
 </script>

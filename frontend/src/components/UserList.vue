@@ -69,7 +69,7 @@ const getUsers = () => {
 //todo: add avatar
 const updateUserStatus = (username, userId, isOnline, isInGame, isInQueue, avatar) => {
   console.log(`user: ${username} / ${userId} has changed status: online? ${isOnline} ingame? ${isInGame} inqueue? ${isInQueue}`);
-	const user = users.value.find(u => u.username === username);
+	const user = users.value.find(u => u.id === userId);
 	if (user) {
     if (isOnline != null)
       user.isOnline = isOnline;
@@ -77,6 +77,11 @@ const updateUserStatus = (username, userId, isOnline, isInGame, isInQueue, avata
       user.isInGame = isInGame;
     if (isInQueue != null)
       user.isInQueue = isInQueue;
+    if (username != null)
+      user.username = username;
+    if (avatar != null)
+      user.avatar = avatar;
+    
 		// Trigger reactivity
 		users.value = [...users.value];
 	} else {
