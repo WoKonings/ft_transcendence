@@ -1,7 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import HelloWorld from '@/components/HelloWorld.vue';
 import LoginScreen from '@/components/LoginScreen.vue';
-import CompleteUser from '@/components/CompleteUser.vue';
 import UserProfile from '@/components/UserProfile.vue';
 
 const routes = [
@@ -19,11 +18,6 @@ const routes = [
     path: '/login',
     name: 'Login',
     component: LoginScreen,
-  },
-  {
-    path: '/choose-username',
-    name: 'complete user',
-    component: CompleteUser,
   },
 ];
 

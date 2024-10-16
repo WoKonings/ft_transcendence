@@ -20,7 +20,6 @@ import { AuthService } from './auth.service';
 import { UserService } from '../user/user.service';
 import { SignInDto } from './dto/sign-in.dto';
 import { CreateUserDto } from 'src/user/dto/create-user.dto';
-import { CompleteProfileDto } from './dto/completeProfile.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -73,25 +72,11 @@ export class AuthController {
   
     try {
       const loginResult = await this.authService.handle42Login(code);
-      
-      // Handle both cases (new user or existing user)
-      if (loginResult.needsUsername) {
-        res.redirect(`http://localhost:8080/choose-username?token=${loginResult.access_token}`);
-      } else {
-        // Redirect the user back to frontend with their token and user info
-        res.redirect(`http://localhost:8080/?token=${loginResult.access_token}`);
-      }
+      res.redirect(`http://localhost:8080/?token=${loginResult.access_token}`);
     } catch (error) {
       console.error('Error during 42 callback:', error);
       res.redirect('http://localhost:8080');
     }
-  }
-
-  // async completeProfile(@Body() completeProfileDto: { token: string; username: string }) {
-  @Post('complete-profile')
-  async completeProfile(@Body() data: CompleteProfileDto) {
-    console.log ("finishing profile!");
-    return await this.authService.completeProfile(data);
   }
 
   @Get('me')

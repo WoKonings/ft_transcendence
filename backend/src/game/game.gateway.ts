@@ -23,6 +23,7 @@ interface GameSession {
 
   gameState: GameState;
   isPrivate: boolean;
+  bigPong: boolean;
   paused: boolean;
 
   startTime: number;
@@ -101,7 +102,7 @@ export class GameGateway {
   // Handle "joinGame" event from client
   @SubscribeMessage('joinGame')
   handleJoinGame(client: Socket, data: JoinGameDto): void {
-    const { userId, username, isPrivate = false} = data;
+    const { userId, username, isPrivate = false, bigPong} = data;
 
     console.log(`received data: `, data);
     if (!client) {
@@ -116,8 +117,13 @@ export class GameGateway {
       console.log('No username provided for join_game');
       return;
     }
+    // if (!bigPong) {
+    //   console.log('Did not specify gamemode');
+    //   return;
+    // }
+    // if (!isPrivate)
 
-    this.assignUserToRoom(client, userId, username, isPrivate);
+    this.assignUserToRoom(client, userId, username, isPrivate, bigPong);
     const session = this.getGameSessionForUser(userId);
     if (!session) {
       console.log('joining session failed');
@@ -192,6 +198,7 @@ async handleInviteGame(client: Socket, data: InviteGameDto): Promise<void> {
         userId: senderId,
         username: senderName,
         isPrivate: true,
+        bigPong: false,
       });
       session = this.getGameSessionForUser(senderId);
       if (!session) {
@@ -259,8 +266,8 @@ async handleInviteGame(client: Socket, data: InviteGameDto): Promise<void> {
   }
 
   // Assign user to a game room or create a new one
-  assignUserToRoom(client: Socket, userId: string, username: string, isPrivate: boolean) {
-    const session = this.findAvailableSession();
+  assignUserToRoom(client: Socket, userId: string, username: string, isPrivate: boolean, bigPong: boolean) {
+    const session = this.findAvailableSession(bigPong);
     if (session) {
       console.log('joining session!');
       // Notify the existing player about the new opponent
@@ -277,27 +284,31 @@ async handleInviteGame(client: Socket, data: InviteGameDto): Promise<void> {
     } else {
       const newGameState = new GameState();
       newGameState.playerOne = userId;
+      newGameState.bigPong = bigPong;
       const newSession: GameSession = {
         player_one: { userId, socket: client, username },
         player_two: null,
         gameState: newGameState,
         isPrivate: isPrivate,
+        bigPong: bigPong,
         paused: true,
         gameId: crypto.randomUUID(),
         startTime: null,
         endTime: null,
       };
       console.log(`creating new gamesession: ${newSession.gameId}`);
+      if (bigPong)
+        console.log('CREATED BIG PONG SESH');
       console.log(`${username} joined lobby as player one`);
       this.gameSessions.set(newSession.gameId, newSession);
     }
   }
   
   // Find an available publicda session that isn't full
-  private findAvailableSession(): GameSession | undefined {
+  private findAvailableSession(bigPong: boolean): GameSession | undefined {
     console.log('searching available session');
     for (const session of this.gameSessions.values()) {
-      if (session.isPrivate == false) {
+      if (session.isPrivate == false && session.bigPong == bigPong) {
         if (session.player_one == null || session.player_two == null) {
           return session;
         }

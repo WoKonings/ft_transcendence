@@ -134,27 +134,7 @@ const loginUser = async () => {
   // router.push('/')
 };
 
-// const handleCallback = async () => {
-//   const route = router.currentRoute.value;
-//   const token = route.query.token;
-//   console.log ('callbakkekre1');
-//   if (token) {
-//     sessionStorage.setItem('access_token', token);
 
-//     if (route.path === '/choose-username') {
-//       // isCompleteProfileNeeded.value = true;
-//     } else {
-//       console.log('should be logging in');
-//       // Clear query params from the URL without reloading the page
-//       router.replace({ path: route.path, query: {} });
-//       router.push('/');
-//       // fetchMe();
-//       // initializeSocket();
-//     }
-//   } else {
-//     // isCompleteProfileNeeded.value = false;
-//   }
-// };
 </script>
 
 <style scoped>

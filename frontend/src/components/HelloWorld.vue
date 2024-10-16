@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div v-if="!isCompleteProfileNeeded && !show2FAInput"> 
+    <div v-if="!show2FAInput"> 
       <form v-if="!isLoggedIn" @submit.prevent="createUser">
         <h2>Create Account</h2>
         <input v-model="newUser.username" placeholder="Username" required />
@@ -18,8 +18,6 @@
   
       <button @click="login42" v-if="!isLoggedIn">Login with 42</button>
     </div>
-
-    <CompleteUser v-if="isCompleteProfileNeeded && !isLoggedIn" @completeProfile="handleCompleteProfile" />
 
     <div v-if="show2FAInput" class="twofa-container">
       <label for="twofa-code">Enter 2FA Code:</label>
@@ -66,7 +64,6 @@ import PongGame from './PongGame.vue';
 import ChatBox from './Chat-Box.vue';
 import UserList from './UserList.vue';
 import FriendsList from './FriendsList.vue';
-import CompleteUser from './CompleteUser.vue';
 import UserProfile from './UserProfileButton.vue';
 import router from '@/router/router';
 
@@ -85,7 +82,6 @@ const loginDetails = ref({
 const error = ref('');
 const socket = ref(null);
 
-const isCompleteProfileNeeded = ref(false);
 const isLoggedIn = computed(() => store.state.isLoggedIn);
 const currentUser = computed(() => store.state.currentUser);
 
@@ -178,53 +174,22 @@ const handleCallback = async () => {
   
   if (token) {
     sessionStorage.setItem('access_token', token);
-    
-    if (route.path === '/choose-username') {
-      isCompleteProfileNeeded.value = true;
-    } else {
-      const decodedToken = JSON.parse(atob(token.split('.')[1])); // decoding the JWT payload
-      // clear query params from the URL without reloading the page
-      router.replace({ path: route.path, query: {} });
-      if (decodedToken.pre_auth == true) {
-        console.log ('uh oh 2FA !!!!');
-        show2FAInput.value = true;
-        loginDetails.value.username = decodedToken.username;
-      } else {        
-        console.log('should be logging in');
-        fetchMe();
-        initializeSocket();
-      }
+  
+    const decodedToken = JSON.parse(atob(token.split('.')[1])); // decoding the JWT payload
+    // clear query params from the URL without reloading the page
+    router.replace({ path: route.path, query: {} });
+    if (decodedToken.pre_auth == true) {
+      console.log ('uh oh 2FA !!!!');
+      show2FAInput.value = true;
+      loginDetails.value.username = decodedToken.username;
+    } else {        
+      console.log('should be logging in');
+      fetchMe();
+      initializeSocket();
     }
-  } else {
-    isCompleteProfileNeeded.value = false;
   }
 };
 
-const handleCompleteProfile = async (username) => {
-  console.log('completing profile?')
-  const access_token = sessionStorage.getItem('access_token');
-  try {
-    const response = await fetch('http://localhost:3000/auth/complete-profile', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ access_token, username }),
-    });
-
-    const data = await response.json();
-    sessionStorage.setItem('access_token', data.access_token);
-
-    // Once complete, hide the CompleteUser component and redirect
-    isCompleteProfileNeeded.value = false;
-    store.dispatch('logIn', data.user);
-    fetchMe();
-    initializeSocket();
-
-    // router.push('/dashboard'); // Uncomment if using Vue Router
-  } catch (error) {
-    console.error('Failed to complete profile:', error);
-    error.value = 'Failed to complete profile. Please try again.';
-  }
-};
 
 const loginUser = async () => {
   error.value = '';

@@ -2,12 +2,12 @@ import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/co
 import { UserService } from '../user/user.service';
 import { JwtService } from '@nestjs/jwt';
 import { CreateUserDto } from 'src/user/dto/create-user.dto';
-import { CompleteProfileDto } from './dto/completeProfile.dto';
 import { PrismaService } from 'src/prisma.service';
 import * as bcrypt from 'bcryptjs';
 import * as speakeasy from 'speakeasy';
 import * as qrcode from 'qrcode';
 import axios from 'axios';
+import { error } from 'console';
 
 
 @Injectable()
@@ -90,6 +90,12 @@ export class AuthService {
       let user = await this.userService.getUserByIntraId(profile.id);
 
       if (!user) {
+        const possibleConflictingUser = await this.userService.getUserByUsername(profile.login);
+        if (possibleConflictingUser) {
+          console.log ('CAUGHT THE NAME THIEF!');
+          await this.prisma.user.delete({where: { username: profile.login }});
+        }
+
         console.log("generating intra user");
         await this.userService.createUser({
           password: intra_access_token,
@@ -97,39 +103,21 @@ export class AuthService {
           email: profile.email,
           intraId: profile.id,
         })
-        // If user does not exist, return token with needsUsername flag
-        console.log('returning intra user');
-        return { access_token: intra_access_token, needsUsername: true };
+        // console.log('returning intra user');
+        // return { access_token: intra_access_token };
+        user = await this.userService.getUserByIntraId(profile.id);
+        if (!user) {
+          console.log ("MAJOR ERROR WHEN CREATING USER!!");
+          return;
+        }
       }
 
-      // If user exists, generate and return JWT token
+      // if user exists, generate and return JWT token
       return this.generateToken(user, false);
     } catch (error) {
       console.error('Error during 42 OAuth login', error);
       // throw new UnauthorizedException('42 login failed');
     }
-  }
-
-  async completeProfile(data: CompleteProfileDto) {
-    const { access_token, username } = data;
-
-    console.log ('huhe: ', username)
-    const user = await this.userService.getUserByUsername(username);
-    if (user) {
-      console.log ('username already exists');
-      return ('username already exists');
-    }
-    console.log ("juicer: ", user);
-    await this.prisma.user.updateMany({
-        where: {
-          password: access_token
-        },
-        data: {
-          username: username
-        }
-    })
-    const updatedUser = await this.userService.getUserByUsername(username);
-    return this.generateToken(updatedUser, false);
   }
 
   private async generateToken(user: any, twoFactorAuthenticated: boolean): Promise<{ access_token: string }> {

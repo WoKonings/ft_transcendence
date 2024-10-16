@@ -141,12 +141,12 @@ const initThreeJS = () => {
   scene.add(ball);
 
   // Create the midline geometry
-  const midlineGeometry = new THREE.BoxGeometry(0.2, 32, 1);
+  const midlineGeometry = new THREE.BoxGeometry(0.25, 32, 1);
   const midlineMaterial = new THREE.MeshPhongMaterial({
     color: 0xffffff
   });
   const midline = new THREE.Mesh(midlineGeometry, midlineMaterial);
-  midline.position.set(0, 0, 0);
+  midline.position.set(0, 0, -1);
   scene.add(midline);
 
   // Create the top and bottom lines
@@ -290,6 +290,12 @@ const updateGameObjects = (gameState) => {
   paddle2.position.x = gameState.paddle2.x;
   ball.position.x = gameState.ball.x;
   ball.position.y = gameState.ball.y;
+  // ball.radius = gameState.ball.radius;
+  // console.log(`ball radius: ${gameState.ball.radius * 2}`);
+  // if (gameState.ball.radius != 0.5)
+  ball.scale.set(gameState.ball.radius / 0.5, gameState.ball.radius / 0.5, gameState.ball.radius / 0.5);
+  // if (gameState.ball.radius != 0.5)
+    // ball.scale.set(2, 2, 2);
 
   player1Score.value = gameState.score.playerOne;
   player2Score.value = gameState.score.playerTwo;

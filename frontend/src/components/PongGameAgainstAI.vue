@@ -5,7 +5,8 @@
       <div class="score"> AI: {{ aiScore }}</div>
     </div>
     <div class="pong-game" ref="container"></div>
-    <button v-if="!waitingForOpponent" @click="queueForPong()" class="queue-button">Queue for Pong</button>
+    <button v-if="!waitingForOpponent" @click="queueForPong(false)" class="queue-button">Queue for Pong</button>
+    <button v-if="!waitingForOpponent" @click="queueForPong(true)" class="queue-button">Queue for Big Pong</button>
     <!-- <button v-if="!waitingForOpponent" @click="queueForPong('flashy')" class="queue-button">Queue for Flashy Pong</button> -->
     <button v-if="!waitingForOpponent" @click="resetPong()" class="queue-button">Reset Score</button>
     <div v-if="!playerHasMovedPaddle">Use W/S or Up and Down arrow keys to move your paddle!</div>
@@ -120,7 +121,6 @@ const initThreeJS = () => {
   bottomLine.position.set(0, -16, 0);
   scene.add(topLine);
   scene.add(bottomLine);
-
 
   nextTick(() => {
     if (container.value) {
@@ -393,11 +393,13 @@ const onWindowResize = () => {
   camera.updateProjectionMatrix();
 };
 
-const queueForPong = () => {
+const queueForPong = (bigPong) => {
   if (socket.value) {
     socket.value.emit('joinGame', {
       userId: currentUser.value.id,
       username: currentUser.value.username,
+      isPrivate: false,
+      bigPong: bigPong,
     });
     waitingForOpponent.value = true;
     inQueue.value = true;
