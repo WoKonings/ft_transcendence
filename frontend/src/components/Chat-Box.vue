@@ -1,7 +1,9 @@
 <template>
   <div class="chat-container">
-    <div class="chat-tabs">
-      <div class="tabs">
+    <!-- Sidebar with channels -->
+    <div class="sidebar">
+      <h2 class="sidebar-title">Channels</h2>
+      <div class="chat-tabs">
         <div 
           v-for="(chat, index) in chats" 
           :key="index" 
@@ -9,44 +11,90 @@
           :class="{ 'active-tab': selectedChat?.name === chat.name }" 
           class="tab"
         >
-          {{ chat.name }}
+          # {{ chat.name }}
         </div>
+      </div>
+      <button @click="joinNewChannel" class="join-button">
+        <i class="fas fa-plus"></i> Join New Channel
+      </button>
+    </div>
+
+    <!-- Main chat content -->
+    <div class="main-content">
+      <!-- Chat box for selected channel -->
+      <div v-if="selectedChat" class="chat-box">
+        <div class="chat-header">
+          <h2># {{ selectedChat.name }}</h2>
+          <button v-if="selectedChat.name !== 'General'" @click="leaveChat" class="leave-button">
+            Leave Chat
+          </button>
+        </div>
+        <div class="messages" ref="messagesContainer">
+          <div 
+            v-for="(message, index) in selectedChat.messages" 
+            :key="index" 
+            :class="['message', { 'current-user-message': message.sender === currentUser.username }]"
+          >
+            <div class="message-header">
+              <span class="sender">{{ message.sender }}</span>
+              <span class="timestamp">{{ formatTimestamp(message.timestamp) }}</span>
+            </div>
+            <div class="message-content">{{ message.text }}</div>
+          </div>
+        </div>
+
+        <!-- Input form to send new message -->
+        <form @submit.prevent="sendMessage" class="input-container">
+          <input 
+            v-model="newMessage" 
+            placeholder="Type a message..."
+          />
+          <button type="submit" class="send-button">
+            <i class="fas fa-paper-plane"></i>
+          </button>
+        </form>
+      </div>
+
+      <!-- Empty state when no channel is selected -->
+      <div v-else class="empty-state">
+        <p>Select a chat to view messages or join a new channel.</p>
       </div>
     </div>
 
-    <div v-if="selectedChat" class="chat-box">
-      <div class="messages" ref="messagesContainer">
-        <div 
-          v-for="(message, index) in selectedChat.messages" 
-          :key="index" 
-          :class="['message', { 'alternate-message': index % 2 === 0 }]"
-        >
-          <span>{{ message.sender }}:</span> {{ message.text }}
-        </div>
-      </div>
-
-      <form @submit.prevent="sendMessage" class="input-container">
-        <input v-model="newMessage" placeholder="Type a message..." />
-        <button type="submit">Send</button>
-      </form>
-      <button @click="joinNewChannel">Join New Channel</button>
-      <button v-if="selectedChat.name !== 'General'" @click="leaveChat">Leave Chat</button>
-    </div>
-    <div v-else class="chat-box">
-      <p>Select a chat to view messages.</p>
-    </div>
+    <!-- User list -->
     <div class="user-list-window">
       <h3>Users in {{ selectedChat?.name || 'Chat' }}</h3>
       <div v-if="userListError" class="error-message">{{ userListError }}</div>
+
+      <!-- Single user list rendering -->
       <ul v-else>
-        <li v-for="user in userList" :key="user.id" class="user-item">
-          <span class="user-name">{{ user.username }}</span>
+        <li 
+          v-for="user in userList" 
+          :key="user.id" 
+          class="user-item"
+          @contextmenu.prevent="openUserOptions(user, $event)"
+        >
+          <span class="profile-picture">
+            <img 
+              :src="user.avatar ? `http://localhost:3000${user.avatar}` : `https://robohash.org/${user.username}?set=set4`" 
+              :alt="`${user.username}`" 
+            />
+          </span>
           <span class="user-status" :class="{ 'online': user.isOnline }"></span>
+          <span class="user-name">{{ user.username }}</span>
         </li>
       </ul>
+
+      <!-- Modal for User Options (Assign Role, Kick) -->
+      <div v-if="showUserOptions" class="user-options-modal" @click="closeUserOptions">
+        <button v-if="currentUser.role === 'Admin'" @click="assignRole('Admin')">Assign Admin</button>
+        <button v-if="currentUser.role === 'Admin'" @click="assignRole('User')">Assign User</button>
+        <button @click="kickUser">Kick from Channel</button>
+      </div>
     </div>
   </div>
 </template>
+
 
 <script setup>
 import { ref, onMounted, onUpdated, watch } from 'vue';
@@ -61,57 +109,72 @@ const selectedChat = ref(null);
 const newMessage = ref('');
 const userList = ref([]);
 const userListError = ref(null);
+const showUserOptions = ref(false);
+// const modalPosition = ref({ x: 0, y: 0 });
+const selectedUser = ref(null);
+
+const openUserOptions = (user, event) => {
+  selectedUser.value = user;
+ // modalPosition.value = { x: event.clientX, y: event.clientY };
+  console.log("Right-clicked user:", user); 
+  console.log(`${currentUser.username} is ${currentUser.role}`);
+  showUserOptions.value = true;
+  console.log("Modal should be visible:", showUserOptions.value);
+};
+
+const closeUserOptions = () => {
+  showUserOptions.value = false;
+}
+
+const assignRole = (role) => {
+  if (selectedUser.value) {
+    socket.emit('updateUserRole', {
+      channelId: selectedChat.value.id,
+      userId: selectedUser.value.id,
+      role: role
+    });
+  }
+  showUserOptions.value = false;
+};
+
+const kickUser = () => {
+  if (selectedUser.value) {
+    socket.emit('kickUserFromChannel', {
+      channelId: selectedChat.value.id,
+      userId: selectedUser.value.id
+    });
+  }
+  showUserOptions.value = false;
+};
+
+document.addEventListener('click', (event) => {
+  const modal = document.querySelector('.user-options-modal');
+  if (!modal?.contains(event.target)) {
+    showUserOptions.value = false;
+  }
+});
 
 const fetchInitialChat = async () => {
   try {
-    // Initialize with the General chat
-    const generalChat = { name: 'General', messages: [], };
+    console.log(`fetching general for ${currentUser.username}`)
+    const generalChat = { name: 'General', messages: [] };
     chats.value.push(generalChat);
     selectedChat.value = generalChat;
     socket.emit('joinChannel', { channel: 'General', username: currentUser.username });
   } catch (error) {
-    console.error('Failed to fetch initial chat:', error);
+    console.error(`Failed to fetch initial chat for ${currentUser.username}`, error);
   }
 };
 
-const fetchUserList = async () => {
-  if (!selectedChat.value) return;
-
-  const chatname = selectedChat.value.name;
-    // Construct the URL with query parameters
-    try{
-      socket.emit('allUsers', { chatname }, (response) => {
-      const data = response.json();
-      console.log(`error: ${data.message}`);
-      if (data.success) {
-      console.log("SUCCESSSSSSSS!!!");
-      userList.value = Object.values(data.users);
-      console.log(`userlist; ${userList.value}`);
-      userListError.value = null; // Clear any previous errors
-    } else {
-      console.log("not successsss!!!");
-      userListError.value = 'Failed to fetch user list';
-    }
-    });
-    } catch (error) {
-
-       console.error('Error fetching user list:', error);
-       userListError.value = 'Error fetching user list';
-    }
-
-    // Check if the response is successful
-};
+console.log('Socket in chat:', socket);
 
 
 const selectChat = (name) => {
-
   selectedChat.value = chats.value.find(chat => chat.name === name);
 };
 
 watch(() => selectedChat.value, (newChat) => {
-  if (newChat) {
-    fetchUserList();
-  } else {
+  if (!newChat) {
     userList.value = [];
     userListError.value = null;
   }
@@ -119,87 +182,90 @@ watch(() => selectedChat.value, (newChat) => {
 
 const sendMessage = () => {
   if (newMessage.value.trim() !== '' && selectedChat.value) {
-    const message = { sender: currentUser.username, text: newMessage.value };
-    
-    // Push the new message to the selected chat
-    selectedChat.value.messages.push(message);
+    const message = { 
+      sender: currentUser.username, 
+      text: newMessage.value,
+      timestamp: new Date()
+    };
 
-    console.log(`Sending message to chat: ${selectedChat.value.name}`);
-    
-    // Emit the message via the socket
-    socket.emit('sendMessage', {
-      senderId: currentUser.id,
-      channelName: selectedChat.value.name,
-      message: newMessage.value,
-    });
-    
-    // Clear the input field after sending the message
-    newMessage.value = '';
+    // selectedChat.value.messages.push(message);
 
-    // Scroll to the bottom to display the latest message
-    scrollToBottom();
+    // Ensure socket is connected and defined
+    if (socket) {
+      console.log(`sending message [${newMessage.value}] from ${currentUser.username}`);
+      socket.emit('sendMessage', {
+        senderId: currentUser.id,
+        channelName: selectedChat.value.name,
+        message: newMessage.value,
+      });
+    } else {
+      console.error('Socket is not initialized.');
+    }
   }
-};
+}
 
 const joinNewChannel = async () => {
   try {
     const channelName = prompt("Enter Channel name to join:");
-    if (!channelName) return;  // Check if a name was entered
+    if (!channelName) return;
+    console.log(`input: ${channelName}`);
     
-     // Ask for a password
-    
-    // Send join channel request with the password if provided
-    socket.emit('joinChannel', { channel: channelName, username: currentUser.username, password: null}, (response) => {
-      if (response.success == true) {
+    socket.emit('joinChannel', { channelName: channelName, username: currentUser.username, password: null }, (response) => {
+      console.log(response);
+      if (response.success === true) {
         const newChat = { name: channelName, messages: [] };
         chats.value.push(newChat);
         selectChat(channelName);
+        // if(userList.length == 1)
+        //     assignRole('ADMIN');
         alert(response.message);
-        fetchUserList();
-      }
-      else if (response.password)  {
+        // Fetch updated user list for the new channel
+        socket.emit('getUserList', { channel: channelName });
+      } else if (response.password) {
         const password = prompt("Enter password");
-        socket.emit('joinChannel', { channel: channelName, username: currentUser.username, password: password || null}, (response) => {
-          if (response.success == true) {
+        socket.emit('joinChannel', { channel: channelName, username: currentUser.username, password: password || null }, (response) => {
+          if (response.success === true) {
             const newChat = { name: channelName, messages: [] };
             chats.value.push(newChat);
             selectChat(channelName);
             alert(response.message);
-            fetchUserList();
+            // Fetch updated user list for the new channel
+            socket.emit('getUserList', { channel: channelName });
           }
         });
-      }
-      else {
-        alert(response.message); // Display error message if joining fails
+      } else {
+        alert(response.message);
       }
     });
-  } 
-  catch (error) {
+  } catch (error) {
     console.error('Failed to join new channel:', error);
   }
-
 };
 
 const leaveChat = () => {
-  if (selectedChat.value && selectedChat.value.name != 'General') {
+  if (selectedChat.value && selectedChat.value.name !== 'General') {
     const channelName = selectedChat.value.name;
     socket.emit('leaveChannel', { channel: channelName, username: currentUser.username });
     
-    // Remove the chat from the list
     chats.value = chats.value.filter(chat => chat.name !== channelName);
-    
-    // Select another chat or clear selection
     if (chats.value.length > 0) {
-      selectedChat.value = chats.value[0];  // Select the first chat in the list
+      selectedChat.value = chats.value[0];
     } else {
-      selectedChat.value = null;  // No chats left, clear selection
+      selectedChat.value = null;
     }
+    // Clear the user list after leaving
+    userList.value = [];
   }
 };
 
 const scrollToBottom = () => {
   const messagesContainer = document.querySelector('.messages');
   messagesContainer.scrollTop = messagesContainer.scrollHeight;
+};
+
+const formatTimestamp = (timestamp) => {
+  const date = new Date(timestamp);
+  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 };
 
 onUpdated(() => {
@@ -209,121 +275,278 @@ onUpdated(() => {
 onMounted(async () => {
   await fetchInitialChat();
 
-  socket.on('recieveMessage', (message) => {
-    console.log(`received: ${message.message} in channel: ${message.channel} from ${message.sender}`);
-    const chat = chats.value.find(c => c.name === message.channel);
-    if (chat) {
-      chat.messages.push({ sender: message.sender, text: message.message });
-    } else {
-      // If the chat doesn't exist, create it
-      const newChat = { name: message.channel, messages: [{ sender: message.sender, text: message.message }] };
-      chats.value.push(newChat);
-    }
-    if (selectedChat.value.name === message.channel) {
-      scrollToBottom();
-    }
-  });
-
-  socket.on('updateUserList', () => {
-    fetchUserList();
+  socket.on('receiveMessage', (message) => {
+    console.log(`Message received in frontend:`, message);
+    console.log('Available chats:', chats.value.map(c => c.name))
+    console.log('looking for: ', message.channelName);
+  // Find the chat (channel) that corresponds to the received message
+  const chat = chats.value.find(c => c.name === message.channel);
+  if (chat) {
+    // Add the new message to the chat's message list
+    console.log(`${chat.channelName} recieved ${message}`);
+    chat.messages.push({
+      sender: message.sender,
+      text: message.message,
+      timestamp: new Date()
+    });
+  }
+  else
+  {
+    console.log(`chat is invalid`);
+  }
+  // Ensure selectedChat exists and matches the message channel
+  if (selectedChat.value?.name === message.channel) {
+    // Scroll to the bottom only if the message is for the currently selected chat
+    scrollToBottom();
+  }
+});
+  socket.on('updateUserList', (userListData) => {
+    userList.value = userListData;
   });
 });
 </script>
 
 <style scoped>
+:root {
+  height: 100%;
+}
+
+body {
+  height: 100%;
+  margin: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
 .chat-container {
   display: flex;
-  flex-direction: column;
-  height: 45%;
+  width: 90%; /* Percentage of the parent width */
+  height: 80vh; /* 80% of the viewport height */
+  max-width: 1200px; /* Maximum width to prevent stretching on very wide screens */
+  max-height: 800px; /* Maximum height to prevent stretching on very tall screens */
+  margin: auto;
+  font-family: Arial, sans-serif;
+  color: #333;
+  border: 1px solid #e0e0e0;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
-.tabs {
-  display: flex;
-  width: 100%;
-}
-
-.tab {
-  padding: 10px;
-  cursor: pointer;
-  border-bottom: 2px solid transparent;
-}
-
-.tab.active-tab {
-  border-bottom: 2px solid white;
-}
-
-.chat-box {
-  flex: 1;
+.sidebar {
+  width: 25%; /* Percentage of the chat container width */
+  min-width: 150px; /* Minimum width to ensure readability */
+  background-color: #2c2c2c;
+  color: #fff;
+  padding: 2%;
   display: flex;
   flex-direction: column;
-  background-color: #f1f1f1;
 }
 
-.messages {
+.sidebar-title {
+  margin-bottom: 5%;
+  font-size: 1.2em;
+}
+
+.chat-tabs {
   flex: 1;
-  padding: 10px;
   overflow-y: auto;
 }
 
-.message {
-  margin-bottom: 10px;
-  padding: 8px;
+.tab {
+  padding: 2.5%;
+  cursor: pointer;
   border-radius: 4px;
-  background-color: #ffffff;
+  margin-bottom: 2%;
+  transition: background-color 0.3s;
+  font-size: 0.9em;
 }
 
-.alternate-message {
-  background-color: #e0e0e0;
+.tab:hover {
+  background-color: #3a3a3a;
 }
 
-.input-container {
-  display: flex;
-  padding: 10px;
-  background-color: #fff;
-  border-top: 1px solid #ccc;
+.tab.active-tab {
+  background-color: #4a4a4a;
 }
 
-input {
-  flex: 1;
-  padding: 10px;
-  border: 1px solid #ccc;
-  border-radius: 4px;
-  margin-right: 10px;
-}
-
-button {
-  padding: 10px 15px;
-  background-color: #007bff;
+.join-button {
+  margin-top: 5%;
+  padding: 2.5%;
+  background-color: #4CAF50;
   color: white;
   border: none;
   border-radius: 4px;
   cursor: pointer;
+  transition: background-color 0.3s;
+  font-size: 0.9em;
 }
 
-button:hover {
-  background-color: #0056b3;
+.join-button:hover {
+  background-color: #45a049;
+}
+
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background-color: #f9f9f9;
+}
+
+.chat-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 2%;
+  background-color: #fff;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.chat-header h2 {
+  font-size: 1.2em;
+  margin: 0;
+}
+
+.leave-button {
+  padding: 1% 2%;
+  background-color: #f44336;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  font-size: 0.8em;
+}
+
+.leave-button:hover {
+  background-color: #d32f2f;
+}
+
+.messages {
+  flex: 1;
+  padding: 15%;
+  overflow-y: auto; /* Enables scrolling when content overflows */
+  max-height: 70vh; /* Limit the height of the messages area */
+}
+
+
+.message {
+  margin-bottom: 2%;
+  padding: 1.5%;
+  border-radius: 8px;
+  max-width: 70%;
+}
+
+.current-user-message {
+  background-color: #dcf8c6;
+  align-self: flex-end;
+  margin-left: auto;
+}
+
+.message-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 1%;
+  font-size: 0.8em;
+}
+
+.sender {
+  font-weight: bold;
+}
+
+.timestamp {
+  color: #888;
+}
+
+.message-content {
+  word-break: break-word;
+  font-size: 0.9em;
+}
+
+.input-container {
+  display: flex;
+  padding: 2%;
+  background-color: #fff;
+  border-top: 1px solid #e0e0e0;
+}
+
+input {
+  flex: 1;
+  padding: 1.5%;
+  border: 1px solid #ccc;
+  border-radius: 20px;
+  font-size: 0.9em;
+}
+
+.send-button {
+  padding: 1.5% 3%;
+  background-color: #1e88e5;
+  color: white;
+  border: none;
+  border-radius: 20px;
+  margin-left: 2%;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  font-size: 0.9em;
+}
+
+.send-button:hover {
+  background-color: #1565c0;
+}
+
+.empty-state {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  font-size: 1em;
+  color: #888;
 }
 
 .user-list-window {
-  width: 250px;
+  width: 20%; /* Percentage of the chat container width */
+  min-width: 120px; /* Minimum width to ensure readability */
   background-color: #f1f1f1;
-  padding: 10px;
+  padding: 1.5%;
   overflow-y: auto;
-  border-left: 1px solid #ccc;
+  border-left: 1px solid #e0e0e0;
+}
+
+.user-list-window h3 {
+  font-size: 1em;
+  margin-bottom: 5%;
 }
 
 .user-item {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  padding: 5px 0;
+  padding: 2% 0;
+  cursor: pointer;
+  font-size: 0.9em;
+  transition: background-color 0.2s ease;
+}
+
+.user-item:hover {
+  background-color: #f0f0f0; /* Light gray background on hover */
 }
 
 .user-status {
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
+  margin-right: 5%;
   background-color: #ccc;
+}
+
+.user-item .user-name {
+  margin-left: 10px;
+  font-weight: bold;
+  transition: color 0.2s ease;
+}
+
+.user-item:hover .user-name {
+  color: #e47d29; /* Change text color on hover */
 }
 
 .user-status.online {
@@ -331,6 +554,99 @@ button:hover {
 }
 
 .error-message {
-  color: red;
+  color: #f44336;
+  margin-top: 5%;
+  font-size: 0.8em;
+}
+
+/* Media query for smaller screens */
+@media (max-width: 768px) {
+  .chat-container {
+    width: 95%;
+    height: 90vh;
+  }
+
+  .sidebar, .user-list-window {
+    min-width: 100px;
+  }
+
+  .sidebar-title, .chat-header h2 {
+    font-size: 1em;
+  }
+
+  .tab, .join-button, .send-button, input {
+    font-size: 0.8em;
+  }
+}
+
+.profile-picture {
+	width: 40px;
+	height: 40px;
+	border-radius: 50%;
+	margin-right: 10px;
+	overflow: hidden;
+}
+
+.profile-picture img {
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+}
+
+/* Modal CSS */
+.user-options-modal {
+  position: fixed; /* Change to fixed for centering */
+  top: 50%; /* Center vertically */
+  left: 50%; /* Center horizontally */
+  transform: translate(-50%, -50%); /* Adjust for its own dimensions */
+  background-color: white;
+  border: 1px solid #ccc;
+  padding: 10px;
+  border-radius: 4px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  z-index: 8000;
+  width: 200px; /* Optional: Set a width for the modal */
+  display: block;
+}
+.user-options-modal button {
+  display: block;
+  width: 100%;
+  padding: 8px;
+  border: none;
+  background: #007bff;
+  color: white;
+  margin-bottom: 5px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.user-options-modal button:hover {
+  background-color: #0056b3;
+}
+
+/* User list CSS */
+.user-item {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.profile-picture img {
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+}
+
+.user-status.online {
+  background-color: green;
+  border-radius: 50%;
+  width: 10px;
+  height: 10px;
+  margin-right: 8px;
+}
+
+.user-name {
+  margin-left: 10px;
 }
 </style>
+

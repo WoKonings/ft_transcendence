@@ -36,9 +36,9 @@
       <div class="chat-box-container">
         <ChatBox v-if="isLoggedIn && currentUser" />
         </div>
-        <div class="pong-game-container">
+        <!-- <div class="pong-game-container">
           <PongGame v-if="isLoggedIn && currentUser" />
-        </div>
+        </div>-->
         <div class="sidebar">
           <!-- <div class=""></div> -->
           <UserProfile v-if="isLoggedIn && currentUser" />
@@ -357,12 +357,15 @@ onMounted(() => {
 
 .chat-box-container {
   display: flex;
-  margin-right: 20px; /* Space between chat and game */
-  justify-items: center;
-  justify-content: center;
-  max-width: 300px;
-  height: 200%;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  width: 100%; /* Ensure full width */
+  height: 100%; /* Occupies full height */
+  padding: 10px;
+  box-sizing: border-box;
 }
+
 
 .pong-game-container {
   display: flex;

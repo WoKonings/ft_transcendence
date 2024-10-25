@@ -1,7 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
-import { Channel } from '@prisma/client';
+import { Channel, ChannelRole } from '@prisma/client';
 import { UserService } from 'src/user/user.service';
+import { Prisma } from '@prisma/client'; // Importing Prisma to access the ChannelRole enum
+import { Console } from 'console';
+import { channel } from 'process';
+import { Channel } from 'diagnostics_channel';
 
 @Injectable()
 export class ChatService {
@@ -19,6 +23,7 @@ export class ChatService {
   async createGeneralChannel() {
     const generalChannel = await this.getChannelByName('General');
     if (!generalChannel) {
+      console.log("creating general");
       await this.prisma.channel.create({
         data: {
           name: 'General',
@@ -48,6 +53,13 @@ export class ChatService {
 
   // Get a channel by its name with users
   async getChannelByName(channelName: string) {
+    
+    if (!channelName)
+    {
+      console.log('Channelname does not exist');
+      return null;
+    }
+
     const channel = await this.prisma.channel.findUnique({
       where: { name: channelName },
       include: { users: true },
@@ -61,10 +73,26 @@ export class ChatService {
     return channel;
   }
 
+  async getUserChannel(channelID: number, userID: number) {
+
+    const userChannel = await this.prisma.userChannel.findFirst({
+      where: {
+        userId: userID,
+        channelId: channelID,
+      },
+    });
+  
+    if (!userChannel) {
+      console.log(`UserChannel does not exist`);
+      return { success: false, message: "UserChannel not found" };
+    }
+  
+    return { success: true, message: "Returning UserChannel", userChannel };
+  }
   // Create a new channel and add the user to it
   async createChannel(channelName: string, username: string, password: string) {
     const user = await this.userService.getUserByUsername(username);
-
+    console.log(`${user.username} creating ${channelName}`);
     if (!user || !channelName) {
       console.log('No username or channel name provided');
       return { success: false, message: 'Invalid username or channel name' };
@@ -80,6 +108,16 @@ export class ChatService {
         },
       },
     });
+
+    await this.prisma.userChannel.create({
+      data: {
+        userId: user.id,
+        channelId: newChannel.id,
+        role: 'ADMIN',
+      },
+    });
+    console.log("yeah we just userchanneled\n");
+    
 
     return { success: true, message: `Channel ${channelName} created and ${username} joined` };
   }
@@ -112,14 +150,15 @@ export class ChatService {
     }
 
     // Add the user to the channel
-    await this.prisma.channel.update({
-      where: { name: channelName },
+    await this.prisma.userChannel.create({
       data: {
-        users: {
-          connect: { id: user.id },
-        },
+        userId: user.id,
+        channelId: channel.id,
+        role: 'MEMBER', 
       },
     });
+
+
 
     return { success: true, message: `User ${username} joined ${channelName}` };
   }
@@ -141,24 +180,21 @@ export class ChatService {
     }
 
     // Remove the user from the channel
-    await this.prisma.channel.update({
-      where: { name: channelName },
-      data: {
-        users: {
-          disconnect: { id: user.id },
-        },
-      },
+    await this.prisma.userChannel.delete({
+      where: { userId_channelId: { userId: user.id, channelId: channel.id } },
     });
 
     // Check if the channel has no more users and delete it if empty
-    const updatedChannel = await this.getChannelByName(channelName);
-    if (updatedChannel?.users.length === 0) {
+    const remainingUsers = await this.prisma.userChannel.findMany({
+      where: { channelId: channel.id },
+    });
+  
+    if (remainingUsers.length === 0) {
       await this.prisma.channel.delete({
-        where: { name: channelName },
+        where: { id: channel.id },
       });
-      console.log(`Deleted empty channel: ${channelName}`);
+      return { success: true, message: `User ${username} left and channel ${channelName} was deleted because it was empty` };
     }
-
     return { success: true, message: `User ${username} left ${channelName}` };
   }
 
@@ -171,48 +207,101 @@ export class ChatService {
       return { success: false, message: 'Channel does not exist' };
     }
 
-    const formattedUsers = channel.users.map(user => ({
-      username: user.username,
-      isOnline: user.isOnline,
+    const users = await this.prisma.userChannel.findMany({
+      where: { channelId: channel.id },
+      include: { user: true },
+    });
+  
+    const formattedUsers = users.map(uc => ({
+      username: uc.user.username,
+      isOnline: uc.user.isOnline,
+      role: uc.role, // Include user role in the response
     }));
-
+  
     return { success: true, users: formattedUsers };
   }
 
   // Get all channels with user counts
   async getAllChannels() {
     const channels = await this.prisma.channel.findMany({
-      select: {
-        name: true,
-        private: true,
-        users: true,
+      include: {
+        userChannels: true, // Fetch userChannels to count users
       },
     });
-
+  
     if (!channels.length) {
-      console.log('No channels found');
       return [];
     }
-
+  
     return channels.map(channel => ({
       name: channel.name,
       private: channel.private,
-      userCount: channel.users.length,
+      userCount: channel.userChannels.length, // Use the length of userChannels to count users
     }));
   }
 
   // Helper function to get a channel with its users
-  async getChannelWithUsers(channelName: string){
-    const channel = await this.prisma.channel.findUnique({
-      where: { name: channelName },
-      include: { users: true },
-    });
+// Helper function to get a channel with its users
+async getChannelWithUsers(channelName: string) {
+  const channel = await this.prisma.channel.findUnique({
+    where: { name: channelName },
+    include: {
+      userChannels: {
+        include: { user: true },
+      },
+    },
+  });
 
-    if (!channel) {
-      console.log('Channel does not exist');
-      return null;
-    }
-
-    return channel;
+  if (!channel) {
+    return null;
   }
+
+  return channel;
+  }
+
+
+  async updateUserRole(channelName: string, userId: number, newRole: ChannelRole) {
+    try {
+      const channel = await this.prisma.channel.findUnique({
+        where: { name: channelName },
+      });
+  
+      if (!channel) {
+        throw new Error(`Channel "${channelName}" does not exist`);
+      }
+  
+      const userChannel = await this.prisma.userChannel.findUnique({
+        where: {
+          userId_channelId: {
+            userId: userId,
+            channelId: channel.id,
+          },
+        },
+      });
+  
+      if (!userChannel) {
+        throw new Error(`User with ID ${userId} is not a member of the channel "${channelName}"`);
+      }
+  
+      const updatedUserChannel = await this.prisma.userChannel.update({
+        where: {
+          userId_channelId: {
+            userId: userId,
+            channelId: channel.id,
+          },
+        },
+        data: {
+          role: newRole, // Use the newRole as ChannelRole
+        },
+      });
+      console.log(`returning  ${}${updatedUserChannel.role}`)
+      return updatedUserChannel;
+    } catch (error) {
+      console.error('Failed to update user role:', error.message);
+      throw new Error(`Failed to update role for user ${userId} in channel "${channelName}"`);
+    }
+  }
+  
+  
+
 }
