@@ -1,62 +1,71 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+generator client {
+  provider = "prisma-client-js"
+}
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-generator client {
-  provider = "prisma-client-js"
-}
-
-//  todo: 2fa, rooms
-//
 model User {
-  id          Int       @id @default(autoincrement())
-  intraId     Int       @unique @default(autoincrement())
-  username    String    @unique
-  email       String    @unique
-  password    String           
-  socket      String?
-  isOnline    Boolean   @default(false)
-  isInGame    Boolean   @default(false)
-  isInQueue   Boolean   @default(false)
-  isBad       Boolean   @default(false)
-  friends     Int[]
-  blocked     Int[]
-  pending     Int[]
-  channels    Channel[] @relation("UserChannels") // Implicit many-to-many relation
-  games       Game[]    @relation("PlayerGames")
-  gamesWon    Game[]    @relation("GameWinner")
-  gamesPlayed Int       @default(0)
-  gameWins    Int       @default(0)
-  createdAt   DateTime  @default(now())
-  elo         Int       @default(600)
-  avatar      String?
+  id           Int           @id @default(autoincrement())
+  username     String        @unique
+  email        String        @unique
+  password     String
+  gamesPlayed  Int           @default(0)
+  createdAt    DateTime      @default(now())
+  elo          Int           @default(600)
+  isBad        Boolean       @default(false)
+  isInGame     Boolean       @default(false)
+  isInQueue    Boolean       @default(false)
+  blocked      Int[]
+  friends      Int[]
+  pending      Int[]
+  socket       String?
+  isOnline     Boolean       @default(false)
+  intraId      Int           @unique @default(autoincrement())
+  avatar       String?
+  gameWins     Int           @default(0)
+  gamesWon     Game[]        @relation("GameWinner")
+  userChannels UserChannel[]
+  games        Game[]        @relation("PlayerGames")
+  channels     Channel[]     @relation("UserChannels")
 }
 
 model Channel {
-  id        Int     @id @default(autoincrement())
-  name      String  @unique
-  password  String?
-  admin     String?
-  private   Boolean
-  users     User[]  @relation("UserChannels")
-  banned    String[]
-  messages  String[]
+  id           Int           @id @default(autoincrement())
+  messages     String[]
+  banned       String[]
+  name         String        @unique
+  private      Boolean
+  password     String?
+  admin        Int[]
+  userChannels UserChannel[]
+  users        User[]        @relation("UserChannels")
+}
+
+model UserChannel {
+  userId    Int
+  channelId Int
+  role      ChannelRole
+  channel   Channel     @relation(fields: [channelId], references: [id])
+  user      User        @relation(fields: [userId], references: [id])
+
+  @@unique([userId, channelId])
 }
 
 model Game {
-  id               Int       @id @default(autoincrement())
-  players          User[]    @relation("PlayerGames")
-  playerScores     Int[]     // Scores for each player, order corresponds to players list
+  id               Int      @id @default(autoincrement())
+  playerScores     Int[]
   playerEloChanges Int[]
-  winner           User      @relation("GameWinner", fields: [winnerId], references: [id])
   winnerId         Int
-  startTime        DateTime  @default(now())
-  endTime          DateTime  @default(now())
+  endTime          DateTime @default(now())
+  startTime        DateTime @default(now())
+  winner           User     @relation("GameWinner", fields: [winnerId], references: [id])
+  players          User[]   @relation("PlayerGames")
+}
+
+enum ChannelRole {
+  ADMIN
+  MEMBER
 }
