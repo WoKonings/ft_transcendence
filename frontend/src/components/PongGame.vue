@@ -3,8 +3,8 @@
   <!-- <div class="game-container"> -->
       <!-- Main Game UI -->
     <div class="scoreboard">
-      <div class="score">{{ player1Score }}</div>
-      <div class="score">{{ player2Score }}</div>
+      <div class="score"> {{ player1 }}: {{ player1Score }}</div>
+      <div class="score"> {{ player2}}: {{ player2Score }}</div>
     </div>
     <div class="pong-game" ref="container"></div>
     <div v-if="showEnd && endScreenMessage" class="end-screen">
@@ -470,7 +470,7 @@ onBeforeUnmount(() => {
   position: relative;
   background-color: #1a1a1a;
   width: 60vw;
-  height: 90vh;
+  height: 80vh;
   margin: 0 auto;
   border-radius: 8px;
 }

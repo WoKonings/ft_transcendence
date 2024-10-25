@@ -280,6 +280,7 @@ const acceptInvite = async (invite) => {
   })
   invites.value = invites.value.filter(i => i.gameId !== invite.gameId);
   closeInvites();
+  // inviteSenders.value.add();
   store.commit('SET_SHOW_GAME', true);
 };
 

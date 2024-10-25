@@ -507,9 +507,9 @@ onBeforeUnmount(() => {
 }
 
 .queue-button {
-	padding: 20px;
-	width: 14vw;
-	margin-bottom: 20px;
+	padding: 15px;
+	width: 10vw;
+	margin-bottom: 10px;
 	background-color: #4CAF50;
 	transition: background-color 0.3s;
 	border: none;

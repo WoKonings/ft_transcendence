@@ -1,5 +1,6 @@
-import { Controller, Get, Param } from '@nestjs/common';
+import { Controller, Get, Param, UseGuards } from '@nestjs/common';
 import { GameService } from './game.service';
+import { AuthGuard } from '../auth/auth.guard'
 
 @Controller('game')
 export class GameController {
@@ -13,6 +14,7 @@ export class GameController {
 
   // Endpoint to fetch games of a specific user
   @Get('/:userId')
+  @UseGuards(AuthGuard)
   async getUserGames(@Param('userId') userId: string) {
     const id = Number(userId);
     return this.gameService.getUserGames(id);

@@ -310,8 +310,18 @@ const initializeSocket = async () => {
   });
 
   socket.value.on('disconnected', (message) => {
-    console.log(message);
+    console.log(`$jerror ${message}`);
+    console.log('BIG DISCONECTATION!!');
+    socket.value.disconnect();
+    socket.value = null;
     logoutUser();
+  });
+
+  socket.value.on('disconnect', (reason) => {
+    console.warn('Disconnected:', reason);
+    console.log('BIG DISCONECTATION 2 ELECTRIC BOJALOO!!');
+
+    // handleReconnect();
   });
 };
 
@@ -319,8 +329,14 @@ onMounted(() => {
   const access_token = sessionStorage.getItem('access_token');
   if (access_token && !isLoggedIn.value) {
     console.log("should request re-login");
-    sessionStorage.removeItem('access_token');
-    console.log('WIPED ACCESS TOKEN!');
+    fetchMe();
+    initializeSocket();
+    if (!isLoggedIn.value) {
+      // sessionStorage.removeItem('access_token');
+      console.log('WIPED ACCESS TOKEN!');
+      logoutUser();
+    }
+    console.log('RELOGGED!');
   }
   //todo: re-enable
   // if (!isLoggedIn.value)

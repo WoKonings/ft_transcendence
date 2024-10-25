@@ -80,9 +80,10 @@ export class GameState {
     ) {
       // Collision with left paddle (paddle1)
       this.ball.dx *= -1.1;
-      if (this.bigPong) {
+      if (this.bigPong && this.ball.radius < 4) {
         this.ball.radius += 0.1;
-        this.ball.radius = Math.round(this.ball.radius);
+        this.ball.radius = parseFloat(this.ball.radius.toFixed(1));
+        // this.ball.radius = Math.round(this.ball.radius);
         console.log(`ball grows: ${this.ball.radius}`);
       }
       
@@ -107,9 +108,10 @@ export class GameState {
     ) {
       // Collision with right paddle (paddle2)
       this.ball.dx *= -1.1;
-      if (this.bigPong) {
-        console.log(`ball grows: ${this.ball.radius}`);
+      if (this.bigPong && this.ball.radius < 4) {
         this.ball.radius += 0.1;
+        this.ball.radius = parseFloat(this.ball.radius.toFixed(1));
+        console.log(`ball grows: ${this.ball.radius}`);
       }
       // Adjust ball position to prevent sticking
       // this.ball.x = this.paddle2.x - this.ball.radius;
