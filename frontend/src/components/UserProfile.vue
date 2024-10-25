@@ -3,22 +3,32 @@
     <!-- Action Buttons -->
     <div class="profile-actions">
       <button class="action-button" @click="goToDashboard">Go back</button>
+      
+      
       <button class="action-button" @click="changeUsername">Change Username</button>
       <!-- Updated Avatar Button -->
       <button class="action-button" @click="openFilePicker">Change Avatar</button>
       <input type="file" ref="fileInput" @change="uploadAvatar" accept="image/*" style="display:none" />
-      <!-- <div class="upload-container" @dragover.prevent @drop.prevent="handleDrop" @click="triggerFilePicker">
-        <p>Drag and drop a file here, or click to select a file.</p>
-        <input type="file" ref="fileInput" @change="handleFileSelect" accept="image/*" style="display:none" />
-      </div> -->
+      <button v-if="!currentUser.twoFactorEnabled" class="action-button" @click="enableTwoFactor">Enable 2FA</button>
+      <button v-else class="action-button delete" @click="disableTwoFactor">Disable 2FA</button>
+      <button class="action-button delete" @click="logoutUser">Logout</button>
       <button class="action-button delete" @click="deleteAccount">Delete Account</button>
     </div>
 
+    <!-- QR Code Modal -->
+    <div v-if="showQRCode" class="qr-code-modal">
+      <h4>Scan this QR code with your authenticator app</h4>
+      <img :src="qrCodeUrl" alt="2FA QR Code" />
+      <input v-model="verificationCode" placeholder="Enter verification code" />
+      <button class="action-button" @click="verifyAndEnableTwoFactor">Verify and Enable 2FA</button>
+      <p v-if="twoFactorError" class="error-message">{{ twoFactorError }}</p> <!-- Display error -->
+      <button class="action-button delete" @click="cancelTwoFactor">Cancel</button>
+    </div>
+    
     <!-- Profile Information Section -->
     <div class="profile-header" v-if="currentUser && currentUser.username">
       <div class="profile-picture">
         <img :src="currentUser.avatar ? `http://localhost:3000${currentUser.avatar}` : `https://robohash.org/${currentUser.username}?set=set4`" :alt="`${currentUser.username}'s avatar`" />
-        <!-- <img :src="`http://localhost:3000${currentUser.avatar}` || `https://robohash.org/${currentUser.username}?set=set4`" :alt="`${currentUser.username}'s avatar`" /> -->
       </div>
       <h2>{{ currentUser.username }}</h2>
     </div>
@@ -60,9 +70,9 @@
           <div class="player">
             <img
               v-if="match && match.players"
-              :src="`https://robohash.org/${match.players[0].username}?set=set4`"
+              :src="match.players[0].avatar ? `http://localhost:3000${match.players[0].avatar}` : `https://robohash.org/${match.players[0].username}?set=set4`"
               :alt="`Player One - ${match.players[0].username}`"
-              class="player-pic"
+              class="profile-picture small"
             />
             <div class="player-name">{{ match.players[0].username }}</div>
             <div class="score">{{ match.playerScores[0] }}</div>
@@ -78,9 +88,9 @@
           </div>
           <div class="player">
             <img
-              :src="`https://robohash.org/${match.players[1].username}?set=set4`"
+              :src="match.players[1].avatar ? `http://localhost:3000${match.players[1].avatar}` : `https://robohash.org/${match.players[1].username}?set=set4`"
               :alt="`Player Two - ${match.players[1].username}`"
-              class="player-pic"
+              class="profile-picture small"
             />
             <div class="player-name">{{ match.players[1].username }}</div>
             <div class="score">{{ match.playerScores[1] }}</div>
@@ -110,34 +120,128 @@ const userProfile = ref({});
 const loading = ref(false);
 const matchHistory = ref([]);
 
+// 2fa vars //
+const showQRCode = ref(false);
+const qrCodeUrl = ref('');
+const verificationCode = ref('');
+const twoFactorError = ref(''); // Ref to track the error message
+
+
 const goToDashboard = () => {
   router.push('/');
 }
 
+const enableTwoFactor = async () => {
+  try {
+    const token = sessionStorage.getItem('access_token');
+    const response = await fetch(`http://localhost:3000/auth/2fa/generate`, {
+        method: 'POST',
+        token: verificationCode.value,
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        // body: JSON.stringify({ newUsername }),
+    });
+    const data = await response.json()
+    qrCodeUrl.value = data.qrCode;
+    showQRCode.value = true;
+  } catch (error) {
+    console.error('Error generating 2FA:', error);
+    // Handle error (e.g., show an error message to the user)
+  }
+}
+
+const verifyAndEnableTwoFactor = async () => {
+  try {
+    const token = sessionStorage.getItem('access_token');
+    const response = await fetch(`http://localhost:3000/auth/2fa/verify`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ token: verificationCode.value }),
+      });
+    verificationCode.value = '';
+
+    if (!response.ok)
+    {
+      console.error( 'failed to set 2FA');
+      twoFactorError.value = 'Invalid 2FA code. Please try again.'
+      return;
+    }
+    currentUser.value.twoFactorEnabled = true;
+    showQRCode.value = false;
+    twoFactorError.value = '';
+    alert('2FA verified and enabled :D');
+  } catch (error) {
+    console.error('Error verifying 2FA:', error);
+    // Handle error (e.g., show an error message to the user)
+  }
+};
+
+const disableTwoFactor = async () => {
+  const confirmation = confirm('Are you sure you want to remove 2FA?');
+  if (!confirmation) {
+    console.log ('correct!');
+    return;
+  }
+
+  try {
+    const token = sessionStorage.getItem('access_token');
+    const response = await fetch(`http://localhost:3000/auth/2fa/disable`, {
+        method: 'POST',
+        token: verificationCode.value,
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        // body: JSON.stringify({ newUsername }),
+      });
+    if (!response.ok)
+      console.error( 'wtf bad');
+    currentUser.value.twoFactorEnabled = false;
+    console.log(response.json().message);
+    alert('2FA has been removed');
+
+  } catch (error) {
+    console.error('Error disabling 2FA:', error);
+    // Handle error (e.g., show an error message to the user)
+  }
+};
+
+const cancelTwoFactor = () => {
+  showQRCode.value = false;
+  verificationCode.value = '';
+};
+
+
 // Function to handle username change
 const changeUsername = async () => {
   const newUsername = prompt('Enter your new username:');
-  if (newUsername) {
-    try {
-      const response = await fetch(`http://localhost:3000/user/update-username`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ newUsername }),
-      });
+  if (!newUsername) {
+    return;
+  }
+  try {
+    console.log(`requesting new username: ${newUsername}`);
+    const token = sessionStorage.getItem('access_token');
+    const response = await fetch(`http://localhost:3000/user/update-username`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ newUsername }),
+    });
 
-      if (response.ok) {
-        const updatedUser = await response.json();
-        store.commit('setCurrentUser', updatedUser); // Update Vuex store with the new username
-        alert('Username updated successfully!');
-      } else {
-        throw new Error('Failed to update username');
-      }
-    } catch (error) {
-      console.error('Error updating username:', error);
-      alert('An error occurred while updating your username.');
+    if (response.ok) {
+      alert('Username updated successfully!');
+    } else {
+      throw new Error('Failed to update username');
     }
+  } catch (error) {
+    alert(`${error}`);
   }
 };
 
@@ -149,56 +253,73 @@ const openFilePicker = () => {
 
 const uploadAvatar = async (event) => {
 	const file = event.target.files[0]; // Get the selected file
+  if (!file) {
+    return;
+  }
+  try {
+    const formData = new FormData();
+    formData.append('file', file);
 
-	if (file) {
-		try {
-			const formData = new FormData();
-			formData.append('file', file);
+    // Send the file to your backend
+    const response = await fetch('http://localhost:3000/user/upload-avatar', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${sessionStorage.getItem('access_token')}`,
+      },
+      body: formData, id: currentUser.value.id
+    });
 
-			// Send the file to your backend
-			const response = await fetch('http://localhost:3000/user/upload-avatar', {
-				method: 'POST',
-				headers: {
-					Authorization: `Bearer ${localStorage.getItem('access_token')}`,
-				},
-				body: formData, id: currentUser.value.id
-			});
+    if (response.ok) {
+      // const data = await response.json();
+      alert('Avatar uploaded successfully!');
 
-			if (response.ok) {
-				// const data = await response.json();
-				alert('Avatar uploaded successfully!');
+      // No need to manually commit or update currentUser directly.
+      // The socket will handle this through 'userStatusUpdate'
+    } else {
+      alert('Failed to update avatar.');
+    }
+  } catch (error) {
+    console.error('Error uploading avatar:', error);
+    alert('An error occurred while uploading your avatar.');
+  }
+};
 
-				// No need to manually commit or update currentUser directly.
-				// The socket will handle this through 'userStatusUpdate'
-			} else {
-				alert('Failed to update avatar.');
-			}
-		} catch (error) {
-			console.error('Error uploading avatar:', error);
-			alert('An error occurred while uploading your avatar.');
-		}
-	}
+const logoutUser = () => {
+  if (currentUser.value){
+    // if (socket.value)
+    //   socket.value.emit('logOut', { id: currentUser.value.id})
+    
+    sessionStorage.removeItem('access_token');
+
+    store.dispatch('logOut');
+    socket.value = null;
+
+    router.push('/login');
+  }
 };
 
 // Function to handle account deletion
 const deleteAccount = async () => {
   const confirmation = confirm('Are you sure you want to delete your account? This action cannot be undone.');
-  if (confirmation) {
-    try {
-      const response = await fetch(`http://localhost:3000/user/delete/${currentUser.value.id}`, {
-        method: 'DELETE',
-      });
-
-      if (response.ok) {
-        alert('Account deleted successfully!');
-        // Add any additional actions, such as logging the user out
-      } else {
-        throw new Error('Failed to delete account');
+  if (!confirmation) {
+    return;
+  }
+  try {
+    const response = await fetch(`http://localhost:3000/user/${currentUser.value.id}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${sessionStorage.getItem('access_token')}`,
+        'Content-Type': 'application/json'
       }
-    } catch (error) {
-      console.error('Error deleting account:', error);
-      alert('An error occurred while deleting your account.');
+    });
+    if (!response.ok) {
+      throw new Error('Failed to delete account');
     }
+    alert('Account deleted successfully!');
+    logoutUser();
+  } catch (error) {
+    console.error('Error deleting account:', error);
+    alert('An error occurred while deleting your account.');
   }
 };
 
@@ -236,12 +357,35 @@ onMounted(async () => {
 
   socket.value.on('userStatusUpdate', (data) => {
     console.log('Received status update!');
-		if (data.userId === currentUser.value.id) {
-      if (data.avatar != null) {
-        currentUser.value.avatar = data.avatar;
-        console.log('Updated current user avatar:', data.avatar);
+		// if (data.userId === currentUser.value.id) {
+    //   if (data.avatar != null) {
+    //     currentUser.value.avatar = data.avatar;
+    //     console.log('Updated current user avatar:', data.avatar);
+    //   }
+    // }
+    console.log('updating history?');
+    for (let match of matchHistory.value) {
+      console.log(`id1: ${match.players[0].id} ChID: ${data.userId}`)
+      if (match.players[0].id == data.id) {
+        if (data.username != null)
+          match.players[0].username = data.username;
+        if (data.avatar != null)
+          match.players[0].avatar = data.avatar;
       }
-		}
+      if (match.players[1].id == data.id) {
+        if (data.username != null)
+          match.players[1].username = data.username;
+        if (data.avatar != null)
+          match.players[1].avatar = data.avatar;
+      }
+    }
+
+    if (data.userId == currentUser.value.id) {
+      if (data.username != null)
+        currentUser.value.username = data.username;
+      if (data.avatar != null)
+        currentUser.value.avatar = data.avatar;
+    }
 	});
 });
 </script>
@@ -297,6 +441,17 @@ onMounted(async () => {
   height: 100px;
   border-radius: 50%;
   overflow: hidden;
+  margin-bottom: 10px;
+}
+
+.small {
+  display: flex;
+  flex-direction: column;
+  object-fit: cover;
+  align-items: center;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
   margin-bottom: 10px;
 }
 
@@ -404,5 +559,22 @@ onMounted(async () => {
 
 .elo-loss {
   color: red;
+}
+
+/* 2fa */
+.qr-code-modal {
+  /* Style your modal here */
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background-color: rgba(0, 0, 0, 0.6); /* Lighter overlay */
+  padding: 20px 40px;
+  border-radius: 10px;
+  color: white;
+  font-size: 24px;
+  text-align: center;
+  box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.3);
+  z-index: 1000; /* Ensure it stays on top */
 }
 </style>

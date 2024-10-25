@@ -94,7 +94,7 @@ const fetchFriends = async () => {
     const response = await fetch('http://localhost:3000/user/friends', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+        'Authorization': `Bearer ${sessionStorage.getItem('access_token')}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ userId })
@@ -118,7 +118,7 @@ const fetchPendingRequests = async () => {
     const response = await fetch('http://localhost:3000/user/pending', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+        'Authorization': `Bearer ${sessionStorage.getItem('access_token')}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ userId })
@@ -164,7 +164,7 @@ const initializeSocketListeners = () => {
 
 const updateUserStatus = (username, userId, isOnline, isInGame, isInQueue, avatar) => {
   console.log(`friend: ${username} / ${userId} has changed status on friends: online? ${isOnline} ingame? ${isInGame} inqueue? ${isInQueue}`);
-	const friend = friends.value.find(u => u.username === username);
+	const friend = friends.value.find(u => u.id === userId);
 	if (friend) {
     if (isOnline != null)
       friend.isOnline = isOnline;
@@ -172,6 +172,10 @@ const updateUserStatus = (username, userId, isOnline, isInGame, isInQueue, avata
       friend.isInGame = isInGame;
     if (isInQueue != null)
       friend.isInQueue = isInQueue;
+    if (username != null)
+      friend.username = username;
+    if (avatar != null)
+      friend.avatar = avatar;
 		// Trigger reactivity
 		friends.value = [...friends.value];
 	} else {
@@ -222,7 +226,7 @@ const acceptRequest = async (requestId) => {
     const response = await fetch('http://localhost:3000/user/add', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+        'Authorization': `Bearer ${sessionStorage.getItem('access_token')}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ targetId: requestId, userId: currentUser.value.id })
@@ -244,7 +248,7 @@ const declineRequest = async (requestId) => {
     const response = await fetch('http://localhost:3000/user/remove', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+        'Authorization': `Bearer ${sessionStorage.getItem('access_token')}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -314,7 +318,7 @@ const removeFriend = async (friend) => {
     const response = await fetch('http://localhost:3000/user/remove', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+        'Authorization': `Bearer ${sessionStorage.getItem('access_token')}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({

@@ -45,7 +45,7 @@ const getUsers = () => {
   fetch('http://localhost:3000/user/all', {
     method: 'GET',
     headers: {
-      'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+      'Authorization': `Bearer ${sessionStorage.getItem('access_token')}`,
       'Content-Type': 'application/json',
     },
   })
@@ -69,7 +69,7 @@ const getUsers = () => {
 //todo: add avatar
 const updateUserStatus = (username, userId, isOnline, isInGame, isInQueue, avatar) => {
   console.log(`user: ${username} / ${userId} has changed status: online? ${isOnline} ingame? ${isInGame} inqueue? ${isInQueue}`);
-	const user = users.value.find(u => u.username === username);
+	const user = users.value.find(u => u.id === userId);
 	if (user) {
     if (isOnline != null)
       user.isOnline = isOnline;
@@ -77,6 +77,11 @@ const updateUserStatus = (username, userId, isOnline, isInGame, isInQueue, avata
       user.isInGame = isInGame;
     if (isInQueue != null)
       user.isInQueue = isInQueue;
+    if (username != null)
+      user.username = username;
+    if (avatar != null)
+      user.avatar = avatar;
+    
 		// Trigger reactivity
 		users.value = [...users.value];
 	} else {
@@ -130,11 +135,11 @@ const closeOptions = () => {
 const addAsFriend = (user) => {
 	console.log(`Adding ${user.username}, id: ${user.id} as a friend`);
 	console.log(`Current user ID: ${currentUser.value.id}`);
-	// console.log(`token?: ${localStorage.getItem('access_token')}`);
+	// console.log(`token?: ${sessionStorage.getItem('access_token')}`);
 	fetch('http://localhost:3000/user/add', {
 		method: 'POST',
 		headers: {
-			'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+			'Authorization': `Bearer ${sessionStorage.getItem('access_token')}`,
 			'Content-Type': 'application/json',
 		},
 		body: JSON.stringify({

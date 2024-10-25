@@ -6,6 +6,7 @@ const store = createStore({
       isLoggedIn: false,
       currentUser: null,
       socket: null,
+      inQueue: false,
     };
   },
   mutations: {

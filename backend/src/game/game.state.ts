@@ -10,6 +10,7 @@ export class GameState {
   playerOne: string | null;
   playerTwo: string | null;
   lastUpdateTime: number;
+  bigPong: boolean;
 
 
 	constructor() {
@@ -79,6 +80,11 @@ export class GameState {
     ) {
       // Collision with left paddle (paddle1)
       this.ball.dx *= -1.1;
+      if (this.bigPong) {
+        this.ball.radius += 0.1;
+        this.ball.radius = Math.round(this.ball.radius);
+        console.log(`ball grows: ${this.ball.radius}`);
+      }
       
       // Adjust ball position to prevent sticking
       // this.ball.x = this.paddle1.x + this.paddle1.width + this.ball.radius;
@@ -101,8 +107,12 @@ export class GameState {
     ) {
       // Collision with right paddle (paddle2)
       this.ball.dx *= -1.1;
+      if (this.bigPong) {
+        console.log(`ball grows: ${this.ball.radius}`);
+        this.ball.radius += 0.1;
+      }
       // Adjust ball position to prevent sticking
-      this.ball.x = this.paddle2.x - this.ball.radius;
+      // this.ball.x = this.paddle2.x - this.ball.radius;
       
       // Calculate dynamic angle for right paddle collision
       let relativeIntersectY = this.ball.y - this.paddle2.y;
@@ -128,6 +138,10 @@ export class GameState {
 	}
 
   resetBall() {
+    // if (this.bigPong) {
+    //   console.log('ball size reset');
+    //   this.ball.radius = 0.5;
+    // }
     this.ball = { x: 0, y: 0, dx: 0, dy: 0, radius: 0.5};
     this.ball.x = 0;
     this.ball.y = 0;

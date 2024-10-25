@@ -1,4 +1,4 @@
-import { Controller, UseGuards, Delete, Get, Post, Body, Param, HttpException, HttpStatus, UseInterceptors, UploadedFile, Req } from '@nestjs/common';
+import { Controller, UseGuards, Delete, Get, Post, Body, Param, HttpException, HttpStatus, UseInterceptors, UploadedFile, Req, BadRequestException } from '@nestjs/common';
 import { UserService } from './user.service';
 import { AuthGuard } from '../auth/auth.guard';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -66,8 +66,8 @@ export class UserController {
 
 
 	@Get('search/:username')
-	async getUserByUsernameOrEmail(@Param('username') username: string) {
-		return this.userService.getUserByUsernameOrEmail(username);
+	async getUserByUsername(@Param('username') username: string) {
+		return this.userService.getUserByUsername(username);
 	}
 
 	@Get(':id')
@@ -79,6 +79,26 @@ export class UserController {
 	@Delete(':id')
 	async deleteUser(@Param('id') id: string) {
 		return this.userService.deleteUser(Number(id));
+	}
+
+	@UseGuards(AuthGuard)
+	@Post('update-username')
+	async updateUsername(@Body('newUsername') newUsername: string, @Req() req: Request) {
+    const userPayload = req['user'];
+    
+    console.log(`updating username for ID: ${userPayload.sub} N: ${userPayload.username} req: ${newUsername}`);
+    if (!newUsername || newUsername.trim() === '') {
+      throw new BadRequestException('Username cannot be empty');
+    }
+    if (newUsername.length > 15) {
+      throw new BadRequestException('Username cannot be longer than 15 characters');
+    } 
+    if (newUsername.length < 3) {
+      throw new BadRequestException('Username must be at least 3 characters');
+    }
+
+    console.log (`updating user specs: id: ${userPayload.sub}, newName: ${newUsername}`);
+		return this.userService.updateUsername(userPayload.sub, newUsername);
 	}
 
   @UseGuards(AuthGuard)
@@ -103,6 +123,8 @@ export class UserController {
   async uploadAvatar(@UploadedFile() file: Express.Multer.File, @Req() req: Request) {
     const userPayload = req['user'];
 
+    console.log('wtf: ', userPayload);
+
     // Validate image dimensions
     const dimensions = imageSize(file.path);
     if (dimensions.width < 40 || dimensions.height < 40 || dimensions.width > 2048 || dimensions.height > 2048) {
@@ -124,8 +146,8 @@ export class UserController {
       }
     }
 
-    console.log(`CHANGING AVATAR FOR ${userPayload.id} / ${user.username}`);
-    await this.userService.updateAvatar(userPayload.id, file.filename);
+    console.log(`CHANGING AVATAR FOR ${user.id} / ${user.username}`);
+    await this.userService.updateAvatar(user.id, file.filename);
     return { message: 'Avatar uploaded successfully' };
   }
 }

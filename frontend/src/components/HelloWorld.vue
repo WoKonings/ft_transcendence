@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div v-if="!isCompleteProfileNeeded"> 
+    <div v-if="!show2FAInput"> 
       <form v-if="!isLoggedIn" @submit.prevent="createUser">
         <h2>Create Account</h2>
         <input v-model="newUser.username" placeholder="Username" required />
@@ -19,12 +19,18 @@
       <button @click="login42" v-if="!isLoggedIn">Login with 42</button>
     </div>
 
-    <CompleteUser v-if="isCompleteProfileNeeded && !isLoggedIn" @completeProfile="handleCompleteProfile" />
-
+    <div v-if="show2FAInput" class="twofa-container">
+      <label for="twofa-code">Enter 2FA Code:</label>
+      <input id="twofa-code" v-model="twoFactorCode" type="text" maxlength="6" placeholder="6-digit code" class="twofa-input"/>
+      <button @click="handle2FA" class="twofa-button">Authenticate</button>
+      <button @click="show2FAInput = false" class="twofa-button">Cancel</button>
+      <p v-if="error" class="error-message">{{ error }}</p>
+    </div>
+<!-- 
     <div v-if="isLoggedIn && currentUser">
       <button @click="logoutUser">Logout</button>
       <button @click="deleteAccount">Delete Account</button>
-    </div>
+    </div> -->
 
     <div class="main-container">
       <div class="chat-box-container">
@@ -58,7 +64,6 @@ import PongGame from './PongGame.vue';
 import ChatBox from './Chat-Box.vue';
 import UserList from './UserList.vue';
 import FriendsList from './FriendsList.vue';
-import CompleteUser from './CompleteUser.vue';
 import UserProfile from './UserProfileButton.vue';
 import router from '@/router/router';
 
@@ -77,10 +82,11 @@ const loginDetails = ref({
 const error = ref('');
 const socket = ref(null);
 
-const isCompleteProfileNeeded = ref(false);
 const isLoggedIn = computed(() => store.state.isLoggedIn);
 const currentUser = computed(() => store.state.currentUser);
-// const showGame = computed(() => store.state.showGame);
+
+const twoFactorCode= ref(null);
+const show2FAInput = ref(false);
 
 const createUser = async () => {
   error.value = '';
@@ -99,13 +105,61 @@ const createUser = async () => {
     }
 
     const data = await response.json();
-    localStorage.setItem('access_token', data.access_token);
+    sessionStorage.setItem('access_token', data.access_token);
     console.log(`Received access token: ${data.access_token}`);
     store.dispatch('logIn', data.user);
     fetchMe();
     initializeSocket();
   } catch (error) {
     console.error('Error creating user:', error);
+    error.value = error.message;
+  }
+};
+
+
+const handle2FA = async () => {
+  error.value = '';
+  console.log (`doing 2FA! with: email: ${loginDetails.value.username}, password: ${loginDetails.value.password}`); 
+  try {
+    const token = sessionStorage.getItem('access_token');
+    const response = await fetch('http://localhost:3000/auth/2fa/authenticate', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({
+        username: loginDetails.value.username,
+        password: loginDetails.value.password,
+        token: twoFactorCode.value
+      })
+    });
+    
+    const data = await response.json();
+    
+    if (!response.ok) {
+      throw new Error(data.message || 'Failed to authenticate with 2FA');
+    }
+    
+    // If 2FA authentication succeeds, store the new access token
+    sessionStorage.removeItem('access_token');
+    sessionStorage.setItem('access_token', data.access_token);
+    // loginDetails.value.username = null;
+    // loginDetails.value.password = null;
+    console.log('2FA authentication succeeded:', data.access_token);
+    
+    // Proceed with authenticated state
+    
+    fetchMe();  // Fetch user details after 2FA authentication
+    initializeSocket();  // Initialize WebSocket connection
+    
+    // Clear the 2FA input
+    twoFactorCode.value = '';
+    show2FAInput.value = false;  // Hide the 2FA input
+  } catch (error) {
+    console.error('Error during 2FA authentication:', error);
+    // loginDetails.value.username = null;
+    // loginDetails.value.password = null;
     error.value = error.message;
   }
 };
@@ -117,49 +171,25 @@ const login42 = () => {
 const handleCallback = async () => {
   const route = router.currentRoute.value;
   const token = route.query.token;
-
+  
   if (token) {
-    localStorage.setItem('access_token', token);
-
-    if (route.path === '/choose-username') {
-      isCompleteProfileNeeded.value = true;
-    } else {
+    sessionStorage.setItem('access_token', token);
+  
+    const decodedToken = JSON.parse(atob(token.split('.')[1])); // decoding the JWT payload
+    // clear query params from the URL without reloading the page
+    router.replace({ path: route.path, query: {} });
+    if (decodedToken.pre_auth == true) {
+      console.log ('uh oh 2FA !!!!');
+      show2FAInput.value = true;
+      loginDetails.value.username = decodedToken.username;
+    } else {        
       console.log('should be logging in');
-      // Clear query params from the URL without reloading the page
-      router.replace({ path: route.path, query: {} });
       fetchMe();
       initializeSocket();
     }
-  } else {
-    isCompleteProfileNeeded.value = false;
   }
 };
 
-const handleCompleteProfile = async (username) => {
-  console.log('completing profile?')
-  const access_token = localStorage.getItem('access_token');
-  try {
-    const response = await fetch('http://localhost:3000/auth/complete-profile', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ access_token, username }),
-    });
-
-    const data = await response.json();
-    localStorage.setItem('access_token', data.access_token);
-
-    // Once complete, hide the CompleteUser component and redirect
-    isCompleteProfileNeeded.value = false;
-    store.dispatch('logIn', data.user);
-    fetchMe();
-    initializeSocket();
-
-    // router.push('/dashboard'); // Uncomment if using Vue Router
-  } catch (error) {
-    console.error('Failed to complete profile:', error);
-    error.value = 'Failed to complete profile. Please try again.';
-  }
-};
 
 const loginUser = async () => {
   error.value = '';
@@ -178,10 +208,17 @@ const loginUser = async () => {
     }
 
     const data = await response.json();
-    localStorage.setItem('access_token', data.access_token);
-    console.log(`Received access token: ${data.access_token}`);
-    fetchMe();
-    initializeSocket();
+    sessionStorage.setItem('access_token', data.access_token);
+    
+    const decodedToken = JSON.parse(atob(data.access_token.split('.')[1])); // Decoding the JWT payload
+    if (decodedToken.pre_auth == true) {
+      console.log ('uh oh 2FA !!!!');
+      show2FAInput.value = true;
+    } else {      
+      console.log(`Received access token: ${data.access_token}`);
+      fetchMe();
+      initializeSocket();
+    }
   } catch (error) {
     console.error('Error logging in:', error);
     error.value = error.message;
@@ -190,7 +227,7 @@ const loginUser = async () => {
 
 const fetchMe = async () => {
   console.log ('fetching my profile!');
-  const token = localStorage.getItem('access_token');
+  const token = sessionStorage.getItem('access_token');
   const headers = {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json'
@@ -203,6 +240,12 @@ const fetchMe = async () => {
       throw new Error('Failed to fetch user profile');
     }
     const data = await response.json();
+    if (data.user.twoFactorEnabled == true) {
+      console.log('TWO FA REQUIRED!');
+    } else {
+      console.log('TWO FA DISABLED!');
+    }
+    console.log('user: ', data.user);
     store.dispatch('logIn', data.user);
   } catch {
     console.error('error fetching user profile');
@@ -215,38 +258,40 @@ const logoutUser = () => {
     // if (socket.value)
     //   socket.value.emit('logOut', { id: currentUser.value.id})
     
-    localStorage.removeItem('access_token');
+    sessionStorage.removeItem('access_token');
 
     store.dispatch('logOut');
     socket.value = null;
+
+    router.push('/login');
   }
 };
 
-const deleteAccount = async () => {
-  error.value = '';
-  try {
-    const response = await fetch(`http://localhost:3000/user/${currentUser.value.id}`, {
-      method: 'DELETE',
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
-        'Content-Type': 'application/json'
-      }
-    });
+// const deleteAccount = async () => {
+//   error.value = '';
+//   try {
+//     const response = await fetch(`http://localhost:3000/user/${currentUser.value.id}`, {
+//       method: 'DELETE',
+//       headers: {
+//         'Authorization': `Bearer ${sessionStorage.getItem('access_token')}`,
+//         'Content-Type': 'application/json'
+//       }
+//     });
 
-    if (!response.ok) {
-      const err = await response.json();
-      throw new Error(err.error);
-    }
+//     if (!response.ok) {
+//       const err = await response.json();
+//       throw new Error(err.error);
+//     }
 
-    logoutUser();
-  } catch (error) {
-    console.error('Error deleting account:', error);
-    error.value = error.message;
-  }
-};
+//     logoutUser();
+//   } catch (error) {
+//     console.error('Error deleting account:', error);
+//     error.value = error.message;
+//   }
+// };
 
 const initializeSocket = async () => {
-  const token = localStorage.getItem('access_token');
+  const token = sessionStorage.getItem('access_token');
   if (!token) return;
 
   if (socket.value == null) {
@@ -264,17 +309,17 @@ const initializeSocket = async () => {
     console.log(message);
   });
 
-  socket.value.on('loginElsewhere', (message) => {
+  socket.value.on('disconnected', (message) => {
     console.log(message);
     logoutUser();
   });
 };
 
 onMounted(() => {
-  const access_token = localStorage.getItem('access_token');
+  const access_token = sessionStorage.getItem('access_token');
   if (access_token && !isLoggedIn.value) {
     console.log("should request re-login");
-    localStorage.removeItem('access_token');
+    sessionStorage.removeItem('access_token');
     console.log('WIPED ACCESS TOKEN!');
   }
   //todo: re-enable
@@ -326,6 +371,43 @@ onMounted(() => {
 
 .user-list-container {
   max-width: 100%;
+}
+
+/* 2FA */
+.twofa-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 20px;
+}
+
+.twofa-input {
+  padding: 10px;
+  font-size: 16px;
+  width: 200px;
+  margin-bottom: 10px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+}
+
+.twofa-button {
+  padding: 10px 20px;
+  font-size: 16px;
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+}
+
+.twofa-button:hover {
+  background-color: #45a049;
+}
+
+.error-message {
+  color: red;
+  margin-top: 10px;
 }
 
 </style>

@@ -8,28 +8,32 @@ datasource db {
 }
 
 model User {
-  id           Int           @id @default(autoincrement())
-  username     String        @unique
-  email        String        @unique
-  password     String
-  gamesPlayed  Int           @default(0)
-  createdAt    DateTime      @default(now())
-  elo          Int           @default(600)
-  isBad        Boolean       @default(false)
-  isInGame     Boolean       @default(false)
-  isInQueue    Boolean       @default(false)
-  blocked      Int[]
-  friends      Int[]
-  pending      Int[]
-  socket       String?
-  isOnline     Boolean       @default(false)
-  intraId      Int           @unique @default(autoincrement())
-  avatar       String?
-  gameWins     Int           @default(0)
-  gamesWon     Game[]        @relation("GameWinner")
-  userChannels UserChannel[]
-  games        Game[]        @relation("PlayerGames")
-  channels     Channel[]     @relation("UserChannels")
+  id          Int       @id @default(autoincrement())
+  intraId     Int       @unique @default(autoincrement())
+  username    String    @unique
+  email       String    @unique
+  password    String           
+  avatar      String?
+  twoFactorSecret    String?
+  twoFactorEnabled   Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  socket      String?
+
+  isOnline    Boolean   @default(false)
+  isInGame    Boolean   @default(false)
+  isInQueue   Boolean   @default(false)
+  isBad       Boolean   @default(false)
+
+  friends     Int[]
+  blocked     Int[]
+  pending     Int[]
+  channels    Channel[] @relation("UserChannels") // Implicit many-to-many relation
+
+  games       Game[]    @relation("PlayerGames")
+  gamesWon    Game[]    @relation("GameWinner")
+  gamesPlayed Int       @default(0)
+  gameWins    Int       @default(0)
+  elo         Int       @default(600)
 }
 
 model Channel {

@@ -28,6 +28,10 @@ export class AppGateway implements OnGatewayInit, OnGatewayConnection, OnGateway
       const token = client.handshake.auth.token as string;
       const decoded = this.jwtService.verify(token);
 
+      if (decoded.pre_auth == true) {
+        client.emit('disconnected', { message: 'Need 2FA' });
+        client.disconnect();
+      }
       // console.log(`test: ${decoded.sub}`);
 
       // see if user is already logged in
@@ -40,13 +44,12 @@ export class AppGateway implements OnGatewayInit, OnGatewayConnection, OnGateway
         const userSocket = this.server.sockets.sockets.get(userAlreadyLoggedIn.socket);
         if (userSocket) {
           console.log('found old socket, disconnecting');
-          userSocket.emit('loginElsewhere', { message: 'You have logged in on another instance. You are being logged out here.'});
+          userSocket.emit('disconnected', { message: 'You have logged in on another instance. You are being logged out here.'});
           userSocket.disconnect();
         } else {
           console.log('could not find old socket');
         }
       }
-
 
       // Store the socket.id in the database
       await this.prisma.user.update({

@@ -41,6 +41,7 @@ export class GameService {
             id: true,
             username: true,
             elo: true,
+            avatar: true,
           },
         },
         winner: {
@@ -48,6 +49,7 @@ export class GameService {
             id: true,
             username: true,
             elo: true,
+            avatar: true,
           },
         },
       },

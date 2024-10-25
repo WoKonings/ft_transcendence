@@ -91,7 +91,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const result = await this.chatService.joinChannel(payload.channelName, payload.username, payload.password);
 
     if (result.success) {
-      const user = await this.userService.getUserByUsernameOrEmail(payload.username);
+      const user = await this.userService.getUserByUsername(payload.username);
 
       if (user) {
         await this.prisma.user.update({
