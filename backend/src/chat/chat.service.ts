@@ -3,9 +3,6 @@ import { PrismaService } from '../prisma.service';
 import { Channel, ChannelRole } from '@prisma/client';
 import { UserService } from 'src/user/user.service';
 import { Prisma } from '@prisma/client'; // Importing Prisma to access the ChannelRole enum
-import { Console } from 'console';
-import { channel } from 'process';
-import { Channel } from 'diagnostics_channel';
 
 @Injectable()
 export class ChatService {
@@ -294,7 +291,7 @@ async getChannelWithUsers(channelName: string) {
           role: newRole, // Use the newRole as ChannelRole
         },
       });
-      console.log(`returning  ${}${updatedUserChannel.role}`)
+      console.log(`returning ${updatedUserChannel.role}`)
       return updatedUserChannel;
     } catch (error) {
       console.error('Failed to update user role:', error.message);

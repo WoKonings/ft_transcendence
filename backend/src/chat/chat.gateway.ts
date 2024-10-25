@@ -143,7 +143,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return;
     }
 
-    const user = await this.userService.getUserByUsernameOrEmail(payload.username);
+    const user = await this.userService.getUserByUsername(payload.username);
     if (!user) {
       console.log('User not found');
       return;
