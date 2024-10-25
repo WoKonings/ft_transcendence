@@ -115,6 +115,7 @@ const selectedUser = ref(null);
 
 const openUserOptions = (user, event) => {
   selectedUser.value = user;
+  event; //only here to remove error.
  // modalPosition.value = { x: event.clientX, y: event.clientY };
   console.log("Right-clicked user:", user); 
   console.log(`${currentUser.username} is ${currentUser.role}`);
@@ -188,6 +189,7 @@ const sendMessage = () => {
       timestamp: new Date()
     };
 
+	message; //only here to remove error
     // selectedChat.value.messages.push(message);
 
     // Ensure socket is connected and defined

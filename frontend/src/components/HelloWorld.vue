@@ -36,9 +36,9 @@
       <div class="chat-box-container">
         <ChatBox v-if="isLoggedIn && currentUser" />
         </div>
-        <!-- <div class="pong-game-container">
+        <div class="pong-game-container">
           <PongGame v-if="isLoggedIn && currentUser" />
-        </div>-->
+        </div>
         <div class="sidebar">
           <!-- <div class=""></div> -->
           <UserProfile v-if="isLoggedIn && currentUser" />
