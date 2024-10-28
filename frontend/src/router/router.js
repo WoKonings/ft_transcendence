@@ -30,7 +30,7 @@ const router = createRouter({
 });
 
 router.afterEach((to) => {
-  document.title = to.meta.title || 'Default Title';
+  document.title = to.meta.title || 'ft_transcendence';
 });
 
 export default router;

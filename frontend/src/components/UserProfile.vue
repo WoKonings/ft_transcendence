@@ -345,7 +345,7 @@ onMounted(async () => {
     const matchResponse = await fetch(`http://localhost:3000/game/${currentUser.value.id}`);
     if (!matchResponse.ok) {
       console.log('failed to fetch match history');
-      // throw new Error('Failed to fetch match history');
+      throw new Error('Failed to fetch match history');
     }
     matchHistory.value = await matchResponse.json();
     matchHistory.value.sort((a, b) => new Date(b.endTime) - new Date(a.endTime));
