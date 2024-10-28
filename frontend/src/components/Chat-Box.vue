@@ -206,6 +206,8 @@ const sendMessage = () => {
   }
 }
 
+
+
 const joinNewChannel = async () => {
   try {
     const channelName = prompt("Enter Channel name to join:");
@@ -298,12 +300,22 @@ onMounted(async () => {
   }
   // Ensure selectedChat exists and matches the message channel
   if (selectedChat.value?.name === message.channel) {
-    // Scroll to the bottom only if the message is for the currently selected chat
     scrollToBottom();
   }
 });
   socket.on('updateUserList', (userListData) => {
     userList.value = userListData;
+  });
+
+  socket.on('userRoleUpdated', ({ username, newRole, message }) => {
+    console.log(`User ${username} role updated to ${newRole}`);
+
+    const user = userList.value.find((user) => user.username === username);
+    if (user) {
+      user.role = newRole;
+    }
+
+    alert(`${username} is now ${newRole}. ${message}`);
   });
 });
 </script>

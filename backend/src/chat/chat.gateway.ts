@@ -88,6 +88,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage('joinChannel')
   async handleJoinChannel(client: Socket, payload: { channelName: string; username: string; password: string }) {
     console.log(`trying to join ${payload.channelName} [Gateway]`);
+    const channelExists = await this.chatService.getChannelByName(payload.channelName);
     const result = await this.chatService.joinChannel(payload.channelName, payload.username, payload.password);
 
     if (result.success) {
@@ -99,13 +100,19 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
           data: { socket: client.id },
         });
 
-      await this.chatService.updateUserRole(payload.channelName, user.id, ChannelRole.ADMIN);
-      this.server.to(payload.channelName).emit('userRoleUpdated', {
-        username: user.username,
-        newRole: "ADMIN",
-      });
+        if (!channelExists) {
+          console.log(" emitting role event to front end")
+          await this.chatService.updateUserRole(payload.channelName, user.id, ChannelRole.ADMIN);
+          this.server.to(payload.channelName).emit('userRoleUpdated', {
+            username: user.username,
+            newRole: "ADMIN",
+            message: "Assigned as admin on channel creation",
+          });
 
-      console.log(`${user.username} is now of ${payload.channelName}`)
+
+          console.log(`${user.username} is now Admin of ${payload.channelName}`)
+        }
+
       client.join(payload.channelName);
       console.log(`${payload.username} joined channel: ${payload.channelName}`);
 
@@ -191,7 +198,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       id: userChannel.user.id,
       username: userChannel.user.username,
       isOnline: userChannel.user.isOnline,
-      role: userChannel.role, // Include role in user list
+      role: userChannel.role, 
     }));
 
     this.server.to(channel.name).emit('updateUserList', usersInChannel);
