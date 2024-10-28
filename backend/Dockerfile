@@ -6,6 +6,7 @@ WORKDIR /usr/src/app
 
 # Copy necessary files
 COPY package*.json ./
+
 RUN npm install
 
 COPY . .
@@ -13,6 +14,7 @@ COPY . .
 # Setup Prisma
 RUN npx prisma generate
 RUN npx prisma
+
 # Expose port 3000 to the world outside the container
 EXPOSE 3000
 
