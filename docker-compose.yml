@@ -1,5 +1,3 @@
-# version: '3.7'
-
 services:
   backend:
     build:
@@ -13,7 +11,7 @@ services:
     depends_on:
       - postgres
     environment:
-      DATABASE_URL: postgres://dbuser:dbpassword@postgres:5432/db
+      DATABASE_URL: ${DATABASE_URL}
     restart: on-failure
     mem_limit: 1.5g
 
@@ -24,11 +22,10 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
-    #todo: add .env for the postgres variables
     environment:
-      POSTGRES_USER: dbuser
-      POSTGRES_PASSWORD: dbpassword
-      POSTGRES_DB: db
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     mem_limit: 1.5g
 
   frontend:

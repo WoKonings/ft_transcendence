@@ -4,26 +4,33 @@ import LoginScreen from '@/components/LoginScreen.vue';
 import UserProfile from '@/components/UserProfile.vue';
 
 const routes = [
-	{
-		path: '/',
-		name: 'Home',
-		component: HelloWorld,
-	},
-	{
-		path: '/profile',
-		name: 'Profile',
-		component: UserProfile,  // Profile page
-	},
+  {
+    path: '/',
+    name: 'Home',
+    component: HelloWorld,
+    meta: { title: 'PONG: Transcending'}
+  },
+  {
+    path: '/profile',
+    name: 'Profile',
+    component: UserProfile,
+    meta: { title: 'PONG: Profile'}
+  },
   {
     path: '/login',
     name: 'Login',
     component: LoginScreen,
+    meta: { title: 'PONG: Login'}
   },
 ];
 
 const router = createRouter({
-	history: createWebHistory(),
-	routes,
+  history: createWebHistory(),
+  routes,
+});
+
+router.afterEach((to) => {
+  document.title = to.meta.title || 'Default Title';
 });
 
 export default router;
