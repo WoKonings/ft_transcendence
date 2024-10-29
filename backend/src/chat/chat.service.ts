@@ -190,6 +190,7 @@ export class ChatService {
       await this.prisma.channel.delete({
         where: { id: channel.id },
       });
+
       return { success: true, message: `User ${username} left and channel ${channelName} was deleted because it was empty` };
     }
     return { success: true, message: `User ${username} left ${channelName}` };

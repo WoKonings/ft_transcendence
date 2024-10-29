@@ -12,6 +12,7 @@ import { UserService } from 'src/user/user.service';
 import { Injectable, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '../auth/auth.guard';
 import { ChannelRole } from '@prisma/client';
+import { subscribe } from 'diagnostics_channel';
 
 @WebSocketGateway({ cors: true })
 @UseGuards(AuthGuard)
@@ -88,6 +89,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage('joinChannel')
   async handleJoinChannel(client: Socket, payload: { channelName: string; username: string; password: string }) {
     console.log(`trying to join ${payload.channelName} [Gateway]`);
+    const channelExists = await this.chatService.getChannelByName(payload.channelName);
     const result = await this.chatService.joinChannel(payload.channelName, payload.username, payload.password);
 
     if (result.success) {
@@ -99,13 +101,26 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
           data: { socket: client.id },
         });
 
-      await this.chatService.updateUserRole(payload.channelName, user.id, ChannelRole.ADMIN);
-      this.server.to(payload.channelName).emit('userRoleUpdated', {
-        username: user.username,
-        newRole: "ADMIN",
-      });
+        if (!channelExists) {
+          console.log(" emitting role event to front end");
+          await this.chatService.updateUserRole(payload.channelName, user.id, ChannelRole.ADMIN);
+          this.server.to(payload.channelName).emit('userRoleUpdated', {
+            username: user.username,
+            newRole: "ADMIN",
+            message: "Assigned as admin on channel creation",
+          });
+          console.log(`${user.username} is now Admin of ${payload.channelName}`)
+        }
+        else {
+          console.log("making user default role");
+          await this.chatService.updateUserRole(payload.channelName, user.id, ChannelRole.MEMBER);
+          this.server.to(payload.channelName).emit('userRoleUpdated', {
+            username: user.username,
+            newRole: "MEMBER",
+            message: "Assigned as MEMBER on channel creation",
+          });
+        }
 
-      console.log(`${user.username} is now of ${payload.channelName}`)
       client.join(payload.channelName);
       console.log(`${payload.username} joined channel: ${payload.channelName}`);
 
@@ -130,31 +145,36 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('updateUserRole')
-  async handleUpdateUserRole(client: Socket, payload: { channelName: string; username: string; newRole: string }) {
-    console.log(`Updating role for ${payload.username} in channel: ${payload.channelName} to ${payload.newRole}`);
-
+  async handleUpdateUserRole(client: Socket, payload: { channelId: number; userId: number; role: string }) {
+    
     const channel = await this.prisma.channel.findFirst({
-      where: { name: payload.channelName },
+      where: { id: payload.channelId },
       include: { userChannels: { include: { user: true } } },
     });
-
+    
     if (!channel) {
       console.log('Channel does not exist');
       return;
     }
 
-    const user = await this.userService.getUserByUsername(payload.username);
+    const user = await this.userService.getUserById(payload.userId);
     if (!user) {
       console.log('User not found');
       return;
     }
-
-    if (!(payload.newRole in ChannelRole)) {
-      console.error(`Invalid role: ${payload.newRole}`);
+    console.log(`Updating role for ${user.username} in channel: ${channel.name} to ${payload.role}`);
+    
+    if (!(payload.role in ChannelRole)) {
+      console.error(`Invalid role: ${payload.role}`);
       return client.emit('error', 'Invalid role');
     }
-    
-    const newRoleEnumValue = ChannelRole[payload.newRole as keyof typeof ChannelRole];
+
+    console.log('Updating role for user:', user.id, 'in channel:', channel.id);
+    const userChannelRecord = await this.chatService.getUserChannel(channel.id, user.id);
+
+    console.log('UserChannel Record:', userChannelRecord);
+
+    const newRoleEnumValue = ChannelRole[payload.role as keyof typeof ChannelRole];
     // Update the user's role in the specified channel
     await this.prisma.userChannel.update({
       where: {
@@ -165,15 +185,15 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       },
     });
 
-    console.log(`Updated role for ${user.username} to ${payload.newRole} in channel: ${payload.channelName}`);
+    console.log(`Updated role for ${user.username} to ${payload.role} in channel: ${channel.name}`);
 
     // Notify users in the channel about the role update
-    this.server.to(payload.channelName).emit('userRoleUpdated', {
+    this.server.to(channel.name).emit('userRoleUpdated', {
       username: user.username,
-      newRole: payload.newRole,
+      newRole: payload.role,
     });
 
-    await this.updateUserList(payload.channelName);
+    await this.updateUserList(channel.name);
   }
 
   async updateUserList(channelName: string) {
@@ -191,12 +211,26 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       id: userChannel.user.id,
       username: userChannel.user.username,
       isOnline: userChannel.user.isOnline,
-      role: userChannel.role, // Include role in user list
+      role: userChannel.role, 
     }));
 
     this.server.to(channel.name).emit('updateUserList', usersInChannel);
     console.log(`Updated user list in channel ${channelName}`);
   }
+
+  @SubscribeMessage('getUserRole')
+  async getUseRole(payload: {userId: number, channelId: number}) {
+    const userRole = this.chatService.getUserChannel(payload.channelId, payload.userId); 
+
+    if (!userRole)
+      {
+        console.log("userRole dont exist");
+        return null;
+      }
+
+      return
+
+  } 
 
   @SubscribeMessage('getUserList')
   async handleGetUserList(client: Socket, payload: { channel: string }) {

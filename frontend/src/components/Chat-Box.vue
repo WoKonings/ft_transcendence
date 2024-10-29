@@ -87,8 +87,8 @@
 
       <!-- Modal for User Options (Assign Role, Kick) -->
       <div v-if="showUserOptions" class="user-options-modal" @click="closeUserOptions">
-        <button v-if="currentUser.role === 'Admin'" @click="assignRole('Admin')">Assign Admin</button>
-        <button v-if="currentUser.role === 'Admin'" @click="assignRole('User')">Assign User</button>
+        <button v-if="currentUser.role === 'ADMIN'" @click="assignRole('ADMIN')">Assign Admin</button>
+        <button v-if="currentUser.role === 'ADMIN'" @click="assignRole('MEMBER')">Assign User</button>
         <button @click="kickUser">Kick from Channel</button>
       </div>
     </div>
@@ -128,6 +128,7 @@ const closeUserOptions = () => {
 }
 
 const assignRole = (role) => {
+  console.log(`assigning ${selectedUser.value.username} to ${role}`)
   if (selectedUser.value) {
     socket.emit('updateUserRole', {
       channelId: selectedChat.value.id,
@@ -136,6 +137,8 @@ const assignRole = (role) => {
     });
   }
   showUserOptions.value = false;
+
+  alert(`${selectedUser.value.username} is now ${role}.`);
 };
 
 const kickUser = () => {
@@ -206,6 +209,8 @@ const sendMessage = () => {
     newMessage.value = '';
   }
 }
+
+
 
 const joinNewChannel = async () => {
   try {
@@ -299,12 +304,26 @@ onMounted(async () => {
   }
   // Ensure selectedChat exists and matches the message channel
   if (selectedChat.value?.name === message.channel) {
-    // Scroll to the bottom only if the message is for the currently selected chat
     scrollToBottom();
   }
 });
   socket.on('updateUserList', (userListData) => {
     userList.value = userListData;
+
+    const currentUserInList= userList.value.find(user => user.id === currentUser.id)
+    console.log(`currentuser Role ${currentUserInList.role}`);
+    currentUser.role = currentUserInList.role;
+  });
+
+  socket.on('userRoleUpdated', ({ username, newRole, message }) => {
+    console.log(`userRoleUpdated event called: User ${username} role updated to ${newRole}`);
+
+    const user = userList.value.find((user) => user.username === username);
+    if (user) {
+      user.role = newRole;
+    }
+
+    alert(`${username} is now ${newRole}. ${message}`);
   });
 });
 </script>
