@@ -17,6 +17,7 @@ export class GameController {
   @UseGuards(AuthGuard)
   async getUserGames(@Param('userId') userId: string) {
     const id = Number(userId);
+    console.log (`test: ${this.gameService.getUserGames(id)}`);
     return this.gameService.getUserGames(id);
   }
 }

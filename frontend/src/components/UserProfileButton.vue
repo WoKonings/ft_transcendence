@@ -32,11 +32,11 @@ const goToProfile = () => {
   align-items: center;
   cursor: pointer;
   background-color: #f4f4f4; /* Example background, adjust as per your theme */
-  padding: 10px;
-  width: 12%;
+  padding: 8px;
+  width: 100%;
   min-width: 200px;
   height: 4%;
-  border-radius: 10px;
+  border-radius: 8px;
   box-shadow: 1px 1px 20px rgba(128, 40, 40, 0.829);
   transition: background-color 0.3s ease;
   margin-bottom: 20px;

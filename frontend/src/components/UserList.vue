@@ -1,7 +1,7 @@
 <template>
-  <div class="user-list" :style="{ maxHeight: '40vh' }">
+  <div class="user-list">
     <h2>Users</h2>
-    <div v-for="user in sortedUsers" :key="user.id" class="user" @click="selectUser(user)">
+    <div v-for="user in sortedUsers" :key="user.id" class="user" @click="viewProfile(user)">
       <div class="avatar">
         <img :src="user.avatar ? `http://localhost:3000${user.avatar}` : `https://robohash.org/${user.username}?set=set4`" :alt="`${user.username}`" />
       </div>
@@ -9,13 +9,6 @@
       <div class="username">{{ user.username }}</div>
     </div>
 
-    <div v-if="selectedUser" class="options-overlay" @click="closeOptions">
-      <div class="options" @click.stop>
-        <button @click="addAsFriend(selectedUser)">Add as Friend</button>
-        <button @click="sendMessage(selectedUser)">Send Message</button>
-        <button @click="viewProfile(selectedUser)">Profile</button>
-      </div>
-    </div>
     <ViewProfile
       :selectedUser="selectedUser"
       :isVisible="isProfileVisible"
@@ -168,6 +161,7 @@ const addAsFriend = (user) => {
 // }
 
 const viewProfile = (user) => {
+  selectedUser.value = user;
   isProfileVisible.value = true; // Show the profile modal
   console.log(`viewing ${user.username}`); 
 };
@@ -197,14 +191,14 @@ onMounted(() => {
 	width: 100%;
 	max-width: 100%;
 	border: 1px solid #ccc;
+  height: 45vh;
 	border-radius: 8px;
-	padding: 10px;
+	padding: 6px;
 	background-color: #f2f2f2;
 	overflow-y: auto; /* Enable scrolling for the content area */
 	
 	/* Scrollbar Styles */
   scroll-behavior: smooth;
-
 }
 
 .user {

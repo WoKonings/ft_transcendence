@@ -183,13 +183,13 @@ watch(() => selectedChat.value, (newChat) => {
 
 const sendMessage = () => {
   if (newMessage.value.trim() !== '' && selectedChat.value) {
-    const message = { 
-      sender: currentUser.username, 
-      text: newMessage.value,
-      timestamp: new Date()
-    };
+    // const message = { 
+    //   sender: currentUser.username, 
+    //   text: newMessage.value,
+    //   timestamp: new Date()
+    // };
 
-	message; //only here to remove error
+
     // selectedChat.value.messages.push(message);
 
     // Ensure socket is connected and defined
@@ -203,6 +203,7 @@ const sendMessage = () => {
     } else {
       console.error('Socket is not initialized.');
     }
+    newMessage.value = '';
   }
 }
 
@@ -323,11 +324,8 @@ body {
 
 .chat-container {
   display: flex;
-  width: 90%; /* Percentage of the parent width */
-  height: 80vh; /* 80% of the viewport height */
-  max-width: 1200px; /* Maximum width to prevent stretching on very wide screens */
-  max-height: 800px; /* Maximum height to prevent stretching on very tall screens */
-  margin: auto;
+  width: 100%; /* Percentage of the parent width */
+  height: 100%; /* 80% of the viewport height */
   font-family: Arial, sans-serif;
   color: #333;
   border: 1px solid #e0e0e0;
@@ -338,7 +336,6 @@ body {
 
 .sidebar {
   width: 25%; /* Percentage of the chat container width */
-  min-width: 150px; /* Minimum width to ensure readability */
   background-color: #2c2c2c;
   color: #fff;
   padding: 2%;
@@ -390,10 +387,11 @@ body {
 }
 
 .main-content {
-  flex: 1;
   display: flex;
   flex-direction: column;
   background-color: #f9f9f9;
+  height: 100%;
+  width: 50%;
 }
 
 .chat-header {
@@ -425,13 +423,18 @@ body {
   background-color: #d32f2f;
 }
 
-.messages {
-  flex: 1;
-  padding: 15%;
-  overflow-y: auto; /* Enables scrolling when content overflows */
-  max-height: 70vh; /* Limit the height of the messages area */
+.chat-box {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 
+.messages {
+  flex: 1;
+  padding: 2%;
+  overflow-y: auto; /* Enables scrolling when content overflows */
+  max-height: calc(80vh - 100px);
+}
 
 .message {
   margin-bottom: 2%;
@@ -468,7 +471,7 @@ body {
 
 .input-container {
   display: flex;
-  padding: 2%;
+  padding: 1%;
   background-color: #fff;
   border-top: 1px solid #e0e0e0;
 }
@@ -507,8 +510,8 @@ input {
 }
 
 .user-list-window {
-  width: 20%; /* Percentage of the chat container width */
-  min-width: 120px; /* Minimum width to ensure readability */
+  width: 25%; /* Percentage of the chat container width */
+  min-width: 20px; /* Minimum width to ensure readability */
   background-color: #f1f1f1;
   padding: 1.5%;
   overflow-y: auto;

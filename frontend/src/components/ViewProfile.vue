@@ -26,6 +26,8 @@
           />
         </div>
         <h2>{{ userProfile.username }}</h2>
+        <button @click="addAsFriend(selectedUser)">Add as Friend</button>
+        <button @click="sendMessage(selectedUser)">Send Message</button>
       </div>
       <div v-if="loading" class="loading">Loading...</div>
       <div v-else class="profile-info">
@@ -95,73 +97,83 @@
   </div>
 </template>
 
-<script>
-import { ref } from 'vue';
+<script setup>
+import { ref, watch } from 'vue';
 
-export default {
-  name: 'ViewProfile',
-  props: {
-    selectedUser: {
-      type: Object,
-      default: null,
-    },
-    isVisible: {
-      type: Boolean,
-      default: false,
-    },
+const userProfile = ref({});
+const loading = ref(false);
+const matchHistory = ref([]);
+const emit = defineEmits();
+const props = defineProps({
+  selectedUser: {
+    type: Object,
+    default: null,
   },
-  setup(props, { emit }) {
-    const userProfile = ref({});
-    const loading = ref(false);
-    const matchHistory = ref([]);
-
-    const fetchUserProfile = async () => {
-      if (!props.selectedUser) {
-        console.log('failed fetching user or selected user');
-        return;
-      }
-      loading.value = true;
-      try {
-        // Fetch the user profile
-        const userResponse = await fetch(`http://localhost:3000/user/search/${props.selectedUser.username}`);
-        if (!userResponse.ok) {
-          throw new Error('Failed to fetch user profile');
-        }
-        userProfile.value = await userResponse.json();
-
-        // Fetch the match history
-        const matchResponse = await fetch(`http://localhost:3000/game/${props.selectedUser.id}`);
-        if (!matchResponse.ok) {
-          throw new Error('Failed to fetch match history');
-        }
-        matchHistory.value = await matchResponse.json();
-        matchHistory.value.sort((a, b) => new Date(b.endTime) - new Date(a.endTime));
-        console.log("history?: ", matchHistory);
-
-
-    return { userProfile, matchHistory, loading };
-      } catch (error) {
-        console.error(error);
-      } finally {
-        loading.value = false;
-      }
-    };
-
-    const closeProfile = () => {
-      console.log('test: ', userProfile.value.gamesWon)
-      emit('close');
-    };
-
-    return { userProfile, loading, fetchUserProfile, closeProfile, matchHistory };
+  isVisible: {
+    type: Boolean,
+    default: false,
   },
-  watch: {
-    isVisible(newVal) {
-      if (newVal) {
-        this.fetchUserProfile();
+});
+
+// Fetch user profile function
+const fetchUserProfile = async () => {
+  if (!props.selectedUser) {
+    console.log('failed fetching user or selected user');
+    return;
+  }
+  loading.value = true;
+  try {
+    // Fetch the user profile
+    console.log(`fetching: ${props.selectedUser.username}, ${props.selectedUser.id}`)
+    const userResponse = await fetch(`http://localhost:3000/user/search/${props.selectedUser.username}`, {
+      method: 'GET',  
+      headers: {
+        'Authorization': `Bearer ${sessionStorage.getItem('access_token')}`,
+        'Content-Type': 'application/json',
       }
-    },
-  },
+    });
+    if (!userResponse.ok) {
+      throw new Error('Failed to fetch user profile');
+    }
+    userProfile.value = await userResponse.json();
+
+    // Fetch the match history
+    console.log(`fetching games: ${props.selectedUser.username}, ${props.selectedUser.id}`)
+    const matchResponse = await fetch(`http://localhost:3000/game/${props.selectedUser.id}`, {
+      method: 'GET',  
+      headers: {
+        'Authorization': `Bearer ${sessionStorage.getItem('access_token')}`,
+        'Content-Type': 'application/json',
+      }
+    });
+    if (!matchResponse.ok) {
+      throw new Error('Failed to fetch match history');
+    }
+    matchHistory.value = await matchResponse.json();
+    matchHistory.value.sort((a, b) => new Date(b.endTime) - new Date(a.endTime));
+    console.log("history?: ", matchHistory);
+  } catch (error) {
+    console.error(error);
+  } finally {
+    loading.value = false;
+  }
 };
+
+// Close profile function
+const closeProfile = () => {
+  console.log('test: ', userProfile.value.gamesWon);
+  emit('close');
+};
+
+// Watcher for isVisible prop
+watch(() => props.isVisible, (newVal) => {
+  if (newVal) {
+    fetchUserProfile();
+  }
+});
+
+// Fetch user profile when component mounts (if needed)
+// fetchUserProfile();
 </script>
 
 <style scoped>

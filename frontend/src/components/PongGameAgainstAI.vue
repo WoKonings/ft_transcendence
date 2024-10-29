@@ -5,21 +5,22 @@
       <div class="score"> AI: {{ aiScore }}</div>
     </div>
     <div class="pong-game" ref="container"></div>
-    <button v-if="!waitingForOpponent" @click="queueForPong(false)" class="queue-button">Queue for Pong</button>
-    <button v-if="!waitingForOpponent" @click="queueForPong(true)" class="queue-button">Queue for Big Pong</button>
-    <!-- <button v-if="!waitingForOpponent" @click="queueForPong('flashy')" class="queue-button">Queue for Flashy Pong</button> -->
-    <button v-if="!waitingForOpponent" @click="resetPong()" class="queue-button">Reset Score</button>
-    <div v-if="!playerHasMovedPaddle">Use W/S or Up and Down arrow keys to move your paddle!</div>
-    <div v-if="waitingForOpponent" class="waiting-overlay">
-      Waiting for opponent...
-      <div class="half-circle-spinner">
-        <div class="circle circle-1"></div>
-        <div class="circle circle-2"></div>
+    
+    <!-- <div v-if="!playerHasMovedPaddle">Use W/S or Up and Down arrow keys to move your paddle!</div> -->
+    <div class="queue-container" >
+      <button @click="resetPong()" class="queue-button">Reset Score</button>
+      <button v-if="!waitingForOpponent" @click="queueForPong(false)" class="queue-button">Queue for Pong</button>
+      <button v-if="!waitingForOpponent" @click="queueForPong(true)" class="queue-button">Queue for Big Pong</button>
+      <div v-if="waitingForOpponent" class="waiting-overlay">
+        Waiting for opponent...
+        <div class="half-circle-spinner">
+          <div class="circle circle-1"></div>
+          <div class="circle circle-2"></div>
+        </div>
+        <button @click="stopQueue" class="cancel-button">Cancel Queue</button>
       </div>
-      <button @click="stopQueue" class="cancel-button">Cancel Queue</button>
     </div>
   </div>
-
 </template>
 
 <script setup>
@@ -59,11 +60,12 @@ const initGame = () => {
 const initThreeJS = () => {
   // ... (similar to the main component, but without particles)
   scene = new THREE.Scene();
-  const width = window.innerWidth * 0.6;
+  const width = window.innerWidth * 0.8;
   const height = window.innerHeight * 0.5;
 
   camera = new THREE.PerspectiveCamera(80, width / height, 0.1, 1000);
   camera.position.z = 20;
+  camera.position.x = 2;
 
   renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setSize(width, height);
@@ -81,11 +83,11 @@ const initThreeJS = () => {
   });
 
   playerPaddle = new THREE.Mesh(paddleGeometry, Material);
-  playerPaddle.position.x = -14;
+  playerPaddle.position.x = -18;
   scene.add(playerPaddle);
 
   aiPaddle = new THREE.Mesh(paddleGeometry, Material);
-  aiPaddle.position.x = 14;
+  aiPaddle.position.x = 18;
   scene.add(aiPaddle);
 
   const ballGeometry = new THREE.SphereGeometry(0.5, 32, 32);
@@ -108,9 +110,18 @@ const initThreeJS = () => {
   const midline = new THREE.Mesh(midlineGeometry, midlineMaterial);
   midline.position.set(0, 0, -1);
   scene.add(midline);
+  
+  // Todo: remove
+  // temporary line geo 
+  // const endline1 = new THREE.Mesh(midlineGeometry, midlineMaterial);
+  // endline1.position.set(20, 0, -1);
+  // const endline2 = new THREE.Mesh(midlineGeometry, midlineMaterial);
+  // endline2.position.set(-20, 0, -1);  
+  // scene.add(endline1);
+  // scene.add(endline2);
 
   // Create the top and bottom lines
-  const topLineGeometry = new THREE.BoxGeometry(40, 0.2, 1);
+  const topLineGeometry = new THREE.BoxGeometry(48, 0.2, 1);
   const bottomLineGeometry = topLineGeometry.clone();
   const lineMaterial = new THREE.MeshPhongMaterial({
     color: 0xffffff
@@ -209,10 +220,10 @@ const updateGameState = () => {
   }
 
   // Scoring
-  if (ball.position.x < -20) {
+  if (ball.position.x < -24) {
     aiScore.value++;
     resetBall();
-  } else if (ball.position.x > 20) {
+  } else if (ball.position.x > 24) {
     playerScore.value++;
     resetBall();
     checkAndUpdateAiPaddleColor();
@@ -386,8 +397,9 @@ const handleStopPlayerMove = (event) => {
 };
 
 const onWindowResize = () => {
-  const width = window.innerWidth * 0.6;
   const height = window.innerHeight * 0.5;
+  const width = window.innerWidth * 0.8;
+
   renderer.setSize(width, height);
   camera.aspect = width / height;
   camera.updateProjectionMatrix();
@@ -402,7 +414,8 @@ const queueForPong = (bigPong) => {
       bigPong: bigPong,
     });
     waitingForOpponent.value = true;
-    inQueue.value = true;
+    store.commit('SET_IN_QUEUE', true);
+    
     console.log(`sent joinGame from socket: ${socket.value.id}, with UID: ${currentUser.value.id}, name: ${currentUser.value.username}`);
   } else {
     console.log('somehow no socket.value');
@@ -449,26 +462,18 @@ onBeforeUnmount(() => {
 <style scoped>
 .game-container {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  flex-direction: row;
   position: relative;
   background-color: #1a1a1a;
-  width: 60vw;
-  height: 80vh;
-  margin: 0 auto;
-  border-radius: 8px;
+  overflow: hidden;
 }
 
 .pong-game {
   display: flex;
-  justify-content: center;
-  align-items: center;
-  width: 80%;
-  height: 100%;
-  position: relative;
+  width: 95%;
+  height: 90%;
   overflow: hidden;
-  margin: 0 auto;
+  border-radius: 6px;
 }
 
 .scoreboard {
@@ -487,35 +492,39 @@ onBeforeUnmount(() => {
 
 /* queue stuff */
 .waiting-overlay {
-  position: relative;
-  background-color: rgba(0, 0, 0, 0.6); /* Lighter overlay */
+  position: fixed;
+  background-color: rgba(0, 0, 0, 0.6);
   padding: 20px 40px;
   border-radius: 10px;
   color: white;
   font-size: 24px;
   text-align: center;
-  box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.3);
-  z-index: 1000; /* Ensure it stays on top */
+  /* box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.3); */
+  z-index: 1000;
 }
 
 .queue-container {
   display: flex;
-	flex-direction: column;
+	flex-direction: row;
 	align-items: center; /* Center horizontally */
 	justify-content: center; /* Center vertically */
-	padding-top: 20vh; /* Adjust to your preference */
+	padding-top: 1px; /* Adjust to your preference */
+  width: 100%;
 }
 
 .queue-button {
-	padding: 15px;
-	width: 10vw;
+	/* padding: 10px; */
+  padding: 1vh 2vw;
+  height: 3vh;
+	width: 15vw;
 	margin-bottom: 10px;
-	background-color: #4CAF50;
+	background-color: #e0e0e0;
+	/* background-color: #4CAF50; */
 	transition: background-color 0.3s;
 	border: none;
 	border-radius: 8px;
 	cursor: pointer;
-	font-size: 1em;
+	font-size: 1vw 1vh;
 }
 
 .queue-button:hover {
@@ -538,18 +547,19 @@ onBeforeUnmount(() => {
   background-color: #ff3333;
 }
 
-
 /* spinner loading animation */
 .half-circle-spinner, .half-circle-spinner * {
   box-sizing: border-box;
 }
 
 .half-circle-spinner {
+  /* width: 60%; */
+  /* height: 60%; */
   width: 60px;
   height: 60px;
   border-radius: 100%;
   position: relative;
-  margin: 20px auto;
+  margin: 5px auto;
 }
 
 .half-circle-spinner .circle {

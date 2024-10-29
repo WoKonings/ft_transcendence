@@ -33,23 +33,24 @@
     </div> -->
 
     <div class="main-container">
-      <div class="chat-box-container">
-        <ChatBox v-if="isLoggedIn && currentUser" />
-        </div>
+      <div class="content-container">
         <div class="pong-game-container">
           <PongGame v-if="isLoggedIn && currentUser" />
         </div>
-        <div class="sidebar">
-          <!-- <div class=""></div> -->
-          <UserProfile v-if="isLoggedIn && currentUser" />
-          <div class="friends-list-container">
-            <FriendsList v-if="isLoggedIn && currentUser" />
-          </div>
-          <div class="user-list-container">
-            <UserList v-if="isLoggedIn && currentUser" />
-          </div>
+        <div class="chat-box-container">
+          <ChatBox v-if="isLoggedIn && currentUser" />
         </div>
       </div>
+      <div class="sidebar">
+        <UserProfile v-if="isLoggedIn && currentUser" />
+        <div class="friends-list-container">
+          <FriendsList v-if="isLoggedIn && currentUser" />
+        </div>
+        <div class="user-list-container">
+          <UserList v-if="isLoggedIn && currentUser" />
+        </div>
+      </div>
+    </div>
   </div>
 
     <p v-if="error" style="color: red">{{ error }}</p>
@@ -259,7 +260,7 @@ const logoutUser = () => {
     //   socket.value.emit('logOut', { id: currentUser.value.id})
     
     sessionStorage.removeItem('access_token');
-
+    
     store.dispatch('logOut');
     socket.value = null;
 
@@ -268,47 +269,49 @@ const logoutUser = () => {
 };
 
 // const deleteAccount = async () => {
-//   error.value = '';
+  //   error.value = '';
 //   try {
-//     const response = await fetch(`http://localhost:3000/user/${currentUser.value.id}`, {
-//       method: 'DELETE',
-//       headers: {
-//         'Authorization': `Bearer ${sessionStorage.getItem('access_token')}`,
-//         'Content-Type': 'application/json'
-//       }
-//     });
-
-//     if (!response.ok) {
-//       const err = await response.json();
-//       throw new Error(err.error);
-//     }
-
+  //     const response = await fetch(`http://localhost:3000/user/${currentUser.value.id}`, {
+    //       method: 'DELETE',
+    //       headers: {
+      //         'Authorization': `Bearer ${sessionStorage.getItem('access_token')}`,
+      //         'Content-Type': 'application/json'
+      //       }
+      //     });
+      
+      //     if (!response.ok) {
+        //       const err = await response.json();
+        //       throw new Error(err.error);
+        //     }
+        
 //     logoutUser();
 //   } catch (error) {
-//     console.error('Error deleting account:', error);
-//     error.value = error.message;
-//   }
-// };
-
-const initializeSocket = async () => {
-  const token = sessionStorage.getItem('access_token');
-  if (!token) return;
-
-  if (socket.value == null) {
-    console.log('requesting new socket');
-    socket.value = await io('http://localhost:3000', {
-      auth: { token },
-    }); 
-    store.commit('SET_SOCKET', socket.value);
+  //     console.error('Error deleting account:', error);
+  //     error.value = error.message;
+  //   }
+  // };
+  
+  const initializeSocket = async () => {
+    const token = sessionStorage.getItem('access_token');
+    if (!token) return;
+    
+    if (socket.value == null) {
+      console.log('requesting new socket');
+      socket.value = await io('http://localhost:3000', {
+        reconnectionDelay: 5000,
+        reconnectionAttemps: 5,
+        auth: { token },
+      }); 
+      store.commit('SET_SOCKET', socket.value);
     console.log('established socket');
   }
-
+  
   if (socket.value == null)
-    return;
+  return;
   socket.value.on('connected', (message) => {
     console.log(message);
   });
-
+  
   socket.value.on('disconnected', (message) => {
     console.log(`$jerror ${message}`);
     console.log('BIG DISCONECTATION!!');
@@ -320,8 +323,12 @@ const initializeSocket = async () => {
   socket.value.on('disconnect', (reason) => {
     console.warn('Disconnected:', reason);
     console.log('BIG DISCONECTATION 2 ELECTRIC BOJALOO!!');
-
+    // alert('Disconnected from server');
     // handleReconnect();
+  });
+
+  socket.value.on('connect_error', (error) => {
+    console.log('Socket connection error:', error);
   });
 };
 
@@ -348,34 +355,37 @@ onMounted(() => {
 <style scoped>
 .main-container {
   display: flex;
-  justify-content: space-between;
   align-items: flex-start;
+  width: 100vw;
   height: 100vh;
   padding: 20px;
   box-sizing: border-box;
 }
 
-.chat-box-container {
+.content-container {
   display: flex;
   flex-direction: column;
-  justify-content: flex-start;
-  align-items: center;
-  width: 100%; /* Ensure full width */
-  height: 100%; /* Occupies full height */
-  padding: 10px;
-  box-sizing: border-box;
+  width: calc(100vw - 20vw);
+  margin-left: auto;
+  margin-right: 20px;
 }
 
+.chat-box-container {
+  display: flex;
+  width: 80vw;
+  height: 34vh;
+}
 
 .pong-game-container {
   display: flex;
-  justify-content: center;
-  align-items:end;
+  width: 80vw;
+  height: 63vh;
 }
 
 .sidebar {
   display: flex;
   margin-left: 20px;
+  width: 15vw;
   flex-direction: column;
   justify-content: space-between;
   max-width: 300px;

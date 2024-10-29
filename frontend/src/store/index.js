@@ -25,6 +25,9 @@ const store = createStore({
     SET_SOCKET(state, socket) {
       state.socket = socket;
     },
+    SET_IN_QUEUE(state, value) {
+      state.inQueue = value;
+    },
   },
   actions: {
     logIn({ commit }, user) {

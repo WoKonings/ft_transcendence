@@ -15,8 +15,8 @@ export class GameState {
 
 	constructor() {
 		this.resetBall();
-		this.paddle1 = { x: -14, y: 0, width: 1, height: 4, dy: 0 };
-		this.paddle2 = { x: 14, y: 0, width: 1, height: 4, dy: 0 };
+		this.paddle1 = { x: -18, y: 0, width: 1, height: 4, dy: 0 };
+		this.paddle2 = { x: 18, y: 0, width: 1, height: 4, dy: 0 };
 		this.score = { playerOne: 0, playerTwo: 0 };
 		this.playerOne = null;
 		this.playerTwo = null;
@@ -128,11 +128,11 @@ export class GameState {
     }
 
 		// Ball collision with left and right screen boundaries and award score.
-		if (this.ball.x - this.ball.radius < -20) {
+		if (this.ball.x - this.ball.radius < -24) {
 			this.score.playerTwo += 1;
       console.log(`player 2 scored`);
 			this.resetBall();
-		} else if (this.ball.x + this.ball.radius > 20) {
+		} else if (this.ball.x + this.ball.radius > 24) {
       this.score.playerOne += 1;
       console.log(`player 1 scored`);
 			this.resetBall();

@@ -1,5 +1,5 @@
 <template>
-  <div class="user-list" :style="{ maxHeight: '40vh' }">
+  <div class="user-list">
     <h2>Friends</h2>
     <div class="header">
       <button v-if="pendingFriendRequests.length > 0" class="notification" @click="viewPendingRequests">
@@ -367,8 +367,9 @@ onMounted(() => {
 	width: 100%;
   max-width: 100%;
 	border: 1px solid #ccc;
+  height: 40vh;
 	border-radius: 8px;
-	padding: 10px;
+	padding: 6px;
 	background-color: #f2f2f2;
   overflow-y: auto; /* Enable scrolling for the content area */
 }

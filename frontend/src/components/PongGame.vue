@@ -469,8 +469,8 @@ onBeforeUnmount(() => {
   justify-content: center;
   position: relative;
   background-color: #1a1a1a;
-  width: 60vw;
-  height: 80vh;
+  width: 100%;
+  height: 100%;
   margin: 0 auto;
   border-radius: 8px;
 }
@@ -482,8 +482,8 @@ onBeforeUnmount(() => {
   width: 80%;
   height: 100%;
   position: relative;
-  overflow: hidden;
   margin: 0 auto;
+  border-radius: 10px;
 }
 
 /*.pong-game {
