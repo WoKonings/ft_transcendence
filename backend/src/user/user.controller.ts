@@ -37,14 +37,20 @@ export class UserController {
 
 	@UseGuards(AuthGuard)
 	@Post('add')
-	async addUserAsFriend(@Body() addFriendDto: AddFriendDto) {
-		return this.userService.addUserAsFriend(addFriendDto.targetId, addFriendDto.userId);
+	async addUserAsFriend(@Body() addFriendDto: AddFriendDto, @Req() req: Request) {
+    const userPayload = req['user'];
+    console.log(`req:  ${userPayload}`);
+
+		return this.userService.addUserAsFriend(addFriendDto.targetId, userPayload.sub);
 	}
 
 	@UseGuards(AuthGuard)
 	@Post('remove')
-	async removeFriend(@Body() addFriendDto: AddFriendDto) {
-		return this.userService.removeFriend(addFriendDto.targetId, addFriendDto.userId);
+	async removeFriend(@Body() addFriendDto: AddFriendDto, @Req() req: Request) {
+    const userPayload = req['user'];
+    console.log(`req:  ${userPayload}`);
+
+    return this.userService.removeFriend(addFriendDto.targetId, userPayload.sub);
 	}
 
 	@Get('all')

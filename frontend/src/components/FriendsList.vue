@@ -187,7 +187,6 @@ const updateUserStatus = (username, userId, isOnline, isInGame, isInQueue, avata
       isInGame: isInGame,
       isInQueue: isInQueue,
     });
-
   }
 };
 
@@ -229,7 +228,7 @@ const acceptRequest = async (requestId) => {
         'Authorization': `Bearer ${sessionStorage.getItem('access_token')}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ targetId: requestId, userId: currentUser.value.id })
+      body: JSON.stringify({ targetId: requestId })
     });
     if (!response.ok) {
       const err = await response.json();

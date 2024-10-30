@@ -172,6 +172,33 @@ watch(() => props.isVisible, (newVal) => {
   }
 });
 
+const addAsFriend = (user) => {
+  console.log(`Adding ${userProfile.value.username}, id: ${userProfile.value.id} as a friend`);
+  // console.log(`Current user ID: ${currentUser.value.id}`);
+  // console.log(`token?: ${sessionStorage.getItem('access_token')}`);
+  fetch('http://localhost:3000/user/add', {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${sessionStorage.getItem('access_token')}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      targetId: user.id,
+    }),
+  })
+  .then(response => response.json())
+  .then(data => {
+    if (data.error) {
+      console.error('Error:', data.error);
+    } else {
+      console.log(data.message);
+    }
+  })
+  .catch(error => {
+    console.error('Error adding friend:', error);
+  });
+};
+
 // Fetch user profile when component mounts (if needed)
 // fetchUserProfile();
 </script>

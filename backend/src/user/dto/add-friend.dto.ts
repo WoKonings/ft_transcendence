@@ -4,8 +4,4 @@ export class AddFriendDto {
 	@IsNumber()
 	@IsNotEmpty()
 	targetId: number;
-
-	@IsNumber()
-	@IsNotEmpty()
-	userId: number;
 }
