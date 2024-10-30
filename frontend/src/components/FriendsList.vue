@@ -89,7 +89,7 @@ const isProfileVisible = ref(false); // State to manage profile visibility
 
 const fetchFriends = async () => {
   error.value = '';
-  const userId = currentUser.value.id;
+  // const userId = currentUser.value.id;
   try {
     const response = await fetch('http://localhost:3000/user/friends', {
       method: 'POST',
@@ -97,7 +97,7 @@ const fetchFriends = async () => {
         'Authorization': `Bearer ${sessionStorage.getItem('access_token')}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ userId })
+      // body: JSON.stringify({ userId })
     });
     if (!response.ok) {
       const err = await response.json();
@@ -113,7 +113,7 @@ const fetchFriends = async () => {
 
 const fetchPendingRequests = async () => {
   error.value = '';
-  const userId = currentUser.value.id;
+  // const userId = currentUser.value.id;
   try {
     const response = await fetch('http://localhost:3000/user/pending', {
       method: 'POST',
@@ -121,7 +121,7 @@ const fetchPendingRequests = async () => {
         'Authorization': `Bearer ${sessionStorage.getItem('access_token')}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ userId })
+      // body: JSON.stringify({ userId })
     });
     if (!response.ok) {
       const err = await response.json();
@@ -324,7 +324,6 @@ const removeFriend = async (friend) => {
       },
       body: JSON.stringify({
         targetId: friend.id,
-        userId: currentUser.value.id,
       }),
     });
     if (!response.ok) {

@@ -13,6 +13,7 @@ import { promises as fs } from 'fs';
 import { imageSize } from 'image-size';
 
 
+//todo: make authguard global on the controller for cleanliness
 @Controller('user')
 export class UserController {
   constructor(private readonly userService: UserService) {}
@@ -53,29 +54,33 @@ export class UserController {
     return this.userService.removeFriend(addFriendDto.targetId, userPayload.sub);
   }
 
+  @UseGuards(AuthGuard)
   @Get('all')
   async getAllUsers() {
     return this.userService.getAllUsers();
   }
 
+  @UseGuards(AuthGuard)
   @Post('friends')
-  async getFriends(@Body() getFriendsDto: GetFriendsDto) {
-    const { userId } = getFriendsDto;
-    return this.userService.getFriends(userId);
+  async getFriends(@Req() req: Request) {
+    const userPayload = req['user'];
+    return this.userService.getFriends(userPayload.sub);
   }
 
+  @UseGuards(AuthGuard)
   @Post('pending')
-  async getIncomingPendingFriends(@Body() getFriendsDto: GetFriendsDto) {
-    const { userId } = getFriendsDto;
-    return this.userService.getIncomingPendingFriends(userId);
+  async getIncomingPendingFriends(@Req() req: Request) {
+    const userPayload = req['user'];
+    return this.userService.getIncomingPendingFriends(userPayload.sub);
   }
 
-
+  @UseGuards(AuthGuard)
   @Get('search/:username')
   async getUserByUsername(@Param('username') username: string) {
     return this.userService.getUserByUsername(username);
   }
 
+  @UseGuards(AuthGuard)
   @Get(':id')
   async getUserById(@Param('id') id: string) {
     return this.userService.getUserById(Number(id));
