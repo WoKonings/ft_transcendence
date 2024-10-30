@@ -87,8 +87,8 @@
 
       <!-- Modal for User Options (Assign Role, Kick) -->
       <div v-if="showUserOptions" class="user-options-modal" @click="closeUserOptions">
-        <button v-if="currentUser.role === 'ADMIN'" @click="assignRole('ADMIN')">Assign Admin</button>
-        <button v-if="currentUser.role === 'ADMIN'" @click="assignRole('MEMBER')">Assign User</button>
+        <button v-if="currentRole === 'ADMIN'" @click="assignRole('ADMIN')">Assign Admin</button>
+        <button v-if="currentRole === 'ADMIN'" @click="assignRole('MEMBER')">Assign User</button>
         <button @click="kickUser">Kick from Channel</button>
       </div>
     </div>
@@ -119,7 +119,7 @@ const openUserOptions = (user, event) => {
   event; //only here to remove error.
  // modalPosition.value = { x: event.clientX, y: event.clientY };
   console.log("Right-clicked user:", user); 
-  console.log(`${currentUser.username} is ${currentUser.role}`);
+  console.log(`${currentUser.username} is ${currentRole.value}`);
   showUserOptions.value = true;
   console.log("Modal should be visible:", showUserOptions.value);
 };
@@ -143,13 +143,7 @@ const assignRole = (role) => {
 };
 
 const kickUser = () => {
-  if (selectedUser.value) {
-    socket.emit('kickUserFromChannel', {
-      channelId: selectedChat.value.id,
-      userId: selectedUser.value.id
-    });
-  }
-  showUserOptions.value = false;
+
 };
 
 document.addEventListener('click', (event) => {
@@ -176,6 +170,8 @@ console.log('Socket in chat:', socket);
 
 const selectChat = (name) => {
   selectedChat.value = chats.value.find(chat => chat.name === name);
+  const user = userList.value.find(user => user.username === currentUser.username);
+  currentRole.value = user.role;
 };
 
 watch(() => selectedChat.value, (newChat) => {
@@ -183,6 +179,20 @@ watch(() => selectedChat.value, (newChat) => {
     userList.value = [];
     userListError.value = null;
   }
+});
+
+watch(userList, (newUserList) => {
+  try {
+    // const oldRole = currentRole.value;
+    const curUser = newUserList.find(user => user.username === currentUser.username);
+    currentRole.value = curUser.role;
+    //console.log(`${currentUser.username} 's role updated from ${oldRole} to ${currentRole.value}`);
+  }
+  catch(error){
+    console.error('Failed to update userlist', error);
+  }
+
+
 });
 
 const sendMessage = () => {
@@ -254,7 +264,8 @@ const joinNewChannel = async () => {
 const leaveChat = () => {
   if (selectedChat.value && selectedChat.value.name !== 'General') {
     const channelName = selectedChat.value.name;
-    socket.emit('leaveChannel', { channel: channelName, username: currentUser.username });
+    console.log(`leaving ${selectedChat.value.name}`);
+    socket.emit('leaveChannel', { channelName: channelName });
     
     chats.value = chats.value.filter(chat => chat.name !== channelName);
     if (chats.value.length > 0) {
@@ -313,7 +324,7 @@ onMounted(async () => {
 
     const currentUserInList= userList.value.find(user => user.id === currentUser.id)
     console.log(`currentuser Role ${currentUserInList.role}`);
-    currentUser.role = currentUserInList.role;
+    currentRole.value = currentUserInList.role;
   });
 
   socket.on('userRoleUpdated', ({ username, newRole, message }) => {
@@ -323,7 +334,9 @@ onMounted(async () => {
     if (user) {
       user.role = newRole;
     }
-
+    // selectedChat.value = chats.value.find(chat => chat.name === name);
+    // const curUser = userList.value.find(user => user.username === currentUser.username);
+    // currentRole.value = curUser.role;
     alert(`${username} is now ${newRole}. ${message}`);
   });
 });

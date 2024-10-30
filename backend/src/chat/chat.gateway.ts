@@ -27,7 +27,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   ) {}
 
   async handleConnection(client: Socket) {
-    console.log(`Client connected: ${client.id}`);
+
   }
 
   async handleDisconnect(client: Socket) {
@@ -54,7 +54,6 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       });
     }
 
-    console.log(`Client disconnected: ${client.id}`);
   }
 
   @SubscribeMessage('sendMessage')
@@ -131,11 +130,13 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('leaveChannel')
-  async handleLeaveChannel(client: Socket, payload: { channelName: string; username: string }) {
-    const result = await this.chatService.leaveChannel(payload.channelName, payload.username);
+  async handleLeaveChannel(client: Socket, payload: { channelName: string }) {
+    const userId = client['user']?.sub;
+    console.log(`leaving ${payload.channelName}`)
+    const result = await this.chatService.leaveChannel(payload.channelName, userId);
 
     if (result.success) {
-      console.log(`${payload.username} left channel: ${payload.channelName}`);
+      console.log(`${userId} left channel: ${payload.channelName}`);
       client.leave(payload.channelName);
       await this.updateUserList(payload.channelName);
     }

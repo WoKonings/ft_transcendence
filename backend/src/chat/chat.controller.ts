@@ -41,9 +41,9 @@ export class ChatController {
     return this.chatService.joinChannel(channelName, username, password);
   }
 
-  @Get('leave')
-  leaveChannel(channelName: string, username: string) {
-	console.log (`${username} is leaving ${channelName}`);
-    return this.chatService.leaveChannel(channelName, username);
-  }
+  // @Get('leave')
+  // leaveChannel(channelName: string, username: string) {
+	// console.log (`${username} is leaving ${channelName}`);
+  //   return this.chatService.leaveChannel(channelName, username);
+  // }
 }
