@@ -145,10 +145,11 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('updateUserRole')
-  async handleUpdateUserRole(client: Socket, payload: { channelId: number; userId: number; role: string }) {
+  async handleUpdateUserRole(client: Socket, payload: { channelName: string; userId: number; role: string }) {
+    console.log(`seeking to update user ${payload.userId} in channel: ${payload.channelName} to ${payload.role}`);
     
     const channel = await this.prisma.channel.findFirst({
-      where: { id: payload.channelId },
+      where: { name: payload.channelName},
       include: { userChannels: { include: { user: true } } },
     });
     
@@ -162,7 +163,6 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       console.log('User not found');
       return;
     }
-    console.log(`Updating role for ${user.username} in channel: ${channel.name} to ${payload.role}`);
     
     if (!(payload.role in ChannelRole)) {
       console.error(`Invalid role: ${payload.role}`);

@@ -112,6 +112,7 @@ const userListError = ref(null);
 const showUserOptions = ref(false);
 // const modalPosition = ref({ x: 0, y: 0 });
 const selectedUser = ref(null);
+const currentRole = ref(null);
 
 const openUserOptions = (user, event) => {
   selectedUser.value = user;
@@ -128,10 +129,10 @@ const closeUserOptions = () => {
 }
 
 const assignRole = (role) => {
-  console.log(`assigning ${selectedUser.value.username} to ${role}`)
+  console.log(`assigning ${selectedUser.value.username} to ${role} in ${selectedChat.value.name}`)
   if (selectedUser.value) {
     socket.emit('updateUserRole', {
-      channelId: selectedChat.value.id,
+      channelName: selectedChat.value.name,
       userId: selectedUser.value.id,
       role: role
     });
