@@ -15,48 +15,48 @@ import { imageSize } from 'image-size';
 
 @Controller('user')
 export class UserController {
-	constructor(private readonly userService: UserService) {}
+  constructor(private readonly userService: UserService) {}
 
-	// @Post()
-	// async createUser(@Body() createUserDto: CreateUserDto) {
-	// 	try {
-	// 		return await this.userService.createUser(createUserDto);
-	// 	} catch (error) {
-	// 		if (error.message.includes('Unique constraint violation')) {
-	// 			throw new HttpException({
-	// 				status: HttpStatus.CONFLICT,
-	// 				error: error.message,
-	// 			}, HttpStatus.CONFLICT);
-	// 		}
-	// 		throw new HttpException({
-	// 			status: HttpStatus.INTERNAL_SERVER_ERROR,
-	// 			error: 'Internal Server Error',
-	// 		}, HttpStatus.INTERNAL_SERVER_ERROR);
-	// 	}
-	// }
+  // @Post()
+  // async createUser(@Body() createUserDto: CreateUserDto) {
+  // 	try {
+  // 		return await this.userService.createUser(createUserDto);
+  // 	} catch (error) {
+  // 		if (error.message.includes('Unique constraint violation')) {
+  // 			throw new HttpException({
+  // 				status: HttpStatus.CONFLICT,
+  // 				error: error.message,
+  // 			}, HttpStatus.CONFLICT);
+  // 		}
+  // 		throw new HttpException({
+  // 			status: HttpStatus.INTERNAL_SERVER_ERROR,
+  // 			error: 'Internal Server Error',
+  // 		}, HttpStatus.INTERNAL_SERVER_ERROR);
+  // 	}
+  // }
 
-	@UseGuards(AuthGuard)
-	@Post('add')
-	async addUserAsFriend(@Body() addFriendDto: AddFriendDto, @Req() req: Request) {
+  @UseGuards(AuthGuard)
+  @Post('add')
+  async addUserAsFriend(@Body() addFriendDto: AddFriendDto, @Req() req: Request) {
     const userPayload = req['user'];
     console.log(`req:  ${userPayload}`);
 
-		return this.userService.addUserAsFriend(addFriendDto.targetId, userPayload.sub);
-	}
+    return this.userService.addUserAsFriend(addFriendDto.targetId, userPayload.sub);
+  }
 
-	@UseGuards(AuthGuard)
-	@Post('remove')
-	async removeFriend(@Body() addFriendDto: AddFriendDto, @Req() req: Request) {
+  @UseGuards(AuthGuard)
+  @Post('remove')
+  async removeFriend(@Body() addFriendDto: AddFriendDto, @Req() req: Request) {
     const userPayload = req['user'];
     console.log(`req:  ${userPayload}`);
 
     return this.userService.removeFriend(addFriendDto.targetId, userPayload.sub);
-	}
+  }
 
-	@Get('all')
-	async getAllUsers() {
-		return this.userService.getAllUsers();
-	}
+  @Get('all')
+  async getAllUsers() {
+    return this.userService.getAllUsers();
+  }
 
   @Post('friends')
   async getFriends(@Body() getFriendsDto: GetFriendsDto) {
@@ -71,25 +71,25 @@ export class UserController {
   }
 
 
-	@Get('search/:username')
-	async getUserByUsername(@Param('username') username: string) {
-		return this.userService.getUserByUsername(username);
-	}
+  @Get('search/:username')
+  async getUserByUsername(@Param('username') username: string) {
+    return this.userService.getUserByUsername(username);
+  }
 
-	@Get(':id')
-	async getUserById(@Param('id') id: string) {
-		return this.userService.getUserById(Number(id));
-	}
+  @Get(':id')
+  async getUserById(@Param('id') id: string) {
+    return this.userService.getUserById(Number(id));
+  }
 
-	@UseGuards(AuthGuard)
-	@Delete(':id')
-	async deleteUser(@Param('id') id: string) {
-		return this.userService.deleteUser(Number(id));
-	}
+  @UseGuards(AuthGuard)
+  @Delete(':id')
+  async deleteUser(@Param('id') id: string) {
+    return this.userService.deleteUser(Number(id));
+  }
 
-	@UseGuards(AuthGuard)
-	@Post('update-username')
-	async updateUsername(@Body('newUsername') newUsername: string, @Req() req: Request) {
+  @UseGuards(AuthGuard)
+  @Post('update-username')
+  async updateUsername(@Body('newUsername') newUsername: string, @Req() req: Request) {
     const userPayload = req['user'];
     
     console.log(`updating username for ID: ${userPayload.sub} N: ${userPayload.username} req: ${newUsername}`);
@@ -104,8 +104,8 @@ export class UserController {
     }
 
     console.log (`updating user specs: id: ${userPayload.sub}, newName: ${newUsername}`);
-		return this.userService.updateUsername(userPayload.sub, newUsername);
-	}
+    return this.userService.updateUsername(userPayload.sub, newUsername);
+  }
 
   @UseGuards(AuthGuard)
   @Post('upload-avatar')

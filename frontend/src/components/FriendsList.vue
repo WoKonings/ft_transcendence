@@ -59,8 +59,8 @@
         <h3>Game Invites</h3>
         <div v-for="invite in invites" :key="invite.gameId" class="request-info">
           <span>{{ invite.sender }}</span>
-          <button @click="acceptInvite(invite)">Accept</button>
-          <button @click="declineInvite(invite.gameId)">Decline</button>
+          <button @click="acceptGameInvite(invite)">Accept</button>
+          <button @click="declineGameInvite(invite)">Decline</button>
         </div>
         <button @click="closeInvites">Close</button>
       </div>
@@ -153,6 +153,7 @@ const initializeSocketListeners = () => {
 
   socket.value.on('gameInvite', (data) => {
     invites.value.push(data);
+    console.log(`${data.sender} IS NOW AN INVITE SENDER`);
     inviteSenders.value.add(data.sender);
   });
 
@@ -269,7 +270,7 @@ const declineRequest = async (requestId) => {
   }
 };
 
-const acceptInvite = async (invite) => {
+const acceptGameInvite = async (invite) => {
   // Handle invite acceptance logic
   console.log('Accepted invite:', invite);
   socket.value.emit('acceptInvite', {
@@ -279,14 +280,14 @@ const acceptInvite = async (invite) => {
   })
   invites.value = invites.value.filter(i => i.gameId !== invite.gameId);
   closeInvites();
-  // inviteSenders.value.add();
-  store.commit('SET_SHOW_GAME', true);
+  inviteSenders.value.delete(invite.sender);
 };
 
-const declineInvite = async (gameId) => {
+const declineGameInvite = async (invite) => {
   // Handle invite decline logic
-  console.log('Declined invite for game:', gameId);
-  invites.value = invites.value.filter(i => i.gameId !== gameId);
+  console.log('Declined invite for game:', invite.gameId);
+  invites.value = invites.value.filter(i => i.gameId !== invite.gameId);
+  inviteSenders.value.delete(invite.sender);
 };
 
 const selectUser = (user) => {
@@ -300,8 +301,8 @@ const closeOptions = () => {
 const inviteToPlay = (friend) => {
   console.log(`friend?: ${friend} ??:`, friend);
   socket.value.emit('sendGameInvite', {
-    senderName: currentUser.value.username,
-    senderId: currentUser.value.id,
+    // senderName: currentUser.value.username,
+    // senderId: currentUser.value.id,
     targetName: friend.username,
   });
   store.dispatch('toggleShowGame', true);
