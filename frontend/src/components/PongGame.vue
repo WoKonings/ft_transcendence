@@ -7,6 +7,7 @@
       <div class="score"> {{ player2}}: {{ player2Score }}</div>
     </div>
     <div class="pong-game" ref="container"></div>
+    <button @click="stopGame" class="cancel-button">Forfeit Game</button>
     <div v-if="showEnd && endScreenMessage" class="end-screen">
       <div class="end-screen-message"> {{ endScreenMessage }}</div>
       <button @click="exitGame()" class="button">Ok</button>
@@ -14,22 +15,6 @@
   </div>
   
   <PongGameAgainstAI v-if="!gameStarted" />
-
-  <!-- Display "Queue for Pong" Buttons if Not Waiting and Game Not Started -->
-  <!-- <div v-if="!waitingForOpponent && !gameStarted" class="queue-container">
-    <button @click="queueForPong('classic')" class="queue-button">Queue for Pong</button>
-    <button @click="queueForPong('flashy')" class="queue-button">Queue for Flashy Pong</button>
-  </div> -->
-
-  <!-- Display Waiting for Opponent with Spinner and Cancel Button if Waiting -->
-  <div v-if="waitingForOpponent && !gameStarted" class="waiting-overlay">
-    Waiting for opponent...
-    <div class="half-circle-spinner">
-      <div class="circle circle-1"></div>
-      <div class="circle circle-2"></div>
-    </div>
-    <button @click="stopGame" class="cancel-button">Cancel Queue</button>
-  </div>
 </template>
 
 <script setup>
@@ -69,7 +54,6 @@ let particleVelocities = [];
 const initGame = () => {
   initThreeJS();
   initParticleSystem();
-  // window.addEventListener('mousemove', handleMouseMove);
   window.addEventListener('keydown', handlePlayerMove);
   window.addEventListener('keyup', handleStopPlayerMove);
 };
@@ -81,19 +65,15 @@ const initThreeJS = () => {
   }
 
   scene = new THREE.Scene();
-  const windowWidth = window.innerWidth;
-  const windowHeight = window.innerHeight;
-  const Width = windowWidth * 0.6;
-  const Height = windowHeight * 0.6;
+  const width = window.innerWidth * 0.8;
+  const height = window.innerHeight * 0.5;
 
-  camera = new THREE.PerspectiveCamera(80, Width / Height, 0.1, 1000);
+  camera = new THREE.PerspectiveCamera(80, width / height, 0.1, 1000);
   camera.position.z = 20;
-  camera.position.y = 0;
+  camera.position.x = 2;
 
   renderer = new THREE.WebGLRenderer({ antialias: true });
-
-  renderer.setSize(Width, Height);
-  // renderer.setSize(800, 600);
+  renderer.setSize(width, height);
 
   composer = new EffectComposer(renderer);
   composer.addPass(new RenderPass(scene, camera));
@@ -121,11 +101,11 @@ const initThreeJS = () => {
   });
 
   paddle1 = new THREE.Mesh(paddleGeometry, paddleMaterial);
-  paddle1.position.x = -14;
+  paddle1.position.x = -18;
   scene.add(paddle1);
 
   paddle2 = new THREE.Mesh(paddleGeometry, paddleMaterial);
-  paddle2.position.x = 14;
+  paddle2.position.x = 18;
   scene.add(paddle2);
 
   const ballGeometry = new THREE.SphereGeometry(0.5, 32, 32);
@@ -141,7 +121,7 @@ const initThreeJS = () => {
   scene.add(ball);
 
   // Create the midline geometry
-  const midlineGeometry = new THREE.BoxGeometry(0.25, 32, 1);
+  const midlineGeometry = new THREE.BoxGeometry(0.25, 32.5, 1);
   const midlineMaterial = new THREE.MeshPhongMaterial({
     color: 0xffffff
   });
@@ -150,20 +130,17 @@ const initThreeJS = () => {
   scene.add(midline);
 
   // Create the top and bottom lines
-  const topLineGeometry = new THREE.BoxGeometry(40, 0.2, 1);
+  const topLineGeometry = new THREE.BoxGeometry(48, 0.2, 1);
   const bottomLineGeometry = topLineGeometry.clone();
   const lineMaterial = new THREE.MeshPhongMaterial({
     color: 0xffffff
   });
   const topLine = new THREE.Mesh(topLineGeometry, lineMaterial);
   const bottomLine = new THREE.Mesh(bottomLineGeometry, lineMaterial);
-  topLine.position.set(0, 16.1, 0);
+  topLine.position.set(0, 16, 0);
   bottomLine.position.set(0, -16, 0);
   scene.add(topLine);
   scene.add(bottomLine);
-
-
-
 
   // Ensure the container is available before appending
   nextTick(() => {
@@ -398,6 +375,7 @@ const stopGame = () => {
     gameStarted.value = false;
     // window.removeEventListener('mousemove', handleMouseMove);
   }
+  exitGame();
 };
 
 // const handleMouseMove = (event) => {
@@ -477,13 +455,10 @@ onBeforeUnmount(() => {
 
 .pong-game {
   display: flex;
-  justify-content: center;
-  align-items: center;
-  width: 80%;
-  height: 100%;
-  position: relative;
-  margin: 0 auto;
-  border-radius: 10px;
+  width: 95%;
+  height: 90%;
+  overflow: hidden;
+  border-radius: 6px;
 }
 
 /*.pong-game {
@@ -527,22 +502,26 @@ onBeforeUnmount(() => {
 
 .queue-container {
   display: flex;
-	flex-direction: column;
+	flex-direction: row;
 	align-items: center; /* Center horizontally */
 	justify-content: center; /* Center vertically */
-	padding-top: 20vh; /* Adjust to your preference */
+	padding-top: 1px; /* Adjust to your preference */
+  width: 100%;
 }
 
 .queue-button {
-	padding: 20px;
-	width: 14vw;
-	margin-bottom: 20px;
-	background-color: #4CAF50;
+	/* padding: 10px; */
+  padding: 1vh 2vw;
+  height: 3vh;
+	width: 15vw;
+	margin-bottom: 10px;
+	background-color: #e0e0e0;
+	/* background-color: #4CAF50; */
 	transition: background-color 0.3s;
 	border: none;
 	border-radius: 8px;
 	cursor: pointer;
-	font-size: 1em;
+	font-size: 1vw 1vh;
 }
 
 .queue-button:hover {
@@ -587,7 +566,7 @@ onBeforeUnmount(() => {
 }
 
 /* spinner loading animation */
-.half-circle-spinner, .half-circle-spinner * {
+/* .half-circle-spinner, .half-circle-spinner * {
   box-sizing: border-box;
 }
 
@@ -625,5 +604,5 @@ onBeforeUnmount(() => {
   100%{
     transform: rotate(360deg);
   }
-}
+} */
 </style>

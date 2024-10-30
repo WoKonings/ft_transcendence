@@ -58,7 +58,6 @@ const initGame = () => {
 };
 
 const initThreeJS = () => {
-  // ... (similar to the main component, but without particles)
   scene = new THREE.Scene();
   const width = window.innerWidth * 0.8;
   const height = window.innerHeight * 0.5;

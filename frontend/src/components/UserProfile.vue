@@ -12,7 +12,7 @@
       <button v-if="!currentUser.twoFactorEnabled" class="action-button" @click="enableTwoFactor">Enable 2FA</button>
       <button v-else class="action-button delete" @click="disableTwoFactor">Disable 2FA</button>
       <button class="action-button delete" @click="logoutUser">Logout</button>
-      <button class="action-button delete" @click="deleteAccount">Delete Account</button>
+      <!-- <button class="action-button delete" @click="deleteAccount">Delete Account</button> -->
     </div>
 
     <!-- QR Code Modal -->
@@ -124,8 +124,9 @@ const matchHistory = ref([]);
 const showQRCode = ref(false);
 const qrCodeUrl = ref('');
 const verificationCode = ref('');
-const twoFactorError = ref(''); // Ref to track the error message
+const twoFactorError = ref('');
 
+//todo: fix reload causing relog if on /profile
 
 const goToDashboard = () => {
   router.push('/');
@@ -215,7 +216,6 @@ const cancelTwoFactor = () => {
   showQRCode.value = false;
   verificationCode.value = '';
 };
-
 
 // Function to handle username change
 const changeUsername = async () => {
@@ -335,14 +335,26 @@ onMounted(async () => {
   // loading.value = true;
   try {
     // Fetch the user profile
-    const userResponse = await fetch(`http://localhost:3000/user/search/${currentUser.value.username}`);
+    const userResponse = await fetch(`http://localhost:3000/user/search/${currentUser.value.username}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${sessionStorage.getItem('access_token')}`,
+        'Content-Type': 'application/json',
+      }
+    });
     if (!userResponse.ok) {
       throw new Error('Failed to fetch user profile');
     }
     userProfile.value = await userResponse.json();
 
     // Fetch the match history
-    const matchResponse = await fetch(`http://localhost:3000/game/${currentUser.value.id}`);
+    const matchResponse = await fetch(`http://localhost:3000/game/${currentUser.value.id}`, {
+    method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${sessionStorage.getItem('access_token')}`,
+        'Content-Type': 'application/json',
+      }
+    });
     if (!matchResponse.ok) {
       console.log('failed to fetch match history');
       throw new Error('Failed to fetch match history');
@@ -491,11 +503,15 @@ onMounted(async () => {
 
 .match-history {
   margin-top: 20px;
-  width: 20%;
+  width: 300px;
+  height: 40%;
+  /* width: 40%;
+  min-width: 300px; */
 }
 
 .match-history-content {
-  max-height: 200px;
+  max-height: 400px;
+  height: 30%;
   overflow-y: auto;
   padding-right: 10px;
 }
