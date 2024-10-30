@@ -9,6 +9,7 @@ import { JoinGameDto } from './dto/join-game.dto';
 import { PlayerMoveDto } from './dto/player-move.dto';
 import { LeaveGameDto } from './dto/leave-game.dto';
 import { InviteGameDto } from './dto/invite-game.dto';
+import { AcceptInviteDto } from './dto/accept-invite.dto';
 
 interface Player {
   username: string;
@@ -225,10 +226,12 @@ async handleInviteGame(client: Socket, data: InviteGameDto): Promise<void> {
   }
 
   @SubscribeMessage('acceptInvite')
-  async acceptGameInvite(client: Socket, data: { gameId, username, userId}) {
+  async acceptGameInvite(client: Socket, data: AcceptInviteDto) {
     console.log ('accepting data: ', data)
-    const { gameId, username, userId } = data;
+    const { gameId } = data;
     const session = this.gameSessions.get(gameId);
+    const userId = client['user']?.sub;
+    const username = client['user']?.username;
 
     if (!session) {
       console.log(`No game session found for gameId: ${gameId}`);
@@ -341,7 +344,8 @@ async handleInviteGame(client: Socket, data: InviteGameDto): Promise<void> {
   
   @SubscribeMessage('playerMoveKBM')
   handlePlayerMoveUp(client: Socket, data: PlayerMoveDto): void {
-    let { userId, dy } = data;
+    const userId = client['user']?.sub;
+    let { dy } = data;
     if (!userId) {
       console.log('No userId provided for playerMove');
       return;

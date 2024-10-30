@@ -275,8 +275,8 @@ const acceptGameInvite = async (invite) => {
   console.log('Accepted invite:', invite);
   socket.value.emit('acceptInvite', {
     gameId: invite.gameId,
-    username: currentUser.value.username,
-    userId: currentUser.value.id,
+    // username: currentUser.value.username,
+    // userId: currentUser.value.id,
   })
   invites.value = invites.value.filter(i => i.gameId !== invite.gameId);
   closeInvites();
