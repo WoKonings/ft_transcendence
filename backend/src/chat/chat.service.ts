@@ -166,8 +166,9 @@ export class ChatService {
   }
 
   // Leave a channel
-  async leaveChannel(channelName: string, username: string) {
-    const user = await this.userService.getUserByUsername(username);
+  async leaveChannel(channelName: string, userId: number) {
+    console.log(`userId is  ${userId} in chat service for leaving`);
+    const user = await this.userService.getUserById(userId);
     const channel = await this.getChannelByName(channelName);
 
     if (!channel || !user) {
@@ -196,9 +197,9 @@ export class ChatService {
         where: { id: channel.id },
       });
 
-      return { success: true, message: `User ${username} left and channel ${channelName} was deleted because it was empty` };
+      return { success: true, message: `User ${user.username} left and channel ${channelName} was deleted because it was empty` };
     }
-    return { success: true, message: `User ${username} left ${channelName}` };
+    return { success: true, message: `User ${user.username} left ${channelName}` };
   }
 
   // Get all users in a channel
