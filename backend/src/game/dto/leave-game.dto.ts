@@ -1,11 +1,5 @@
 import { IsNotEmpty, IsString } from "class-validator";
 
+//todo: delete if empty
 export class LeaveGameDto {
-	@IsNotEmpty()
-	@IsString()
-	readonly userId: string;
-  
-	@IsNotEmpty()
-	@IsString()
-	readonly username: string;
   }

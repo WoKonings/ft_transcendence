@@ -12,7 +12,6 @@ import {
   UseGuards,
   UnauthorizedException
 } from '@nestjs/common';
-import axios from 'axios';
 import { Response } from 'express';
 import { TwoFAuthGuard } from './auth.2fa-guard';
 import { AuthGuard } from './auth.guard';
@@ -21,6 +20,8 @@ import { UserService } from '../user/user.service';
 import { SignInDto } from './dto/sign-in.dto';
 import { CreateUserDto } from 'src/user/dto/create-user.dto';
 
+
+//todo: remove console logs
 @Controller('auth')
 export class AuthController {
   constructor(
@@ -47,6 +48,7 @@ export class AuthController {
     };
   }
 
+  //todo: make this impossible, but easy to switch back on
   @Post('register')
   async register(@Body() createUserDto: CreateUserDto) {
     return this.authService.register(createUserDto);

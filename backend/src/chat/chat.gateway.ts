@@ -126,7 +126,6 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         await this.updateUserList(payload.channelName);
       }
     }
-
     return result;
   }
 

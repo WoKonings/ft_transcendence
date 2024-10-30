@@ -59,8 +59,8 @@
         <h3>Game Invites</h3>
         <div v-for="invite in invites" :key="invite.gameId" class="request-info">
           <span>{{ invite.sender }}</span>
-          <button @click="acceptInvite(invite)">Accept</button>
-          <button @click="declineInvite(invite.gameId)">Decline</button>
+          <button @click="acceptGameInvite(invite)">Accept</button>
+          <button @click="declineGameInvite(invite)">Decline</button>
         </div>
         <button @click="closeInvites">Close</button>
       </div>
@@ -89,7 +89,7 @@ const isProfileVisible = ref(false); // State to manage profile visibility
 
 const fetchFriends = async () => {
   error.value = '';
-  const userId = currentUser.value.id;
+  // const userId = currentUser.value.id;
   try {
     const response = await fetch('http://localhost:3000/user/friends', {
       method: 'POST',
@@ -97,7 +97,7 @@ const fetchFriends = async () => {
         'Authorization': `Bearer ${sessionStorage.getItem('access_token')}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ userId })
+      // body: JSON.stringify({ userId })
     });
     if (!response.ok) {
       const err = await response.json();
@@ -113,7 +113,7 @@ const fetchFriends = async () => {
 
 const fetchPendingRequests = async () => {
   error.value = '';
-  const userId = currentUser.value.id;
+  // const userId = currentUser.value.id;
   try {
     const response = await fetch('http://localhost:3000/user/pending', {
       method: 'POST',
@@ -121,7 +121,7 @@ const fetchPendingRequests = async () => {
         'Authorization': `Bearer ${sessionStorage.getItem('access_token')}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ userId })
+      // body: JSON.stringify({ userId })
     });
     if (!response.ok) {
       const err = await response.json();
@@ -153,6 +153,7 @@ const initializeSocketListeners = () => {
 
   socket.value.on('gameInvite', (data) => {
     invites.value.push(data);
+    console.log(`${data.sender} IS NOW AN INVITE SENDER`);
     inviteSenders.value.add(data.sender);
   });
 
@@ -269,24 +270,24 @@ const declineRequest = async (requestId) => {
   }
 };
 
-const acceptInvite = async (invite) => {
+const acceptGameInvite = async (invite) => {
   // Handle invite acceptance logic
   console.log('Accepted invite:', invite);
   socket.value.emit('acceptInvite', {
     gameId: invite.gameId,
-    username: currentUser.value.username,
-    userId: currentUser.value.id,
+    // username: currentUser.value.username,
+    // userId: currentUser.value.id,
   })
   invites.value = invites.value.filter(i => i.gameId !== invite.gameId);
   closeInvites();
-  // inviteSenders.value.add();
-  store.commit('SET_SHOW_GAME', true);
+  inviteSenders.value.delete(invite.sender);
 };
 
-const declineInvite = async (gameId) => {
+const declineGameInvite = async (invite) => {
   // Handle invite decline logic
-  console.log('Declined invite for game:', gameId);
-  invites.value = invites.value.filter(i => i.gameId !== gameId);
+  console.log('Declined invite for game:', invite.gameId);
+  invites.value = invites.value.filter(i => i.gameId !== invite.gameId);
+  inviteSenders.value.delete(invite.sender);
 };
 
 const selectUser = (user) => {
@@ -300,8 +301,8 @@ const closeOptions = () => {
 const inviteToPlay = (friend) => {
   console.log(`friend?: ${friend} ??:`, friend);
   socket.value.emit('sendGameInvite', {
-    senderName: currentUser.value.username,
-    senderId: currentUser.value.id,
+    // senderName: currentUser.value.username,
+    // senderId: currentUser.value.id,
     targetName: friend.username,
   });
   store.dispatch('toggleShowGame', true);
@@ -323,7 +324,6 @@ const removeFriend = async (friend) => {
       },
       body: JSON.stringify({
         targetId: friend.id,
-        userId: currentUser.value.id,
       }),
     });
     if (!response.ok) {

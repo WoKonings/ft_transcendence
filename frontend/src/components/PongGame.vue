@@ -417,22 +417,22 @@ const handlePlayerMove = (event) => {
   if ((event.key === 'w' || event.key === 'ArrowUp') && moving == false) {
     // console.log('moving up');
     moving = true;
-    socket.value.emit('playerMoveKBM', { userId: currentUser.value.id, dy: 1 });
+    socket.value.emit('playerMoveKBM', { dy: 1 });
   } else if ((event.key === 's' || event.key === 'ArrowDown') && moving == false) {
     // console.log('moving down');
     moving = true;
-    socket.value.emit('playerMoveKBM', { userId: currentUser.value.id, dy: -1 });
+    socket.value.emit('playerMoveKBM', { dy: -1 });
   }
 }
 const handleStopPlayerMove = (event) => {
   if ((event.key === 'w' || event.key === 'ArrowUp') && moving == true) {
     // console.log('stopped moving up');
     moving = false;
-    socket.value.emit('playerMoveKBM', { userId: currentUser.value.id, dy: 0 });
+    socket.value.emit('playerMoveKBM', { dy: 0 });
   } else if ((event.key === 's' || event.key === 'ArrowDown') && moving == true) {
     // console.log('stopped moving down');
     moving = false;
-    socket.value.emit('playerMoveKBM', { userId: currentUser.value.id, dy: 0 });
+    socket.value.emit('playerMoveKBM', { dy: 0 });
   }
 }
 
