@@ -13,11 +13,11 @@ export class GameController {
   }
 
   // Endpoint to fetch games of a specific user
-  @Get('/:userId')
   @UseGuards(AuthGuard)
+  @Get('/:userId')
   async getUserGames(@Param('userId') userId: string) {
     const id = Number(userId);
-    console.log (`test: ${this.gameService.getUserGames(id)}`);
+    // console.log (`test: ${this.gameService.getUserGames(id)}`);
     return this.gameService.getUserGames(id);
   }
 }
