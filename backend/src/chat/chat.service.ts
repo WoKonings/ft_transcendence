@@ -86,7 +86,7 @@ export class ChatService {
   
     return { success: true, message: "Returning UserChannel", userChannel };
   }
-  // Create a new channel and add the user to it
+
   async createChannel(channelName: string, username: string, password: string) {
     const user = await this.userService.getUserByUsername(username);
     console.log(`${user.username} creating ${channelName}`);
@@ -94,29 +94,34 @@ export class ChatService {
       console.log('No username or channel name provided');
       return { success: false, message: 'Invalid username or channel name' };
     }
-
+  
+    // Create the channel itself
     const newChannel = await this.prisma.channel.create({
       data: {
         name: channelName,
-        private: password ? true : false,
+        private: !!password,
         password: password || null,
-        users: {
-          connect: { id: user.id },
-        },
       },
     });
+  
+    // Add the creating user to the channel with an admin role
+    await this.createUserChannel(user.id, newChannel.id, ChannelRole.ADMIN);
+  
+    return { success: true, message: `Channel ${channelName} created and ${username} joined` };
+  }
+  
+  // Method to add a user to a channel with a specified role
+  async createUserChannel(userId: number, channelId: number, role: ChannelRole) {
+  console.log(`creating userchannel entry for user ${userId}, at channelid ${channelId} and role ${role}`);
 
     await this.prisma.userChannel.create({
       data: {
-        userId: user.id,
-        channelId: newChannel.id,
-        role: 'ADMIN',
+        userId,
+        channelId,
+        role,
       },
     });
-    console.log("yeah we just userchanneled\n");
-    
-
-    return { success: true, message: `Channel ${channelName} created and ${username} joined` };
+    console.log(`User ${userId} added to channel ${channelId} with role ${role}`);
   }
 
   // Join an existing channel or create a new one if it doesn't exist
