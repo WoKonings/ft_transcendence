@@ -26,7 +26,10 @@
           />
         </div>
         <h2>{{ userProfile.username }}</h2>
-        <button @click="addAsFriend(selectedUser)">Add as Friend</button>
+        <button v-if="!props.isFriend" @click="addAsFriend(selectedUser)">Add as Friend</button>
+        <button v-if="props.isFriend" @click="removeFriend(selectedUser)">Remove Friend</button>
+        <!-- <button @click="todo" v-if="isInviteSender(selectedUser.id)">Accept Invite</button>
+        <button @click="todo" v-if="isInviteSender(selectedUser.id)">Decline Invite</button> -->
         <button @click="sendMessage(selectedUser)">Send Message</button>
       </div>
       <div v-if="loading" class="loading">Loading...</div>
@@ -103,7 +106,7 @@ import { ref, watch, defineEmits, defineProps } from 'vue';
 const userProfile = ref({});
 const loading = ref(false);
 const matchHistory = ref([]);
-const emit = defineEmits(['close']);
+const emit = defineEmits(['close', 'friendRemoved']);
 const props = defineProps({
   selectedUser: {
     type: Object,
@@ -113,6 +116,10 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+  isFriend: {
+    type: Boolean,
+    default: false,
+  }
 });
 
 // Fetch user profile function
@@ -208,6 +215,11 @@ const addAsFriend = (user) => {
   .catch(error => {
     console.error('Error adding friend:', error);
   });
+};
+
+const removeFriend = async (friend) => {
+  emit('friendRemoved', friend);
+  emit('close');
 };
 
 // Fetch user profile when component mounts (if needed)

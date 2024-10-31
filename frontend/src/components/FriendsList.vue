@@ -9,10 +9,8 @@
         {{ invites.length }} Game Invites
       </button>
     </div>
-    <div v-for="friend in sortedFriends" :key="friend.id" 
-         class="user"
-         @click="selectUser(friend)"
-         :class="{ 'highlight': isInviteSender(friend.id) }">
+    <div v-for="friend in sortedFriends" :key="friend.id" class="user"
+      @click="viewProfile(friend)" :class="{ 'highlight': isInviteSender(friend.id) }">
       <div class="avatar">
         <img :src="friend.avatar ? `http://localhost:3000${friend.avatar}` : `https://robohash.org/${friend.username}?set=set4`" :alt="`${friend.username}`" />
       </div>
@@ -34,7 +32,10 @@
     <ViewProfile
       :selectedUser="selectedUser"
       :isVisible="isProfileVisible"
-      @close="isProfileVisible = false" />
+      :isFriend="true"
+      @close="isProfileVisible = false" 
+      @friendRemoved="removeFriend"
+    />
     </div>
 
     <!-- Error Message -->
@@ -212,6 +213,7 @@ const viewInvites = () => {
 };
 
 const viewProfile = (user) => {
+  selectedUser.value = user;
   isProfileVisible.value = true; // Show the profile modal
   console.log(`viewing ${user.username}`); 
 };
@@ -315,6 +317,7 @@ const sendMessage = (friend) => {
 };
 
 const removeFriend = async (friend) => {
+  console.log (`removing friend: ${friend}` );
   try {
     const response = await fetch('http://localhost:3000/user/remove', {
       method: 'POST',
