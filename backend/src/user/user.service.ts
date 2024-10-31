@@ -254,6 +254,10 @@ async getIncomingPendingFriends(userId: number) {
 
   //todo: error catching if no user?
   async getUserById(userId: number) {
+    if (!userId) {
+      console.log('caught null userId');
+      return (null);
+    }
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       include: { channels: true},
