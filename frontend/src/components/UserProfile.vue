@@ -291,7 +291,8 @@ const logoutUser = () => {
     store.dispatch('logOut');
     socket.value = null;
 
-    router.push('/login');
+    router.push('/');
+    // router.push('/login');
   }
 };
 

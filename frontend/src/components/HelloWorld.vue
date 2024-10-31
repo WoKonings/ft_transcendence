@@ -33,6 +33,9 @@
     </div> -->
 
     <div class="main-container">
+      <div v-if="error != ''" class="disconnect-container">
+          {{ error }}
+      </div>
       <div class="content-container">
         <div class="pong-game-container">
           <PongGame v-if="isLoggedIn && currentUser" />
@@ -323,6 +326,7 @@ const logoutUser = () => {
   socket.value.on('disconnect', (reason) => {
     console.warn('Disconnected:', reason);
     console.log('BIG DISCONECTATION 2 ELECTRIC BOJALOO!!');
+    error.value = 'Disconnected from server.';
     // alert('Disconnected from server');
     // handleReconnect();
   });
@@ -398,6 +402,22 @@ onMounted(() => {
 
 .user-list-container {
   max-width: 100%;
+}
+
+.disconnect-container {
+	width: 100%;
+	height: 5vh;
+	background-color: #ff4c4c; /* Red color to indicate disconnection */
+	color: white; /* Text color for contrast */
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	font-size: 2vh;
+	font-weight: bold;
+	position: absolute; /* So it floats above other content */
+	top: 0; /* Stick it to the top of the page */
+	left: 0;
+	z-index: 1000; /* Ensures it stays above other elements */
 }
 
 /* 2FA */
