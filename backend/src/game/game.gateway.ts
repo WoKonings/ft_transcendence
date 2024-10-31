@@ -81,14 +81,18 @@ export class GameGateway {
 
     if (game.player_one && game.player_one.userId === userId) {
       console.log('player one bailed');
+      game.gameState.score.playerTwo = 7;
+      console.log('updated score to 7 for p2');
       this.handleGameOver(game.player_two, game.player_one, game);
       if (game.player_two)
         game.player_two.socket.emit('opponentLeft', game.player_one.username);
       game.player_one = null;
       game.gameState.playerOne = null;
     } else if (game.player_two && game.player_two.userId === userId) {
-      this.handleGameOver(game.player_one, game.player_two, game);
       console.log('player two bailed');
+      game.gameState.score.playerOne = 7;
+      console.log('updated score to 7 for p1');
+      this.handleGameOver(game.player_one, game.player_two, game);
       if (game.player_one)
         game.player_one.socket.emit('opponentLeft', game.player_two.username);
       game.player_two = null;

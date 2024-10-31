@@ -361,6 +361,16 @@ onMounted(async () => {
     }
     matchHistory.value = await matchResponse.json();
     matchHistory.value.sort((a, b) => new Date(b.endTime) - new Date(a.endTime));
+    
+    matchHistory.value.forEach(game => {
+      if (game.players[0].id !== game.winner.id) {
+        console.log('switching invalid game');
+        [game.players[0], game.players[1]] = [game.players[1], game.players[0]];
+      }
+      if (game.playerScores[0] < game.playerScores[1]) {
+        [game.playerScores[0], game.playerScores[1]] = [game.playerScores[1], game.playerScores[0]];
+      }
+    });
     console.log ('fetched match history!: ', matchHistory);
     // loading.value = false
   } catch (error) {

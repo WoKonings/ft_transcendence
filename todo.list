@@ -1,0 +1,28 @@
+PRIO:
+
+Check if all forms of user input are validated.
+
+FIX delete user (because of channels)
+
+FriendsList improvements
+on socket DC, reset to login page."
+Make resizing feel better
+
+Copy PongGameAgainstAI components into PongGame
+
+MAYBE:
+Ladder
+Delay on game start in PvP
+
+FUN:
+ARG
+More Pong Levelsw
+Insane AI
+VS AI highscore.
+Actual Elo implementation.
+
+
+FINALLY:
+re-enable all guards that have been disabled.
+raise JWT token time by a lot (or build refresh tokens)
+disable fake logins
