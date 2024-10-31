@@ -2,6 +2,7 @@
   <div class="game-container">
     <div class="scoreboard">
       <div class="score"> You: {{ playerScore }}</div>
+      <div v-if="bigPong"> BIG PONG </div>
       <div class="score"> AI: {{ aiScore }}</div>
     </div>
     <div class="pong-game" ref="container"></div>
@@ -45,6 +46,8 @@ const playerScore = ref(0);
 const aiScore = ref(0);
 const playerHasMovedPaddle = ref(false);
 const waitingForOpponent = ref(false);
+const bigPong = ref(false);
+const ballScale = ref(0.5);
 
 // Game state
 let ballVelocity = { x: 0.2, y: 0.1 };
@@ -174,21 +177,27 @@ const updateGameState = () => {
   ball.position.y += ballVelocity.y;
 
   // Ball collision with top and bottom
-  if ((ball.position.y + 0.5 > 16 && ballVelocity.y > 0) || (ball.position.y - 0.5 < -16 && ballVelocity.y < 0)) {
+  if ((ball.position.y + ballScale.value > 16 && ballVelocity.y > 0) || (ball.position.y - ballScale.value < -16 && ballVelocity.y < 0)) {
     ballVelocity.y *= -1;
   }
 
   // Ball collision with paddles
   if (
     ballVelocity.x < 0 &&
-    ball.position.x - 0.5 <= playerPaddle.position.x + 0.5 &&
-    ball.position.x + 0.5 >= playerPaddle.position.x - 0.5 &&
-    ball.position.y + 0.5 >= playerPaddle.position.y - 2 &&
-    ball.position.y - 0.5 <= playerPaddle.position.y + 2
+    ball.position.x - ballScale.value <= playerPaddle.position.x + ballScale.value &&
+    ball.position.x + ballScale.value >= playerPaddle.position.x - ballScale.value &&
+    ball.position.y + ballScale.value >= playerPaddle.position.y - 2 &&
+    ball.position.y - ballScale.value <= playerPaddle.position.y + 2
   ) {
     // Collision with player paddle
     ballVelocity.x *= -1.1;
-    
+    if (bigPong.value) {
+      ballScale.value += 0.1;
+      ball.scale.set(ballScale.value / 0.5 , ballScale.value / 0.5, ballScale.value / 0.5);
+      console.log(`ball grows: ${ballScale.value}`);
+    }
+    // ball.radius = parseFloat(ball.radius.toFixed(1));
+
     // Calculate dynamic angle for player paddle collision
     let relativeIntersectY = ball.position.y - playerPaddle.position.y;
     let normalizedRelativeIntersectionY = relativeIntersectY / 2; // 2 is half the paddle height
@@ -200,14 +209,19 @@ const updateGameState = () => {
     ballVelocity.x = Math.abs(speed * Math.cos(bounceAngle)); // Ensure it's moving right
   } else if (
     ballVelocity.x > 0 &&
-    ball.position.x + 0.5 >= aiPaddle.position.x - 0.5 &&
-    ball.position.x - 0.5 <= aiPaddle.position.x + 0.5 &&
-    ball.position.y + 0.5 >= aiPaddle.position.y - 2 &&
-    ball.position.y - 0.5 <= aiPaddle.position.y + 2
+    ball.position.x + ballScale.value >= aiPaddle.position.x - ballScale.value &&
+    ball.position.x - ballScale.value <= aiPaddle.position.x + ballScale.value &&
+    ball.position.y + ballScale.value >= aiPaddle.position.y - 2 &&
+    ball.position.y - ballScale.value <= aiPaddle.position.y + 2
   ) {
     // Collision with AI paddle
     ballVelocity.x *= -1.1;
-    
+    if (bigPong.value) {
+      ballScale.value += 0.1;
+      ball.scale.set(ballScale.value / 0.5 , ballScale.value / 0.5, ballScale.value / 0.5);
+      console.log(`ball grows: ${ballScale.value}`);
+    }
+    // ball.radius = parseFloat(ball.radius.toFixed(1));
     // Calculate dynamic angle for AI paddle collision
     let relativeIntersectY = ball.position.y - aiPaddle.position.y;
     let normalizedRelativeIntersectionY = relativeIntersectY / 2; // 2 is half the paddle height
@@ -274,9 +288,14 @@ const resetPong = () => {
   checkAndUpdateAiPaddleColor();
 }
 
+const toggleBigPong = () => {
+  bigPong.value = !bigPong.value;
+}
+
 const resetBall = () => {
   ball.position.set(0, 0, 0);
-  
+  ballScale.value = 0.5;
+  ball.scale.set(ballScale.value / 0.5 , ballScale.value / 0.5, ballScale.value / 0.5);
   // Generate a random angle between 15 and 75 degrees
   const angle = (Math.random() * 60 + 15) * (Math.PI / 180);
   
