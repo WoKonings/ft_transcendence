@@ -26,12 +26,14 @@
           />
         </div>
         <h2>{{ userProfile.username }}</h2>
-        <button v-if="!props.isFriend" @click="addAsFriend(selectedUser)">Add as Friend</button>
-        <button v-if="props.isFriend" @click="removeFriend(selectedUser)">Remove Friend</button>
-        <button v-if="props.isFriend" @click="inviteToPlay(selectedUser)">Invite to Play</button>
+        <div class="buttons">
+          <button class="button" @click="sendMessage(selectedUser)">Send Message</button>
+          <button class="button" v-if="!props.isFriend" @click="addAsFriend(selectedUser)">Add as Friend</button>
+          <button class="button" v-if="props.isFriend" @click="inviteToPlay(selectedUser)">Invite to Play</button>
+          <button class="button-red" v-if="props.isFriend" @click="removeFriend(selectedUser)">Remove Friend</button>
+        </div>
         <!-- <button @click="todo" v-if="isInviteSender(selectedUser.id)">Accept Invite</button>
         <button @click="todo" v-if="isInviteSender(selectedUser.id)">Decline Invite</button> -->
-        <button @click="sendMessage(selectedUser)">Send Message</button>
       </div>
       <div v-if="loading" class="loading">Loading...</div>
       <div v-else class="profile-info">
@@ -345,6 +347,38 @@ const inviteToPlay = (friend) => {
   max-height: 200px;
   overflow-y: auto;
   padding-right: 10px;
+}
+
+.buttons {
+	background-color: #ffffff;
+	padding: 2px;
+	border-radius: 8px;
+	box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+	display: flex;
+	flex-direction: row;
+	gap: 1px;
+}
+
+.button {
+	background-color: #4CAF50;
+	color: white;
+	border: none;
+	border-radius: 4px;
+	padding: 8px;
+	cursor: pointer;
+	font-size: 14px;
+	transition: background-color 0.2s;
+}
+
+.button-red {
+	background-color: #af534c;
+	color: white;
+	border: none;
+	border-radius: 4px;
+	padding: 8px;
+	cursor: pointer;
+	font-size: 14px;
+	transition: background-color 0.2s;
 }
 
 /* Sleek scrollbar styling */

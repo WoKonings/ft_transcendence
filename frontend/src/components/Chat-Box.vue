@@ -545,7 +545,8 @@ input {
 .user-list-window {
   width: 25%; /* Percentage of the chat container width */
   min-width: 20px; /* Minimum width to ensure readability */
-  background-color: #f1f1f1;
+  background-color: #2c2c2c;
+  color: #fff;
   padding: 1.5%;
   overflow-y: auto;
   border-left: 1px solid #e0e0e0;

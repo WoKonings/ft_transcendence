@@ -19,7 +19,7 @@
     </div>
 
     <!-- Options Overlay -->
-    <div v-if="selectedUser" class="options-overlay" @click="closeOptions">
+    <!-- <div v-if="selectedUser" class="options-overlay" @click="closeOptions">
       <div class="options" @click.stop>
         <button @click="inviteToPlay(selectedUser)">Invite to Play</button>
         <button @click="sendMessage(selectedUser)">Send Message</button>
@@ -28,7 +28,7 @@
         <button @click="todo" v-if="isInviteSender(selectedUser.id)">Accept Invite</button>
         <button @click="todo" v-if="isInviteSender(selectedUser.id)">Decline Invite</button>
       </div>
-    </div>
+    </div> -->
     <ViewProfile
       :selectedUser="selectedUser"
       :isVisible="isProfileVisible"
@@ -293,9 +293,9 @@ const declineGameInvite = async (invite) => {
   inviteSenders.value.delete(invite.sender);
 };
 
-const selectUser = (user) => {
-  selectedUser.value = user;
-};
+// const selectUser = (user) => {
+//   selectedUser.value = user;
+// };
 
 const closeOptions = () => {
   selectedUser.value = null;
@@ -306,12 +306,7 @@ const inviteToPlay = (friend) => {
   socket.value.emit('sendGameInvite', {
     targetName: friend.username,
   });
-  store.dispatch('toggleShowGame', true);
-  closeOptions();
-};
-
-const sendMessage = (friend) => {
-  console.log('Sending message to:', friend.name);
+  // store.dispatch('toggleShowGame', true);
   closeOptions();
 };
 
@@ -371,7 +366,8 @@ onMounted(() => {
   height: 40vh;
 	border-radius: 8px;
 	padding: 6px;
-	background-color: #f2f2f2;
+  background-color: #1a1a1a;
+  color: #fff;
   overflow-y: auto; /* Enable scrolling for the content area */
 }
 

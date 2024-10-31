@@ -31,7 +31,8 @@ const goToProfile = () => {
   display: flex;
   align-items: center;
   cursor: pointer;
-  background-color: #f4f4f4; /* Example background, adjust as per your theme */
+  color: #fff;
+  background-color: #1a1a1a;
   padding: 8px;
   width: 100%;
   min-width: 200px;
@@ -63,6 +64,6 @@ const goToProfile = () => {
 .username {
   font-weight: bold;
   font-size: 16px;
-  color: #333; /* Adjust to fit your theme */
+  color: #fff;
 }
 </style>

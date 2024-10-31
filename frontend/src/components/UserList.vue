@@ -177,7 +177,8 @@ onMounted(() => {
   height: 45vh;
 	border-radius: 8px;
 	padding: 6px;
-	background-color: #f2f2f2;
+  background-color: #1a1a1a;
+  color: #fff;
 	overflow-y: auto; /* Enable scrolling for the content area */
 	
 	/* Scrollbar Styles */

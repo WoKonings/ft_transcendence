@@ -360,6 +360,7 @@ onMounted(() => {
   height: 100vh;
   padding: 20px;
   box-sizing: border-box;
+  background-color: #161616;
 }
 
 .content-container {

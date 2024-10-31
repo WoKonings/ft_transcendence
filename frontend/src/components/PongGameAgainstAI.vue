@@ -490,7 +490,7 @@ onBeforeUnmount(() => {
 .pong-game {
   display: flex;
   width: 95%;
-  height: 90%;
+  height: 100%;
   overflow: hidden;
   border-radius: 6px;
 }
@@ -528,22 +528,25 @@ onBeforeUnmount(() => {
 	align-items: center; /* Center horizontally */
 	justify-content: center; /* Center vertically */
 	padding-top: 1px; /* Adjust to your preference */
+  height: 10%;
   width: 100%;
 }
 
 .queue-button {
-	/* padding: 10px; */
-  padding: 1vh 2vw;
-  height: 3vh;
+	display: flex; /* Centers text horizontally and vertically */
+	align-items: center;
+	justify-content: center;
+	padding: 10px 10px;
+	height: 3vh;
 	width: 15vw;
 	margin-bottom: 10px;
 	background-color: #e0e0e0;
-	/* background-color: #4CAF50; */
 	transition: background-color 0.3s;
 	border: none;
 	border-radius: 8px;
 	cursor: pointer;
-	font-size: 1vw 1vh;
+	font-size: calc(0.6vw + 0.6vh); /* Responsive font size */
+	text-align: center; /* Ensures text is centered */
 }
 
 .queue-button:hover {

@@ -3,10 +3,7 @@
     <!-- Action Buttons -->
     <div class="profile-actions">
       <button class="action-button" @click="goToDashboard">Go back</button>
-      
-      
       <button class="action-button" @click="changeUsername">Change Username</button>
-      <!-- Updated Avatar Button -->
       <button class="action-button" @click="openFilePicker">Change Avatar</button>
       <input type="file" ref="fileInput" @change="uploadAvatar" accept="image/*" style="display:none" />
       <button v-if="!currentUser.twoFactorEnabled" class="action-button" @click="enableTwoFactor">Enable 2FA</button>
@@ -418,6 +415,9 @@ onMounted(async () => {
   flex-direction: column;
   align-items: center;
   padding: 20px;
+  background-color: #1a1a1a;
+  color: #fff;
+  height: 100%;
 }
 
 .profile-actions {
@@ -455,7 +455,7 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 0px;
 }
 
 .profile-picture {
@@ -463,7 +463,7 @@ onMounted(async () => {
   height: 100px;
   border-radius: 50%;
   overflow: hidden;
-  margin-bottom: 10px;
+  margin-bottom: 4px;
 }
 
 .small {
@@ -474,7 +474,7 @@ onMounted(async () => {
   width: 50px;
   height: 50px;
   border-radius: 50%;
-  margin-bottom: 10px;
+  margin-bottom: 4px;
 }
 
 .profile-picture img {
@@ -484,6 +484,7 @@ onMounted(async () => {
 }
 
 .profile-info {
+  color: white;
   display: grid;
   grid-template-columns: auto 1fr;
   grid-gap: 10px 20px;
@@ -497,7 +498,7 @@ onMounted(async () => {
 
 .info-label {
   font-weight: 600;
-  color: #4b5563;
+  color: white;
   margin-right: 10px;
 }
 
@@ -514,14 +515,15 @@ onMounted(async () => {
 .match-history {
   margin-top: 20px;
   width: 300px;
-  height: 40%;
+  height: 50vh;
+  min-height: 500px;
   /* width: 40%;
   min-width: 300px; */
 }
 
 .match-history-content {
   max-height: 400px;
-  height: 30%;
+  height: 100%;
   overflow-y: auto;
   padding-right: 10px;
 }
