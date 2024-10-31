@@ -28,6 +28,9 @@
           <button v-if="selectedChat.name !== 'General'" @click="leaveChat" class="leave-button">
             Leave Chat
           </button>
+          <button v-if="currentRole === 'ADMIN'" @click="setPassword" class="set-password-button">
+            Set Channel Password
+          </button>
         </div>
         <div class="messages" ref="messagesContainer">
           <div 
@@ -99,6 +102,14 @@
 <script setup>
 import { ref, onMounted, onUpdated, watch } from 'vue';
 import { useStore } from 'vuex';
+
+//to do: DMs , 
+// handle connection -> re-display all channels that the user was in upon reconnecting
+// socket parsing (every event)
+// useroption modal position
+// password testing
+// general chat
+// 
 
 const store = useStore();
 const socket = store.state.socket;
@@ -195,6 +206,20 @@ watch(userList, (newUserList) => {
 
 });
 
+const setPassword = async () => {
+  const password = prompt("Enter new password for this channel (leave blank for no password):");
+  
+  // Emit event to server to set the channel password
+  socket.emit('setChannelPassword', {channelName: selectedChat.value.name, userId: currentUser.id, password: password || null }, (response) => {
+    if (response.success) {
+      alert(response.message);
+    } else {
+      alert(`Error setting password: ${response.message}`);
+    }
+  });
+};
+
+
 const sendMessage = () => {
   if (newMessage.value.trim() !== '' && selectedChat.value) {
     // const message = { 
@@ -226,32 +251,30 @@ const sendMessage = () => {
 const joinNewChannel = async () => {
   try {
     const channelName = prompt("Enter Channel name to join:");
+
     if (!channelName) return;
     console.log(`input: ${channelName}`);
     
-    socket.emit('joinChannel', { channelName: channelName, username: currentUser.username, password: null }, (response) => {
+    socket.emit('joinChannel', { channelName: channelName, userId: currentUser.id, password: null }, (response) => {
       console.log(response);
       if (response.success === true) {
+        console.log('no pass resp');
         const newChat = { name: channelName, messages: [] };
         chats.value.push(newChat);
         selectChat(channelName);
-        // if(userList.length == 1)
-        //     assignRole('ADMIN');
         alert(response.message);
-        // Fetch updated user list for the new channel
         socket.emit('getUserList', { channel: channelName });
-      } else if (response.password) {
+      } else if (response.success === false) {
+        console.log('pass resp');
         const password = prompt("Enter password");
-        socket.emit('joinChannel', { channel: channelName, username: currentUser.username, password: password || null }, (response) => {
-          if (response.success === true) {
-            const newChat = { name: channelName, messages: [] };
-            chats.value.push(newChat);
-            selectChat(channelName);
-            alert(response.message);
-            // Fetch updated user list for the new channel
-            socket.emit('getUserList', { channel: channelName });
-          }
-        });
+        socket.emit('submitPassword', { channelName: channelName, userId: currentUser.id, password: password }, (response) => {
+          if (response.success === true)
+              alert(`welcome to ${channelName}`);
+        const newChat = { name: channelName, messages: [] };
+        chats.value.push(newChat);
+        selectChat(channelName);
+        socket.emit('getUserList', { channel: channelName });
+        })
       } else {
         alert(response.message);
       }
