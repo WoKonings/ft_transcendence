@@ -35,6 +35,7 @@
       :isFriend="true"
       @close="isProfileVisible = false" 
       @friendRemoved="removeFriend"
+      @invite="inviteToPlay"
     />
     </div>
 
@@ -303,8 +304,6 @@ const closeOptions = () => {
 const inviteToPlay = (friend) => {
   console.log(`friend?: ${friend} ??:`, friend);
   socket.value.emit('sendGameInvite', {
-    // senderName: currentUser.value.username,
-    // senderId: currentUser.value.id,
     targetName: friend.username,
   });
   store.dispatch('toggleShowGame', true);

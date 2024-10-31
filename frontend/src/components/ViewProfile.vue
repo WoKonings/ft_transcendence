@@ -28,6 +28,7 @@
         <h2>{{ userProfile.username }}</h2>
         <button v-if="!props.isFriend" @click="addAsFriend(selectedUser)">Add as Friend</button>
         <button v-if="props.isFriend" @click="removeFriend(selectedUser)">Remove Friend</button>
+        <button v-if="props.isFriend" @click="inviteToPlay(selectedUser)">Invite to Play</button>
         <!-- <button @click="todo" v-if="isInviteSender(selectedUser.id)">Accept Invite</button>
         <button @click="todo" v-if="isInviteSender(selectedUser.id)">Decline Invite</button> -->
         <button @click="sendMessage(selectedUser)">Send Message</button>
@@ -106,7 +107,7 @@ import { ref, watch, defineEmits, defineProps } from 'vue';
 const userProfile = ref({});
 const loading = ref(false);
 const matchHistory = ref([]);
-const emit = defineEmits(['close', 'friendRemoved']);
+const emit = defineEmits(['close', 'friendRemoved', 'invite']);
 const props = defineProps({
   selectedUser: {
     type: Object,
@@ -221,6 +222,17 @@ const removeFriend = async (friend) => {
   emit('friendRemoved', friend);
   emit('close');
 };
+
+const inviteToPlay = (friend) => {
+  emit('invite', friend);
+  // console.log(`friend?: ${friend} ??:`, friend);
+  // socket.value.emit('sendGameInvite', {
+  //   targetName: friend.username,
+  // });
+  // store.dispatch('toggleShowGame', true);
+  // closeOptions();
+};
+
 
 // Fetch user profile when component mounts (if needed)
 // fetchUserProfile();

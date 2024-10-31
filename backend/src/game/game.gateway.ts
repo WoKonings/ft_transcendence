@@ -252,6 +252,7 @@ async handleInviteGame(client: Socket, data: InviteGameDto): Promise<void> {
       session.gameState.playerTwo = userId;
       console.log(`${username} joined lobby as player two`);
     }
+    client.emit('gameJoined', session.player_one.userId === userId ? 1 : 2);
     if (session.player_one && session.player_two) {
       console.log(`GAME IS NOW STARTING! p1: ${session.player_one.username} p2: ${session.player_two.username}`);
       session.startTime = Date.now();
