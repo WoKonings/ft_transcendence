@@ -3,6 +3,7 @@ import { PrismaService } from '../prisma.service';
 import { Channel, ChannelRole } from '@prisma/client';
 import { UserService } from 'src/user/user.service';
 import { Prisma } from '@prisma/client'; // Importing Prisma to access the ChannelRole enum
+import { channel } from 'diagnostics_channel';
 
 @Injectable()
 export class ChatService {
@@ -87,8 +88,8 @@ export class ChatService {
     return { success: true, message: "Returning UserChannel", userChannel };
   }
 
-  async createChannel(channelName: string, username: string, password: string) {
-    const user = await this.userService.getUserByUsername(username);
+  async createChannel(channelName: string, userId: number, password: string) {
+    const user = await this.userService.getUserById(userId);
     console.log(`${user.username} creating ${channelName}`);
     if (!user || !channelName) {
       console.log('No username or channel name provided');
@@ -107,7 +108,7 @@ export class ChatService {
     // Add the creating user to the channel with an admin role
     await this.createUserChannel(user.id, newChannel.id, ChannelRole.ADMIN);
   
-    return { success: true, message: `Channel ${channelName} created and ${username} joined` };
+    return { success: true, message: `Channel ${channelName} created and ${user.username} joined` };
   }
   
   // Method to add a user to a channel with a specified role
@@ -125,8 +126,8 @@ export class ChatService {
   }
 
   // Join an existing channel or create a new one if it doesn't exist
-  async joinChannel(channelName: string, username: string, password: string) {
-    const user = await this.userService.getUserByUsername(username);
+  async joinChannel(channelName: string, userId: number, password: string) {
+    const user = await this.userService.getUserById(userId);
 
     if (!user) {
       return { success: false, message: 'Invalid username' };
@@ -136,13 +137,12 @@ export class ChatService {
 
     // If channel doesn't exist, create it
     if (!channel) {
-      return await this.createChannel(channelName, username, password);
+      return await this.createChannel(channelName, userId, password);
     }
 
-    // Check if the channel is private and if the password matches
-    if (channel.private && password !== channel.password) {
+    if (password !== channel.password) {
       console.log('Incorrect password');
-      return { success: false, message: 'Incorrect password', passwordRequired: true };
+      return { success: false, message: 'please input password', passwordRequired: true };
     }
 
     // Check if the user is already in the channel
@@ -162,7 +162,7 @@ export class ChatService {
 
 
 
-    return { success: true, message: `User ${username} joined ${channelName}` };
+    return { success: true, message: `User ${user.username} joined ${channelName}` };
   }
 
   // Leave a channel
@@ -202,6 +202,37 @@ export class ChatService {
     return { success: true, message: `User ${user.username} left ${channelName}` };
   }
 
+  async submitPassword(channelName: string, password: string)
+  {
+    const channel = await this.getChannelByName(channelName);
+
+    if (password != channel.password)
+    {
+      return { success: false, message: "invalid password, please try again"};
+    }
+
+    return { success: true};
+      
+  }
+
+  async setChannelPassword(channelName: string, password: string)
+  {
+    const channel = this.getChannelByName(channelName);
+
+    if(!channel)
+    {
+      console.log("channel does not exist");
+      return null;
+    }
+
+    await this.prisma.channel.update({
+      
+      where : { name: channelName},
+      data : { password: password},
+    });
+
+    return{ success: true, message: `password succesfully set to ${password}`};
+  }
   // Get all users in a channel
   async getAllUsers(channelName: string) {
     console.log('getAllUsers called');

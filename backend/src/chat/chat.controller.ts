@@ -35,11 +35,11 @@ export class ChatController {
     }
   }
 
-  @Get('Join')
-  joinChannel(channelName: string, username: string, password: string, privacy: boolean) {
-	console.log (`${username} is joining ${channelName}`);
-    return this.chatService.joinChannel(channelName, username, password);
-  }
+  // @Get('Join')
+  // joinChannel(channelName: string, username: string, password: string, privacy: boolean) {
+	// console.log (`${username} is joining ${channelName}`);
+  //   return this.chatService.joinChannel(channelName, username, password);
+  // }
 
   // @Get('leave')
   // leaveChannel(channelName: string, username: string) {

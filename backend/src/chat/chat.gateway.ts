@@ -12,7 +12,8 @@ import { UserService } from 'src/user/user.service';
 import { Injectable, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '../auth/auth.guard';
 import { ChannelRole } from '@prisma/client';
-import { subscribe } from 'diagnostics_channel';
+import { channel, subscribe } from 'diagnostics_channel';
+import { DEFAULT_FACTORY_CLASS_METHOD_KEY } from '@nestjs/common/module-utils/constants';
 
 @WebSocketGateway({ cors: true })
 @UseGuards(AuthGuard)
@@ -56,6 +57,17 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   }
 
+  @SubscribeMessage('setChannelPassword')
+  async setChannelPassword(client: Socket, payload: { role: string, channelName: string, password: string}) {
+    // console.log(`current role trying to change pass = ${payload.role}`);
+    // if (payload.role != "ADMIN")
+    // {
+    //   console.log("invalid");
+    //   return null;
+    // }
+
+    return this.chatService.setChannelPassword(payload.channelName, payload.password);
+  }
   @SubscribeMessage('sendMessage')
   async handleMessage(client: Socket, payload: { senderId: number; channelName: string; message: string }) {
     console.log(`channelName: ${payload.channelName} message: ${payload.message}`);
@@ -85,14 +97,35 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     });
   }
 
+  @SubscribeMessage('submitPassword')
+  async submitPassword(client: Socket, payload: {channelName: string , userId: number, password: string}) {
+    const channel = await this.chatService.getChannelByName(payload.channelName);
+
+    if(!channel)
+    {
+      console.log("channel does not exist for submitting password");
+      return null;
+    }
+
+    const response =  await this.chatService.submitPassword(channel.name, payload.password);
+
+    if (response.success == true)
+    {
+      return await this.handleJoinChannel(client, {channelName: channel.name, userId: payload.userId, password: payload.password})
+    }
+    else if (response.success == false)
+      return(response);
+
+  }
+
   @SubscribeMessage('joinChannel')
-  async handleJoinChannel(client: Socket, payload: { channelName: string; username: string; password: string }) {
+  async handleJoinChannel(client: Socket, payload: { channelName: string; userId: number, password: string }) {
     console.log(`trying to join ${payload.channelName} [Gateway]`);
     const channelExists = await this.chatService.getChannelByName(payload.channelName);
-    const result = await this.chatService.joinChannel(payload.channelName, payload.username, payload.password);
+    const result = await this.chatService.joinChannel(payload.channelName, payload.userId, payload.password);
 
     if (result.success) {
-      const user = await this.userService.getUserByUsername(payload.username);
+      const user = await this.userService.getUserById(payload.userId);
 
       if (user) {
         await this.prisma.user.update({
@@ -121,7 +154,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         }
 
       client.join(payload.channelName);
-      console.log(`${payload.username} joined channel: ${payload.channelName}`);
+      console.log(`${user.username} joined channel: ${payload.channelName}`);
 
         await this.updateUserList(payload.channelName);
       }
