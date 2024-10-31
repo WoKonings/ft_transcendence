@@ -247,6 +247,8 @@ const inviteToPlay = (friend) => {
   left: 0;
   width: 100vw;
   height: 100vh;
+  background-color: #2c2c2c;
+  color: #fff;
   background-color: rgba(0, 0, 0, 0.7);
   display: flex;
   justify-content: center;
@@ -255,7 +257,8 @@ const inviteToPlay = (friend) => {
 }
 
 .modal-content {
-  background: white;
+  background-color: #2c2c2c;
+  color: #fff;
   padding: 20px;
   border-radius: 8px;
   width: 400px;
@@ -350,7 +353,7 @@ const inviteToPlay = (friend) => {
 }
 
 .buttons {
-	background-color: #ffffff;
+
 	padding: 2px;
 	border-radius: 8px;
 	box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);

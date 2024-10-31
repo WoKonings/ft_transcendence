@@ -445,7 +445,8 @@ body {
 .main-content {
   display: flex;
   flex-direction: column;
-  background-color: #f9f9f9;
+  background-color: #1a1a1a;
+  color: #fff;
   height: 100%;
   width: 50%;
 }
@@ -455,7 +456,6 @@ body {
   justify-content: space-between;
   align-items: center;
   padding: 2%;
-  background-color: #fff;
   border-bottom: 1px solid #e0e0e0;
 }
 
@@ -528,7 +528,7 @@ body {
 .input-container {
   display: flex;
   padding: 1%;
-  background-color: #fff;
+
   border-top: 1px solid #e0e0e0;
 }
 
