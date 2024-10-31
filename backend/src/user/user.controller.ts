@@ -86,11 +86,11 @@ export class UserController {
     return this.userService.getUserById(Number(id));
   }
 
-  @UseGuards(AuthGuard)
-  @Delete(':id')
-  async deleteUser(@Param('id') id: string) {
-    return this.userService.deleteUser(Number(id));
-  }
+  // @UseGuards(AuthGuard)
+  // @Delete(':id')
+  // async deleteUser(@Param('id') id: string) {
+  //   return this.userService.deleteUser(Number(id));
+  // }
 
   @UseGuards(AuthGuard)
   @Post('update-username')

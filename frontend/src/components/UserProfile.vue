@@ -299,29 +299,29 @@ const logoutUser = () => {
 };
 
 // Function to handle account deletion
-const deleteAccount = async () => {
-  const confirmation = confirm('Are you sure you want to delete your account? This action cannot be undone.');
-  if (!confirmation) {
-    return;
-  }
-  try {
-    const response = await fetch(`http://localhost:3000/user/${currentUser.value.id}`, {
-      method: 'DELETE',
-      headers: {
-        'Authorization': `Bearer ${sessionStorage.getItem('access_token')}`,
-        'Content-Type': 'application/json'
-      }
-    });
-    if (!response.ok) {
-      throw new Error('Failed to delete account');
-    }
-    alert('Account deleted successfully!');
-    logoutUser();
-  } catch (error) {
-    console.error('Error deleting account:', error);
-    alert('An error occurred while deleting your account.');
-  }
-};
+// const deleteAccount = async () => {
+//   const confirmation = confirm('Are you sure you want to delete your account? This action cannot be undone.');
+//   if (!confirmation) {
+//     return;
+//   }
+//   try {
+//     const response = await fetch(`http://localhost:3000/user/${currentUser.value.id}`, {
+//       method: 'DELETE',
+//       headers: {
+//         'Authorization': `Bearer ${sessionStorage.getItem('access_token')}`,
+//         'Content-Type': 'application/json'
+//       }
+//     });
+//     if (!response.ok) {
+//       throw new Error('Failed to delete account');
+//     }
+//     alert('Account deleted successfully!');
+//     logoutUser();
+//   } catch (error) {
+//     console.error('Error deleting account:', error);
+//     alert('An error occurred while deleting your account.');
+//   }
+// };
 
 onMounted(async () => {
   if (!isLoggedIn.value) { 
@@ -361,7 +361,7 @@ onMounted(async () => {
     }
     matchHistory.value = await matchResponse.json();
     matchHistory.value.sort((a, b) => new Date(b.endTime) - new Date(a.endTime));
-    
+
     matchHistory.value.forEach(game => {
       if (game.players[0].id !== game.winner.id) {
         console.log('switching invalid game');

@@ -117,66 +117,49 @@ const getStatusClass = (user) => {
   return 'status-offline';
 };
 
-const selectUser = (user) => {
-  selectedUser.value = user;
-};
+// const selectUser = (user) => {
+//   selectedUser.value = user;
+// };
 
-const closeOptions = () => {
-  selectedUser.value = null;
-};
+// const closeOptions = () => {
+//   selectedUser.value = null;
+// };
 
-const addAsFriend = (user) => {
-	console.log(`Adding ${user.username}, id: ${user.id} as a friend`);
-	console.log(`Current user ID: ${currentUser.value.id}`);
-	// console.log(`token?: ${sessionStorage.getItem('access_token')}`);
-	fetch('http://localhost:3000/user/add', {
-		method: 'POST',
-		headers: {
-			'Authorization': `Bearer ${sessionStorage.getItem('access_token')}`,
-			'Content-Type': 'application/json',
-		},
-		body: JSON.stringify({
-			targetId: user.id,
-			userId: currentUser.value.id,
-		}),
-	})
-		.then(response => response.json())
-		.then(data => {
-			if (data.error) {
-				console.error('Error:', data.error);
-			} else {
-				console.log(data.message);
-			}
-		})
-		.catch(error => {
-			console.error('Error adding friend:', error);
-		});
+// const addAsFriend = (user) => {
+// 	console.log(`Adding ${user.username}, id: ${user.id} as a friend`);
+// 	console.log(`Current user ID: ${currentUser.value.id}`);
+// 	// console.log(`token?: ${sessionStorage.getItem('access_token')}`);
+// 	fetch('http://localhost:3000/user/add', {
+// 		method: 'POST',
+// 		headers: {
+// 			'Authorization': `Bearer ${sessionStorage.getItem('access_token')}`,
+// 			'Content-Type': 'application/json',
+// 		},
+// 		body: JSON.stringify({
+// 			targetId: user.id,
+// 			userId: currentUser.value.id,
+// 		}),
+// 	})
+// 		.then(response => response.json())
+// 		.then(data => {
+// 			if (data.error) {
+// 				console.error('Error:', data.error);
+// 			} else {
+// 				console.log(data.message);
+// 			}
+// 		})
+// 		.catch(error => {
+// 			console.error('Error adding friend:', error);
+// 		});
 
-	closeOptions();
-};
-
-// const inviteToGame = (user) => {
-// 	console.log(`Inviting ${user.username} to a game`);
 // 	closeOptions();
-// }
+// };
 
 const viewProfile = (user) => {
   selectedUser.value = user;
   isProfileVisible.value = true; // Show the profile modal
   console.log(`viewing ${user.username}`); 
 };
-
-const sendMessage = (user) => {
-  console.log(`Sending message to ${user.username}`);
-  // Implement message sending logic here
-  closeOptions();
-};
-
-// const viewProfile = (user) => {
-//   console.log(`Viewing profile of ${user.username}`);
-//   // Implement profile viewing logic here
-//   closeOptions();
-// };
 
 onMounted(() => {
   getUsers();

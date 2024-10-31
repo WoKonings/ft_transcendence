@@ -98,12 +98,12 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue';
+import { ref, watch, defineEmits, defineProps } from 'vue';
 
 const userProfile = ref({});
 const loading = ref(false);
 const matchHistory = ref([]);
-const emit = defineEmits();
+const emit = defineEmits(['close']);
 const props = defineProps({
   selectedUser: {
     type: Object,

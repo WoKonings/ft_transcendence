@@ -41,11 +41,17 @@ export class UserService {
     if (!targetUser) {
       throw new BadRequestException('Target user not found');
     }
-
-    // Check if target user already added user, if so, accept on both sides.
+    
     const user = await this.prisma.user.findUnique({
       where: { id: userId}
     })
+
+    if (user.friends.includes(targetId) || targetUser.friends.includes(userId)) {
+      console.log ("users are already friends");
+      throw new BadRequestException('Already friends with user');
+    }
+  
+    // Check if target user already added user, if so, accept on both sides.
     if (user && user.pending.includes(targetId)) {
       console.log('accepting:', targetUser.username, 'for :', user.username); // Log IDs to verify they are correct
 
@@ -286,51 +292,51 @@ async getIncomingPendingFriends(userId: number) {
   }
 
 
-  async deleteUser(id: number): Promise<User> {
-    const user = await this.getUserById(id);
+  // async deleteUser(id: number): Promise<User> {
+  //   const user = await this.getUserById(id);
   
-    if (!user) {
-      throw new NotFoundException(`User with ID ${id} not found.`);
-    }
+  //   if (!user) {
+  //     throw new NotFoundException(`User with ID ${id} not found.`);
+  //   }
   
-    // Find all users who have this user in their friends list
-    const friends = await this.prisma.user.findMany({
-      where: {
-        friends: {
-          has: id,
-        },
-      },
-    });
+  //   // Find all users who have this user in their friends list
+  //   const friends = await this.prisma.user.findMany({
+  //     where: {
+  //       friends: {
+  //         has: id,
+  //       },
+  //     },
+  //   });
   
-    // Update each friend's friends list to remove the deleted user's ID
-    for (const friend of friends) {
-      await this.prisma.user.update({
-        where: { id: friend.id },
-        data: {
-          friends: {
-            set: friend.friends.filter((friendId) => friendId !== id), // Remove the deleted user's ID
-          },
-        },
-      });
-    }
-    // disconnect user from all channels they were in.
-    for (const channels in user.channels) {
-      console.log(`channel: ${channels}`);
-      await this.prisma.channel.update({
-        where: {name: channels},
-        data: {
-          users: {
-            disconnect: { username: user.username }
-          }
-        }
+  //   // Update each friend's friends list to remove the deleted user's ID
+  //   for (const friend of friends) {
+  //     await this.prisma.user.update({
+  //       where: { id: friend.id },
+  //       data: {
+  //         friends: {
+  //           set: friend.friends.filter((friendId) => friendId !== id), // Remove the deleted user's ID
+  //         },
+  //       },
+  //     });
+  //   }
+  //   // disconnect user from all channels they were in.
+  //   for (const channels in user.channels) {
+  //     console.log(`channel: ${channels}`);
+  //     await this.prisma.channel.update({
+  //       where: {name: channels},
+  //       data: {
+  //         users: {
+  //           disconnect: { username: user.username }
+  //         }
+  //       }
         
-      });
-    }
+  //     });
+  //   }
  
-    return this.prisma.user.delete({
-      where: { id },
-    });
-  }
+  //   return this.prisma.user.delete({
+  //     where: { id },
+  //   });
+  // }
 
   async updateAvatar(userId: number, filename: string): Promise<void> {
     const avatarPath = `/uploads/avatars/${filename}`;

@@ -9,6 +9,7 @@
     <!-- <div v-if="!playerHasMovedPaddle">Use W/S or Up and Down arrow keys to move your paddle!</div> -->
     <div class="queue-container" >
       <button @click="resetPong()" class="queue-button">Reset Score</button>
+      <button @click="toggleBigPong()" class="queue-button">Toggle Big Pong</button>
       <button v-if="!waitingForOpponent" @click="queueForPong(false)" class="queue-button">Queue for Pong</button>
       <button v-if="!waitingForOpponent" @click="queueForPong(true)" class="queue-button">Queue for Big Pong</button>
       <div v-if="waitingForOpponent" class="waiting-overlay">
@@ -34,7 +35,7 @@ import { useStore } from 'vuex';
 const store = useStore();
 const socket = computed(() => store.state.socket);
 const currentUser = computed(() => store.state.currentUser);
-const inQueue = computed(() => store.state.inQueue);
+// const inQueue = computed(() => store.state.inQueue);
 
 const container = ref(null);
 let scene, camera, renderer, composer;
