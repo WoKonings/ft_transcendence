@@ -307,6 +307,7 @@ const logoutUser = () => {
   if (socket.value == null)
   return;
   socket.value.on('connected', (message) => {
+    error.value = '';
     console.log(message);
   });
   
@@ -373,13 +374,13 @@ onMounted(() => {
 .chat-box-container {
   display: flex;
   width: 80vw;
-  height: 34vh;
+  height: 36vh;
 }
 
 .pong-game-container {
   display: flex;
   width: 80vw;
-  height: 63vh;
+  height: 60vh;
 }
 
 .sidebar {
