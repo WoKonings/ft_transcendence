@@ -91,7 +91,7 @@
       <div v-if="showUserOptions" class="user-options-modal" @click="closeUserOptions">
         <button v-if="currentRole === 'ADMIN'" @click="assignRole('ADMIN')">Assign Admin</button>
         <button v-if="currentRole === 'ADMIN'" @click="assignRole('MEMBER')">Assign User</button>
-        <button v-if="currentRole === 'ADMIN'" @click="kickUser(selectedChat.name, selectedUser.id)">Kick from Channel</button>
+        <button v-if="currentRole === 'ADMIN'" @click="kickUser()">Kick from Channel</button>
       </div>
     </div>
   </div>
@@ -107,6 +107,8 @@ import { useStore } from 'vuex';
 // socket parsing (every event)
 // useroption modal position
 // dms
+// add private
+// add owner - > aka; set the admin array[0] to the userId of the person who created it (in service?)
 
 const store = useStore();
 const socket = store.state.socket;
@@ -149,12 +151,14 @@ const assignRole = (role) => {
   alert(`${selectedUser.value.username} is now ${role}.`);
 };
 
-const kickUser = (userId, channelName) => {
+const kickUser = () => {
   if (currentRole.value === 'ADMIN') {
-    console.log(`kicking ${userId} from ${channelName}`);
-    socket.emit('kickUser', { channelName: channelName, userId: userId }, (response) => {
+    console.log(`kicking ${selectedUser.value.id} from ${selectedChat.value.name}`);
+    socket.emit('kickUser', { channelName: selectedChat.value.name, userId: selectedUser.value.id }, (response) => {
       if (response.success) {
-        console.log(response.message);
+
+      
+        alert(response.message);
       } else {
         console.error('Failed to kick user:', response.error);
       }
@@ -364,8 +368,27 @@ onMounted(async () => {
     // const curUser = userList.value.find(user => user.username === currentUser.username);
     // currentRole.value = curUser.role;
     alert(`${username} is now ${newRole}. ${message}`);
+
+
+  });
+  
+  socket.on('userKicked', ({userId, channelName}) => {
+        if (userId === currentUser.id && selectedChat.value.name === channelName) {
+          chats.value = chats.value.filter(chat => chat.name !== channelName);
+          if (chats.value.length > 0) {
+            selectedChat.value = chats.value[0];
+          } else {
+            selectedChat.value = null;
+          }
+        userList.value = [];
+        alert('You have been removed from this channel.');
+        } else {
+        // Update the user list for other users still in the channel
+        userList.value = userList.value.filter(user => user.id !== userId);
+    }
   });
 });
+
 </script>
 
 <style scoped>

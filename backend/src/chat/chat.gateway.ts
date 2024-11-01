@@ -120,10 +120,11 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('kickUser')
-  async handleKick(payload: { channelName: string, userId: number})
-  {
+  async handleKickUser(client: Socket, payload: { channelName: string, userId: number }) {
+    console.log(`KICK: ${payload.channelName}, ${payload.userId}`)
     const channel = await this.chatService.getChannelByName(payload.channelName);
     const user = await this.userService.getUserById(payload.userId);
+
 
     if(!user)
     {
@@ -142,7 +143,9 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     if (response.success === true)
     {
-      return { success: true, message: ` user has been succesfully kicked from ${channel.name}` };
+      if (response.success) {
+        this.server.to(channel.name).emit('userKicked', { userId: user.id, channelName: channel.name });
+      }
     }
   }
 
@@ -291,7 +294,6 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       }
 
       return
-
   } 
 
   @SubscribeMessage('getUserList')
