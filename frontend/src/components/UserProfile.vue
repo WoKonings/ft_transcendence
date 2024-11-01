@@ -1,6 +1,9 @@
 <template>
   <div class="user-profile-page" v-if="isLoggedIn == true">
     <!-- Action Buttons -->
+    <div v-if="disconnected_error != ''" class="disconnect-container">
+      {{ disconnected_error }}
+    </div>
     <div class="profile-actions">
       <button class="action-button" @click="goToDashboard">Go back</button>
       <button class="action-button" @click="changeUsername">Change Username</button>
@@ -116,6 +119,7 @@ const userProfile = ref({});
 
 const loading = ref(false);
 const matchHistory = ref([]);
+const disconnected_error = ref('');
 
 // 2fa vars //
 const showQRCode = ref(false);
@@ -385,6 +389,16 @@ onMounted(async () => {
     console.error(error);
   }
 
+  socket.value.on('connected', (message) => {
+    disconnected_error.value = '';
+    console.log(message);
+  });
+
+  socket.value.on('disconnect', (reason) => {
+    console.warn('Disconnected:', reason);
+    disconnected_error.value = 'Disconnected from server.';
+  });
+
   socket.value.on('userStatusUpdate', (data) => {
     console.log('Received status update!');
 		// if (data.userId === currentUser.value.id) {
@@ -597,7 +611,23 @@ onMounted(async () => {
 }
 
 .elo-loss {
-  color: red;
+  color: rgb(128, 0, 0);
+}
+
+.disconnect-container {
+	width: 100%;
+	height: 3vh;
+	background-color: #ff4c4c85; /* Red color to indicate disconnection */
+	color: white; /* Text color for contrast */
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	font-size: 2vh;
+	font-weight: bold;
+	position: absolute; /* So it floats above other content */
+	top: 0; /* Stick it to the top of the page */
+	left: 0;
+	z-index: 1000; /* Ensures it stays above other elements */
 }
 
 /* 2fa */
