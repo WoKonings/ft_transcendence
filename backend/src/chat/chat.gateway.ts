@@ -15,6 +15,9 @@ import { AuthGuard } from '../auth/auth.guard';
 import { ChannelRole } from '@prisma/client';
 import { channel, subscribe } from 'diagnostics_channel';
 import { DEFAULT_FACTORY_CLASS_METHOD_KEY } from '@nestjs/common/module-utils/constants';
+import { serializeWithBufferAndIndex } from 'typeorm/driver/mongodb/bson.typings';
+import { JwtService } from '@nestjs/jwt';
+import e from 'express';
 
 @WebSocketGateway({ cors: true })
 @UseGuards(AuthGuard)
@@ -26,9 +29,12 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private readonly chatService: ChatService,
     private readonly userService: UserService,
     private readonly prisma: PrismaService,
+    private readonly jwtService: JwtService,
   ) {}
 
   async handleConnection(client: Socket) {
+
+
 
   }
 
@@ -55,6 +61,8 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         },
       });
     }
+
+    
 
   }
 
@@ -121,10 +129,11 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('kickUser')
-  async handleKick(payload: { channelName: string, userId: number})
-  {
+  async handleKickUser(client: Socket, payload: { channelName: string, userId: number }) {
+    console.log(`KICK: ${payload.channelName}, ${payload.userId}`)
     const channel = await this.chatService.getChannelByName(payload.channelName);
     const user = await this.userService.getUserById(payload.userId);
+
 
     if(!user)
     {
@@ -143,7 +152,9 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     if (response.success === true)
     {
-      return { success: true, message: ` user has been succesfully kicked from ${channel.name}` };
+      if (response.success) {
+        this.server.to(channel.name).emit('userKicked', { userId: user.id, channelName: channel.name });
+      }
     }
   }
 
@@ -304,7 +315,6 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       }
 
       return
-
   } 
 
   @SubscribeMessage('getUserList')
@@ -312,8 +322,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const channel = await this.chatService.getChannelByName(payload.channel);
 
     if (!channel) {
-      console.error('Channel not found:', payload.channel);
-      return client.emit('userListError', 'Channel not found');
+      console.error('Channel not found: in get userlist', payload.channel);
     }
 
     const usersInChannel = await this.prisma.userChannel.findMany({

@@ -171,18 +171,17 @@ export class ChatService {
     const user = await this.userService.getUserById(userId);
     const channel = await this.getChannelByName(channelName);
 
+
     if (!channel || !user) {
       console.log('No channel or user found to leave');
       return { success: false, message: 'Channel or user not found' };
     }
 
-    // Check if the user is in the channel
-    if (!channel.users.some(u => u.id === user.id)) {
-      console.log('User is not in the channel');
-      return { success: false, message: 'User not in the channel' };
-    }
+    const userchannel = await this.getUserChannel(channel.id,  userId);
+    
+    if (!userchannel)
+      return { success: false, message: "userchannel entry does not exist" };
 
-    // Remove the user from the channel
     await this.prisma.userChannel.delete({
       where: { userId_channelId: { userId: user.id, channelId: channel.id } },
     });
