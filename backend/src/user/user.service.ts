@@ -3,12 +3,15 @@ import { UserGateway } from './user.gateway';
 import { PrismaService } from '../prisma.service';
 import { Prisma, User, Channel } from '@prisma/client';
 import { AuthGuard } from '@nestjs/passport';
+import { AuthService } from 'src/auth/auth.service';
 
 @Injectable()
 export class UserService {
   constructor(
     private prisma: PrismaService, 
+    // private authService: AuthService,
     @Inject(forwardRef(() => UserGateway)) private readonly userGateway: UserGateway,
+    @Inject(forwardRef(() => AuthService)) private readonly authService: AuthService,
   ) {} // Inject the gateway) {}
 
   async createUser(data: Prisma.UserCreateInput): Promise<User> {
@@ -27,7 +30,6 @@ export class UserService {
     }
   }
 
-  //todo: accept user if they added you and you add them?
   async addUserAsFriend(targetId: number, userId: number) {
 	  console.log('targetId:', targetId, 'userId:', userId); // Log IDs to verify they are correct
 	// Fetch the target user
@@ -171,8 +173,6 @@ export class UserService {
     });
     return user;
   }
-
-
 
   async getAllUsers() {
     const users = await this.prisma.user.findMany({
@@ -355,13 +355,11 @@ async getIncomingPendingFriends(userId: number) {
 
   async updateUsername(userId: number, newUsername: string) {
     // ensure name is not taken already
-    const user = await this.prisma.user.findUnique({
+    let user = await this.prisma.user.findUnique({
       where: { username: newUsername }
     });
     if (user) {
       throw new BadRequestException('Username already taken');
-      console.log ('username already taken');
-      return;
     }
 
     // update!
@@ -374,5 +372,12 @@ async getIncomingPendingFriends(userId: number) {
     this.userGateway.emitUserStatusUpdate(userId, { username: newUsername });
 
     console.log('updated username!');
+    user = await this.prisma.user.findUnique({
+      where: { username: newUsername }
+    });
+    console.log('user check: ', user);
+    //generate new token?
+    const newToken = this.authService.newNameNewToken(user);
+    return (newToken);
   }
 }
