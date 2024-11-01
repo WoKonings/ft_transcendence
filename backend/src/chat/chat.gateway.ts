@@ -14,6 +14,7 @@ import { AuthGuard } from '../auth/auth.guard';
 import { ChannelRole } from '@prisma/client';
 import { channel, subscribe } from 'diagnostics_channel';
 import { DEFAULT_FACTORY_CLASS_METHOD_KEY } from '@nestjs/common/module-utils/constants';
+import { serializeWithBufferAndIndex } from 'typeorm/driver/mongodb/bson.typings';
 
 @WebSocketGateway({ cors: true })
 @UseGuards(AuthGuard)
@@ -28,6 +29,34 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   ) {}
 
   async handleConnection(client: Socket) {
+
+    // const userId = client['user']?.sub; 
+    // if (!userId) {
+    //   console.error('User ID not found on connection');
+    //   client.disconnect();
+    //   return;
+    // }
+
+
+    // const userChannels = await this.prisma.userChannel.findMany({
+    //   where: { userId },
+    //   include: { channel: true },
+    // });
+
+    // if (userChannels.length === 1)
+    // {
+    //   return null;
+    // }
+
+    // const channels = userChannels.map(userChannel => ({
+    //   channelId: userChannel.channel.id,
+    //   channelName: userChannel.channel.name,
+    //   userRole: userChannel.role,
+    // }));
+
+    // client.emit('restoreChannels', channels);
+
+    //emit the array of userchannels to the frontend 
 
   }
 
@@ -54,6 +83,8 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         },
       });
     }
+
+    
 
   }
 
@@ -301,8 +332,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const channel = await this.chatService.getChannelByName(payload.channel);
 
     if (!channel) {
-      console.error('Channel not found:', payload.channel);
-      return client.emit('userListError', 'Channel not found');
+      console.error('Channel not found: in get userlist', payload.channel);
     }
 
     const usersInChannel = await this.prisma.userChannel.findMany({
