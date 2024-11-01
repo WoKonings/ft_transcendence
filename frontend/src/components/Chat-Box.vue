@@ -207,16 +207,23 @@ watch(() => selectedChat.value, (newChat) => {
     userListError.value = null;
   }
 
-  socket.emit('getUserList', {
-    channel: newChat.name
-  });
+  if (selectedChat.value.isDM) {
+    socket.emit('getDMUserList', {
+      userId: newChat.userId
+    });
+  } else {
+    socket.emit('getUserList', {
+      channel: newChat.name
+    });
+  }
 });
 
 watch(userList, (newUserList) => {
   try {
     // const oldRole = currentRole.value;
     const curUser = newUserList.find(user => user.username === currentUser.username);
-    currentRole.value = curUser.role;
+    if (curUser)
+      currentRole.value = curUser.role;
     //console.log(`${currentUser.username} 's role updated from ${oldRole} to ${currentRole.value}`);
   }
   catch(error){
@@ -226,10 +233,12 @@ watch(userList, (newUserList) => {
 
 watch(() => props.directMessage, (directMessage) => {
   if (directMessage) {
-    if (!chats.value.find(chat => chat.id === directMessage.userId));
-      const directChat = { name: directMessage.username, isDM: true, id: directMessage.userId, messages: [] };
+    if (!chats.value.find(chat => chat.id === directMessage.id));
+      const directChat = { name: directMessage.username, isDM: true, userId: directMessage.id, messages: [] };
+      console.log(`ya: ${directMessage.id}`);
       chats.value.push(directChat);
-      socket.emit('getDMUserList', { userId: directMessage.userId });
+      socket.emit('getDMUserList', { userId: directChat.userId });
+      selectChat(directChat.name);
       // Handle the direct message
       console.log('Received direct message:', newMessage);
       // You can add logic to display the direct message in your chat
@@ -261,9 +270,17 @@ const sendMessage = () => {
 
     // selectedChat.value.messages.push(message);
 
-    if (selectedChat.value.isDM) {
-      console.log(`fake: ${newMessage.value}`);
-      return;
+    if (selectedChat.value.isDM && selectedChat.value.userId) {
+      socket.emit('directMessage', {
+        targetId: selectedChat.value.userId,
+        message: newMessage.value,
+      });
+      selectedChat.value.messages.push({
+        sender: currentUser.username,
+        text: newMessage.value,
+        timestamp: new Date()
+      });
+      console.log(`DMing: ${newMessage.value}`);
     }
     else if (socket) {
       console.log(`sending message [${newMessage.value}] from ${currentUser.username}`);
@@ -393,6 +410,56 @@ onMounted(async () => {
     currentRole.value = currentUserInList.role;
   });
 
+  socket.on('updateDMUserList', (userListData) => {
+    console.log('updated user list!');
+    userList.value = userListData;
+
+    // const currentUserInList= userList.value.find(user => user.id === currentUser.id)
+    // console.log(`currentuser Role ${currentUserInList.role}`);
+    // currentRole.value = currentUserInList.role;
+  });
+
+  socket.on('directMessage', (data) => {
+    console.log(`surely DM: ${data.userId}: ${data.message}`);
+    const chat = chats.value.find(chat => chat.userId === data.userId);
+    if (chat) {
+      console.log('dm already exists');
+      chat.messages.push({
+        sender: data.name,
+        text: data.message,
+        timestamp: new Date()
+      });
+    } else {
+      const directChat = { name: data.name, isDM: true, userId: data.userId, messages: [] };
+      console.log(`new DM!: ${data.userId}`);
+      directChat.messages.push({
+        sender: data.name,
+        text: data.message,
+        timestamp: new Date()
+      });
+      chats.value.push(directChat);
+    }
+
+
+    // const currentUserInList= userList.value.find(user => user.id === currentUser.id)
+    // console.log(`currentuser Role ${currentUserInList.role}`);
+    // currentRole.value = currentUserInList.role;
+  });
+
+
+  socket.on('userStatusUpdate', (data) => {
+    console.log(`USER STATUS UDPATE event called: User ${data.username}`);
+
+    const user = userList.value.find((user) => user.id === data.id);
+    if (user) {
+      if (data.username != null)
+          user.username = data.username;
+        if (data.avatar != null)
+          user.avatar = data.avatar;
+    }
+
+  });
+
   socket.on('userRoleUpdated', ({ username, newRole, message }) => {
     console.log(`userRoleUpdated event called: User ${username} role updated to ${newRole}`);
 
@@ -409,18 +476,18 @@ onMounted(async () => {
   });
   
   socket.on('userKicked', ({userId, channelName}) => {
-        if (userId === currentUser.id && selectedChat.value.name === channelName) {
-          chats.value = chats.value.filter(chat => chat.name !== channelName);
-          if (chats.value.length > 0) {
-            selectedChat.value = chats.value[0];
-          } else {
-            selectedChat.value = null;
-          }
-        userList.value = [];
-        // alert('You have been removed from this channel.');
-        } else {
-        // Update the user list for other users still in the channel
-        userList.value = userList.value.filter(user => user.id !== userId);
+    if (userId === currentUser.id && selectedChat.value.name === channelName) {
+      chats.value = chats.value.filter(chat => chat.name !== channelName);
+      if (chats.value.length > 0) {
+        selectedChat.value = chats.value[0];
+      } else {
+        selectedChat.value = null;
+      }
+    userList.value = [];
+    // alert('You have been removed from this channel.');
+    } else {
+    // Update the user list for other users still in the channel
+    userList.value = userList.value.filter(user => user.id !== userId);
     }
   });
 

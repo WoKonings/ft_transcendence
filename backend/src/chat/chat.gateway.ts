@@ -219,14 +219,21 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('directMessage')
-  async handleDirectMessage(client: Socket, payload: { targetId: number }) {
+  async handleDirectMessage(client: Socket, payload: { targetId: number, message: string }) {
+    const senderId = client['user'].id;
+    const senderName = client['user'].username;
     console.log(`trying to message ${payload.targetId}`);
-    const target = this.userService.getUserById(payload.targetId);
+    const target = await this.userService.getUserById(payload.targetId);
     if (!target) {
-      console.log('ad');
+      console.log('target userId for DM does not exist');
       return;
     }
-
+    const data = { userId: senderId, name: senderName, message: payload.message }
+    const socket = this.server.sockets.sockets.get(target.socket);
+    if (socket) {
+      socket.emit('directMessage', data);
+    }
+    console.log(`direct message from: ${senderName} to: ${target.username}: ${payload.message}`)
     return;
   }
 
@@ -348,8 +355,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage('getDMUserList')
   async handleGetDMUserList(client: Socket, payload: { userId: number }) {
     const userId = client['user']?.sub;
-    console.log(`TEST IN DMG: ${userId} ${payload.userId}`);
-    const targetUser = await this.prisma.user.findUnique({
+    const targetUser = await this.prisma.user.findFirst({
       where: { id: payload.userId },
       select: { id: true, username: true, avatar: true, isOnline: true },
     });
@@ -358,14 +364,12 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       console.error('User not found:', payload.userId);
     }
   
-    const currentUser = await this.prisma.user.findUnique({
+    const currentUser = await this.prisma.user.findFirst({
       where: { id: userId },
       select: { id: true, username: true, avatar: true, isOnline: true },
     });
 
     const userList = [targetUser, currentUser];
-
-    console.log(`jaboody: ${targetUser}, ${currentUser}`);
     client.emit('updateDMUserList', userList);
   }
 }
