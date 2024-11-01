@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ConflictException, Inject, forwardRef } from '@nestjs/common';
 import { UserService } from '../user/user.service';
 import { JwtService } from '@nestjs/jwt';
 import { CreateUserDto } from 'src/user/dto/create-user.dto';
@@ -13,7 +13,7 @@ import { error } from 'console';
 @Injectable()
 export class AuthService {
   constructor(
-    private userService: UserService,
+    @Inject(forwardRef(() => UserService)) private userService: UserService,
     private jwtService: JwtService,
     private prisma: PrismaService,
   ) {}
@@ -118,6 +118,11 @@ export class AuthService {
       console.error('Error during 42 OAuth login', error);
       // throw new UnauthorizedException('42 login failed');
     }
+  }
+
+  async newNameNewToken(user: any) {
+    console.log('user?: ', user);
+    return (await this.generateToken(user, false));
   }
 
   private async generateToken(user: any, twoFactorAuthenticated: boolean): Promise<{ access_token: string }> {

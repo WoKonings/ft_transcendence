@@ -6,6 +6,7 @@ import { UserGateway } from './user.gateway';
 import { JwtModule } from '@nestjs/jwt';
 import { jwtConstants } from '../auth/constants';
 import { GameModule } from 'src/game/game.module';
+import { AuthModule } from 'src/auth/auth.module';
 
 @Module({
   imports: [
@@ -14,7 +15,8 @@ import { GameModule } from 'src/game/game.module';
       secret: jwtConstants.secret,
       signOptions: { expiresIn: '60s' },
     }),
-    forwardRef(() => GameModule)
+    forwardRef(() => GameModule),
+    forwardRef(() => AuthModule)
   ],
   providers: [UserService, UserGateway],
   controllers: [UserController],

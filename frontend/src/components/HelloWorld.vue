@@ -26,11 +26,6 @@
       <button @click="show2FAInput = false" class="twofa-button">Cancel</button>
       <p v-if="error" class="error-message">{{ error }}</p>
     </div>
-<!-- 
-    <div v-if="isLoggedIn && currentUser">
-      <button @click="logoutUser">Logout</button>
-      <button @click="deleteAccount">Delete Account</button>
-    </div> -->
 
     <div class="main-container">
       <div v-if="error != ''" class="disconnect-container">

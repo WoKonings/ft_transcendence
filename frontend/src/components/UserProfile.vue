@@ -233,7 +233,12 @@ const changeUsername = async () => {
     });
 
     if (response.ok) {
+      const data = await response.json();
       alert('Username updated successfully!');
+      sessionStorage.removeItem('access_token');
+      sessionStorage.setItem('access_token', data.access_token)
+      console.log(`TEST: ${data.access_token}`);
+
     } else {
       throw new Error('Failed to update username');
     }
