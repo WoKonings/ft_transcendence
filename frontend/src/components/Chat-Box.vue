@@ -69,11 +69,11 @@
       <div v-if="userListError" class="error-message">{{ userListError }}</div>
 
       <!-- Single user list rendering -->
-      <ul v-else>
-        <li 
+      <div v-else>
+        <div 
           v-for="user in userList" 
           :key="user.id" 
-          :class="['user-item', { 'admin-item': user.role === 'ADMIN' }]"
+          :class="['user-item', { 'admin-item': user.role === 'ADMIN' }]" 
           @contextmenu.prevent="openUserOptions(user, $event)"
         >
           <span class="profile-picture">
@@ -83,10 +83,9 @@
             />
           </span>
           <div class="status-indicator" :class="getStatusClass(user)"></div>
-          <!-- <span class="user-status" :class="{ 'online': user.isOnline }"></span> -->
           <span class="user-name">{{ user.username }}</span>
-        </li>
-      </ul>
+        </div>
+      </div>
 
       <!-- Modal for User Options (Assign Role, Kick) -->
       <div v-if="showUserOptions" class="user-options-modal" @click="closeUserOptions">
@@ -424,6 +423,10 @@ onMounted(async () => {
     userList.value = userListData;
 
     const currentUserInList= userList.value.find(user => user.id === currentUser.id)
+    if (!currentUserInList || !currentUserInList.role) {
+      currentRole.value = "MEMBER";
+      return;
+    }
     console.log(`currentuser Role ${currentUserInList.role}`);
     currentRole.value = currentUserInList.role;
   });
@@ -744,14 +747,15 @@ input {
   min-width: 40px; /* Minimum width to ensure readability */
   background-color: #2c2c2c;
   color: #fff;
-  padding: 1.5%;
+  padding: 0.5%;
   overflow-y: auto;
   border-left: 1px solid #e0e0e0;
 }
 
 .user-list-window h3 {
   font-size: 1em;
-  margin-bottom: 1%;
+  margin-top: 5px;
+  margin-bottom: 10px;
 }
 
 /*.user-item {
@@ -777,11 +781,22 @@ input {
   transition: background-color 0.2s;
   position: relative;
   border-radius: 10px;
+  margin-bottom: 4px;
 }
 
 .user-item:hover {
   background-color: #e0e0e0;
   border-radius: 10px;
+}
+
+.user-item .user-name {
+  margin-left: 10px;
+  font-weight: bold;
+  transition: color 0.2s ease;
+}
+
+.user-item:hover .user-name {
+  color: #e47d29; /* Change text color on hover */
 }
 
 .admin-item {
@@ -809,6 +824,7 @@ input {
   left: 35px;
 }
 
+
 .status-online {
   background-color: #4CAF50;
 }
@@ -825,15 +841,6 @@ input {
   background-color: #2196F3;
 }
 
-.user-item .user-name {
-  margin-left: 10px;
-  font-weight: bold;
-  transition: color 0.2s ease;
-}
-
-.user-item:hover .user-name {
-  color: #e47d29; /* Change text color on hover */
-}
 
 .user-status.online {
   background-color: #4CAF50;
@@ -908,13 +915,6 @@ input {
 
 .user-options-modal button:hover {
   background-color: #0056b3;
-}
-
-/* User list CSS */
-.user-item {
-  display: flex;
-  align-items: center;
-  margin-bottom: 10px;
 }
 
 .profile-picture img {
