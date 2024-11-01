@@ -119,6 +119,33 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   }
 
+  @SubscribeMessage('kickUser')
+  async handleKick(payload: { channelName: string, userId: number})
+  {
+    const channel = await this.chatService.getChannelByName(payload.channelName);
+    const user = await this.userService.getUserById(payload.userId);
+
+    if(!user)
+    {
+      console.log(`user ${user.username} does no exist`);
+      return null;
+    }
+    if (!channel)
+    {
+      console.error("channel does not exist in kicking");
+      return null;
+    }
+
+    const response = await this.chatService.leaveChannel(channel.name, payload.userId);
+
+    console.log(`kicking ${user.username} from ${channel.name}`)
+
+    if (response.success === true)
+    {
+      return { success: true, message: ` user has been succesfully kicked from ${channel.name}` };
+    }
+  }
+
   @SubscribeMessage('joinChannel')
   async handleJoinChannel(client: Socket, payload: { channelName: string; userId: number, password: string }) {
     console.log(`trying to join ${payload.channelName} [Gateway]`);

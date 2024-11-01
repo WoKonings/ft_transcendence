@@ -58,7 +58,6 @@
         </form>
       </div>
 
-      <!-- Empty state when no channel is selected -->
       <div v-else class="empty-state">
         <p>Select a chat to view messages or join a new channel.</p>
       </div>
@@ -92,7 +91,7 @@
       <div v-if="showUserOptions" class="user-options-modal" @click="closeUserOptions">
         <button v-if="currentRole === 'ADMIN'" @click="assignRole('ADMIN')">Assign Admin</button>
         <button v-if="currentRole === 'ADMIN'" @click="assignRole('MEMBER')">Assign User</button>
-        <button @click="kickUser">Kick from Channel</button>
+        <button v-if="currentRole === 'ADMIN'" @click="kickUser(selectedChat.name, selectedUser.id)">Kick from Channel</button>
       </div>
     </div>
   </div>
@@ -107,11 +106,11 @@ import { useStore } from 'vuex';
 // handle connection -> re-display all channels that the user was in upon reconnecting
 // socket parsing (every event)
 // useroption modal position
+// dms
 
 const store = useStore();
 const socket = store.state.socket;
 const currentUser = store.state.currentUser;
-
 const chats = ref([]);
 const selectedChat = ref(null);
 const newMessage = ref('');
@@ -150,9 +149,21 @@ const assignRole = (role) => {
   alert(`${selectedUser.value.username} is now ${role}.`);
 };
 
-const kickUser = () => {
-
+const kickUser = (userId, channelName) => {
+  if (currentRole.value === 'ADMIN') {
+    console.log(`kicking ${userId} from ${channelName}`);
+    socket.emit('kickUser', { channelName: channelName, userId: userId }, (response) => {
+      if (response.success) {
+        console.log(response.message);
+      } else {
+        console.error('Failed to kick user:', response.error);
+      }
+    });
+  } else {
+    console.error('You do not have permission to kick users');
+  }
 };
+
 
 document.addEventListener('click', (event) => {
   const modal = document.querySelector('.user-options-modal');
