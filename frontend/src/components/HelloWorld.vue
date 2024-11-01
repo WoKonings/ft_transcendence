@@ -311,6 +311,7 @@ const logoutUser = () => {
   return;
   socket.value.on('connected', (message) => {
     error.value = '';
+    disconnected_error.value = '';
     console.log(message);
   });
   
@@ -330,8 +331,8 @@ const logoutUser = () => {
     // handleReconnect();
   });
 
-  socket.value.on('connect_error', (error) => {
-    console.log('Socket connection error:', error);
+  socket.value.on('connect_error', () => {
+    // console.log('Socket connection error:', error);
   });
 };
 
