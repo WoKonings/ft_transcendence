@@ -73,7 +73,7 @@
         <li 
           v-for="user in userList" 
           :key="user.id" 
-          class="user-item"
+          :class="['user-item', { 'admin-item': user.role === 'ADMIN' }]"
           @contextmenu.prevent="openUserOptions(user, $event)"
         >
           <span class="profile-picture">
@@ -82,7 +82,8 @@
               :alt="`${user.username}`" 
             />
           </span>
-          <span class="user-status" :class="{ 'online': user.isOnline }"></span>
+          <div class="status-indicator" :class="getStatusClass(user)"></div>
+          <!-- <span class="user-status" :class="{ 'online': user.isOnline }"></span> -->
           <span class="user-name">{{ user.username }}</span>
         </li>
       </ul>
@@ -379,6 +380,13 @@ const scrollToBottom = () => {
 const formatTimestamp = (timestamp) => {
   const date = new Date(timestamp);
   return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+};
+
+const getStatusClass = (user) => {
+  if (user.isInGame) return 'status-in-game';
+  if (user.isInQueue) return 'status-in-queue';
+  if (user.isOnline) return 'status-online';
+  return 'status-offline';
 };
 
 onUpdated(() => {
@@ -733,7 +741,7 @@ input {
 
 .user-list-window {
   width: 25%; /* Percentage of the chat container width */
-  min-width: 20px; /* Minimum width to ensure readability */
+  min-width: 40px; /* Minimum width to ensure readability */
   background-color: #2c2c2c;
   color: #fff;
   padding: 1.5%;
@@ -743,10 +751,10 @@ input {
 
 .user-list-window h3 {
   font-size: 1em;
-  margin-bottom: 5%;
+  margin-bottom: 1%;
 }
 
-.user-item {
+/*.user-item {
   display: flex;
   align-items: center;
   padding: 2% 0;
@@ -756,15 +764,65 @@ input {
 }
 
 .user-item:hover {
-  background-color: #f0f0f0; /* Light gray background on hover */
+  background-color: #f0f0f0;
+}*/
+
+.user-item {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  padding: 6px;
+  border: 1px solid #ddd;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  position: relative;
+  border-radius: 10px;
 }
 
-.user-status {
-  width: 8px;
-  height: 8px;
+.user-item:hover {
+  background-color: #e0e0e0;
+  border-radius: 10px;
+}
+
+.admin-item {
+	border: 2px solid #1e90ff;
+	border-radius: 10px;
+}
+
+.admin-item:hover {
+	background-color: #1e8fff5d;
+	font-weight: bold;
+}
+
+.admin-item .user-name {
+	color: #1e90ff;
+	font-weight: bold;
+}
+
+.status-indicator {
+  width: 12px;
+  height: 12px;
   border-radius: 50%;
-  margin-right: 5%;
-  background-color: #ccc;
+  border: 2px solid #fff;
+  position: absolute;
+  bottom: 5px;
+  left: 35px;
+}
+
+.status-online {
+  background-color: #4CAF50;
+}
+
+.status-offline {
+  background-color: #9e9e9e;
+}
+
+.status-in-queue {
+  background-color: #FFC107;
+}
+
+.status-in-game {
+  background-color: #2196F3;
 }
 
 .user-item .user-name {
@@ -863,6 +921,7 @@ input {
   border-radius: 50%;
   width: 40px;
   height: 40px;
+  object-fit: cover;
 }
 
 .user-status.online {

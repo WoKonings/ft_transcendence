@@ -1,23 +1,18 @@
 PRIO:
-
 Check if all forms of user input are validated.
 
 CHAT:
-General fixed.
-CSS for Users
-BUGS?
-Direct Messages
 
 BUGS:
- invite game causing one player to not see names properly
- reloading on profile page causes you to get sent to login page
+
+USER PROFILE:
+
+GAME:
+
+ONLINE GAME:
+Copy offline game CSS carefully
 
 
-FriendsList improvements
-on socket DC, reset to login page."
-Make resizing feel better
-
-Copy PongGameAgainstAI components into PongGame
 
 MAYBE:
 Ladder

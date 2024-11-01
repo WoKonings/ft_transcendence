@@ -324,8 +324,7 @@ const logoutUser = () => {
   });
 
   socket.value.on('disconnect', (reason) => {
-    console.warn('Disconnected:', reason);
-    console.log('BIG DISCONECTATION 2 ELECTRIC BOJALOO!!');
+    console.log('Disconnected:', reason);
     disconnected_error.value = 'Disconnected from server.';
     // alert('Disconnected from server');
     // handleReconnect();
