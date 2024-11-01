@@ -36,16 +36,16 @@
           <PongGame v-if="isLoggedIn && currentUser" />
         </div>
         <div class="chat-box-container">
-          <ChatBox v-if="isLoggedIn && currentUser" />
+          <ChatBox v-if="isLoggedIn && currentUser" :directMessage="directMessager" />
         </div>
       </div>
       <div class="sidebar">
         <UserProfile v-if="isLoggedIn && currentUser" />
         <div class="friends-list-container">
-          <FriendsList v-if="isLoggedIn && currentUser" />
+          <FriendsList v-if="isLoggedIn && currentUser" @directMessage="directMessage" />
         </div>
         <div class="user-list-container">
-          <UserList v-if="isLoggedIn && currentUser" />
+          <UserList v-if="isLoggedIn && currentUser" @directMessage="directMessage"/>
         </div>
       </div>
     </div>
@@ -87,6 +87,8 @@ const currentUser = computed(() => store.state.currentUser);
 
 const twoFactorCode= ref(null);
 const show2FAInput = ref(false);
+
+const directMessager = ref(null);
 
 const createUser = async () => {
   error.value = '';
@@ -331,6 +333,12 @@ const logoutUser = () => {
   socket.value.on('connect_error', (error) => {
     console.log('Socket connection error:', error);
   });
+};
+
+const directMessage = (user) => {
+  console.log('LAYER 3');
+  console.log(`DM CHECK?: ${user} ??:`);
+  directMessager.value = user;
 };
 
 onMounted(() => {

@@ -4,6 +4,7 @@ import {
   SubscribeMessage,
   OnGatewayConnection,
   OnGatewayDisconnect,
+  WsException,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { ChatService } from './chat.service';
@@ -206,6 +207,18 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     return result;
   }
 
+  @SubscribeMessage('directMessage')
+  async handleDirectMessage(client: Socket, payload: { targetId: number }) {
+    console.log(`trying to message ${payload.targetId}`);
+    const target = this.userService.getUserById(payload.targetId);
+    if (!target) {
+      console.log('ad');
+      return;
+    }
+
+    return;
+  }
+
   @SubscribeMessage('updateUserRole')
   async handleUpdateUserRole(client: Socket, payload: { channelName: string; userId: number; role: string }) {
     console.log(`seeking to update user ${payload.userId} in channel: ${payload.channelName} to ${payload.role}`);
@@ -321,5 +334,29 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }));
 
     client.emit('updateUserList', userList);
+  }
+
+  @SubscribeMessage('getDMUserList')
+  async handleGetDMUserList(client: Socket, payload: { userId: number }) {
+    const userId = client['user']?.sub;
+    console.log(`TEST IN DMG: ${userId} ${payload.userId}`);
+    const targetUser = await this.prisma.user.findUnique({
+      where: { id: payload.userId },
+      select: { id: true, username: true, avatar: true, isOnline: true },
+    });
+  
+    if (!targetUser) {
+      console.error('User not found:', payload.userId);
+    }
+  
+    const currentUser = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, username: true, avatar: true, isOnline: true },
+    });
+
+    const userList = [targetUser, currentUser];
+
+    console.log(`jaboody: ${targetUser}, ${currentUser}`);
+    client.emit('updateDMUserList', userList);
   }
 }

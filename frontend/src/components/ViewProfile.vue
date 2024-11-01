@@ -109,7 +109,7 @@ import { ref, watch, defineEmits, defineProps } from 'vue';
 const userProfile = ref({});
 const loading = ref(false);
 const matchHistory = ref([]);
-const emit = defineEmits(['close', 'friendRemoved', 'invite']);
+const emit = defineEmits(['close', 'friendRemoved', 'invite', 'directMessage']);
 const props = defineProps({
   selectedUser: {
     type: Object,
@@ -235,6 +235,11 @@ const inviteToPlay = (friend) => {
   // closeOptions();
 };
 
+const sendMessage = (selectedUser) => {
+  console.log('DM: ', selectedUser.username);
+  emit('directMessage', selectedUser);
+  emit('close');
+}
 
 // Fetch user profile when component mounts (if needed)
 // fetchUserProfile();

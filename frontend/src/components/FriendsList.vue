@@ -36,6 +36,7 @@
       @close="isProfileVisible = false" 
       @friendRemoved="removeFriend"
       @invite="inviteToPlay"
+      @directMessage="directMessage"
     />
     </div>
 
@@ -70,13 +71,15 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue';
+import { ref, computed, onMounted, defineEmits } from 'vue';
 import { useStore } from 'vuex';
 import ViewProfile from './ViewProfile.vue';
 
 const store = useStore();
 const currentUser = computed(() => store.state.currentUser);
 const socket = computed(() => store.state.socket);
+
+const emit = defineEmits(['directMessage']);
 
 const friends = ref([]);
 const pendingFriendRequests = ref([]);
@@ -308,6 +311,12 @@ const inviteToPlay = (friend) => {
   });
   // store.dispatch('toggleShowGame', true);
   closeOptions();
+};
+
+const directMessage = (user) => {
+  emit('directMessage', user);
+  console.log('FRIENDSLIST LAYER');
+  console.log(`DM CHECK?: ${user} ??:`);
 };
 
 const removeFriend = async (friend) => {

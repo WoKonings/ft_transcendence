@@ -11,7 +11,7 @@
           :class="{ 'active-tab': selectedChat?.name === chat.name }" 
           class="tab"
         >
-          # {{ chat.name }}
+        {{ chat.isDM ? '@' : '#' }}{{ chat.name }}
         </div>
       </div>
       <button @click="joinNewChannel" class="join-button">
@@ -99,7 +99,7 @@
 
 
 <script setup>
-import { ref, onMounted, onUpdated, watch } from 'vue';
+import { ref, onMounted, onUpdated, watch, defineProps } from 'vue';
 import { useStore } from 'vuex';
 
 //to do: DMs , 
@@ -120,6 +120,13 @@ const showUserOptions = ref(false);
 // const modalPosition = ref({ x: 0, y: 0 });
 const selectedUser = ref(null);
 const currentRole = ref(null);
+
+const props = defineProps({
+  directMessage: {
+    type: Object,
+    default: () => (null)
+  }
+});
 
 const openUserOptions = (user, event) => {
   selectedUser.value = user;
@@ -211,6 +218,18 @@ watch(userList, (newUserList) => {
   }
 });
 
+watch(() => props.directMessage, (directMessage) => {
+  if (directMessage) {
+    if (!chats.value.find(chat => chat.id === directMessage.userId));
+      const directChat = { name: directMessage.username, isDM: true, id: directMessage.userId, messages: [] };
+      chats.value.push(directChat);
+      socket.emit('getDMUserList', { userId: directMessage.userId });
+      // Handle the direct message
+      console.log('Received direct message:', newMessage);
+      // You can add logic to display the direct message in your chat
+  }
+});
+
 const setPassword = async () => {
   const password = prompt("Enter new password for this channel (leave blank for no password):");
   
@@ -236,8 +255,11 @@ const sendMessage = () => {
 
     // selectedChat.value.messages.push(message);
 
-    // Ensure socket is connected and defined
-    if (socket) {
+    if (selectedChat.value.isDM) {
+      console.log(`fake: ${newMessage.value}`);
+      return;
+    }
+    else if (socket) {
       console.log(`sending message [${newMessage.value}] from ${currentUser.username}`);
       socket.emit('sendMessage', {
         senderId: currentUser.id,
@@ -288,6 +310,18 @@ const joinNewChannel = async () => {
 };
 
 const leaveChat = () => {
+  //todo: refactor
+  if (selectedChat.value && selectedChat.value.isDM == true){
+    const channelName = selectedChat.value.name;
+    console.log('leaving DM!: ', selectedChat.value.name);
+    chats.value = chats.value.filter(chat => chat.name !== channelName);
+    if (chats.value.length > 0) {
+      selectedChat.value = chats.value[0];
+    } else {
+      selectedChat.value = null;
+    }
+    // userList.value = [];
+  }
   if (selectedChat.value && selectedChat.value.name !== 'General') {
     const channelName = selectedChat.value.name;
     console.log(`leaving ${selectedChat.value.name}`);

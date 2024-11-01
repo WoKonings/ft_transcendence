@@ -13,18 +13,21 @@
       :selectedUser="selectedUser"
       :isVisible="isProfileVisible"
       @close="isProfileVisible = false"
+      @directMessage="directMessage"
     />
   </div>
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue';
+import { ref, onMounted, computed, defineEmits } from 'vue';
 import { useStore } from 'vuex';
 import ViewProfile from './ViewProfile.vue';
 
 const store = useStore();
 const socket = computed(() => store.state.socket);
 const currentUser = computed(() => store.state.currentUser);
+
+const emit = defineEmits(['directMessage']);
 
 const users = ref([]);
 const error = ref('');
@@ -119,6 +122,12 @@ const viewProfile = (user) => {
   selectedUser.value = user;
   isProfileVisible.value = true;
   console.log(`viewing ${user.username}`); 
+};
+
+const directMessage = (user) => {
+  console.log('ye');
+  console.log(`DM CHECK?: ${user} ??:`);
+  emit('directMessage', user);
 };
 
 onMounted(() => {
