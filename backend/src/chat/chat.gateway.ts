@@ -68,6 +68,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     return this.chatService.setChannelPassword(payload.channelName, payload.password);
   }
+  
   @SubscribeMessage('sendMessage')
   async handleMessage(client: Socket, payload: { senderId: number; channelName: string; message: string }) {
     console.log(`channelName: ${payload.channelName} message: ${payload.message}`);
@@ -154,7 +155,8 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         }
 
       client.join(payload.channelName);
-      console.log(`${user.username} joined channel: ${payload.channelName}`);
+      
+      console.log(`${user.username} joined channel: ${payload.channelName} \n and is now in ${client.rooms}`);
 
         await this.updateUserList(payload.channelName);
       }

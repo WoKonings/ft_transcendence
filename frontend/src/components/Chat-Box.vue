@@ -107,9 +107,6 @@ import { useStore } from 'vuex';
 // handle connection -> re-display all channels that the user was in upon reconnecting
 // socket parsing (every event)
 // useroption modal position
-// password testing
-// general chat
-// 
 
 const store = useStore();
 const socket = store.state.socket;
@@ -170,14 +167,13 @@ const fetchInitialChat = async () => {
     const generalChat = { name: 'General', messages: [] };
     chats.value.push(generalChat);
     selectedChat.value = generalChat;
-    socket.emit('joinChannel', { channel: 'General', username: currentUser.username });
+    socket.emit('joinChannel', { channelName: 'General', userId: currentUser.id, password: null });
   } catch (error) {
     console.error(`Failed to fetch initial chat for ${currentUser.username}`, error);
   }
 };
 
 console.log('Socket in chat:', socket);
-
 
 const selectChat = (name) => {
   selectedChat.value = chats.value.find(chat => chat.name === name);
@@ -202,8 +198,6 @@ watch(userList, (newUserList) => {
   catch(error){
     console.error('Failed to update userlist', error);
   }
-
-
 });
 
 const setPassword = async () => {
@@ -245,8 +239,6 @@ const sendMessage = () => {
     newMessage.value = '';
   }
 }
-
-
 
 const joinNewChannel = async () => {
   try {
