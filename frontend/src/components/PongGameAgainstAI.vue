@@ -491,7 +491,6 @@ onBeforeUnmount(() => {
   display: flex;
   width: 95%;
   height: 100%;
-  overflow: hidden;
   border-radius: 6px;
 }
 

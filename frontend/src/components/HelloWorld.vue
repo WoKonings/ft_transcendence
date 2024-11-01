@@ -28,8 +28,8 @@
     </div>
 
     <div class="main-container">
-      <div v-if="error != ''" class="disconnect-container">
-          {{ error }}
+      <div v-if="disconnected_error != ''" class="disconnect-container">
+          {{ disconnected_error }}
       </div>
       <div class="content-container">
         <div class="pong-game-container">
@@ -79,6 +79,7 @@ const loginDetails = ref({
   password: ''
 });
 const error = ref('');
+const disconnected_error = ref('');
 const socket = ref(null);
 
 const isLoggedIn = computed(() => store.state.isLoggedIn);
@@ -322,7 +323,7 @@ const logoutUser = () => {
   socket.value.on('disconnect', (reason) => {
     console.warn('Disconnected:', reason);
     console.log('BIG DISCONECTATION 2 ELECTRIC BOJALOO!!');
-    error.value = 'Disconnected from server.';
+    disconnected_error.value = 'Disconnected from server.';
     // alert('Disconnected from server');
     // handleReconnect();
   });
@@ -402,8 +403,8 @@ onMounted(() => {
 
 .disconnect-container {
 	width: 100%;
-	height: 5vh;
-	background-color: #ff4c4c; /* Red color to indicate disconnection */
+	height: 3vh;
+	background-color: #ff4c4c85; /* Red color to indicate disconnection */
 	color: white; /* Text color for contrast */
 	display: flex;
 	justify-content: center;
