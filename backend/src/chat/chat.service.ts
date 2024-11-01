@@ -129,7 +129,7 @@ export class ChatService {
     const user = await this.userService.getUserById(userId);
 
     if (!user) {
-      return { success: false, message: 'Invalid username' };
+      return { success: false, message: 'Invalid userId' };
     }
 
     let channel = await this.getChannelByName(channelName);
@@ -161,7 +161,7 @@ export class ChatService {
 
     if (userInChannel) {
       console.log(`User is already in the channel, test: ${userInChannel.role}`);
-      return { success: true, message: 'Already in the channel' };
+      return { success: false, message: 'Already in the channel' };
     }
 
     // Add the user to the channel

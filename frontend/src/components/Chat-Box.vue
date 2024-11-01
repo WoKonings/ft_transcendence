@@ -121,7 +121,7 @@ const userListError = ref(null);
 const showUserOptions = ref(false);
 // const modalPosition = ref({ x: 0, y: 0 });
 const selectedUser = ref(null);
-const currentRole = ref(null);
+const currentRole = ref('MEMBER');
 
 const props = defineProps({
   directMessage: {
@@ -222,8 +222,11 @@ watch(userList, (newUserList) => {
   try {
     // const oldRole = currentRole.value;
     const curUser = newUserList.find(user => user.username === currentUser.username);
-    if (curUser)
+    if (curUser) {
       currentRole.value = curUser.role;
+    } else {
+      currentRole.value = 'MEMBER'
+    }
     //console.log(`${currentUser.username} 's role updated from ${oldRole} to ${currentRole.value}`);
   }
   catch(error){
@@ -306,22 +309,23 @@ const joinNewChannel = async () => {
     socket.emit('joinChannel', { channelName: channelName, userId: currentUser.id, password: null }, (response) => {
       console.log(response);
       if (response.success === true) {
-        console.log('no pass resp');
         const newChat = { name: channelName, messages: [] };
         chats.value.push(newChat);
         selectChat(channelName);
         //alert(response.message);
         socket.emit('getUserList', { channel: channelName });
-      } else if (response.success === false) {
-        console.log('pass resp');
+      } else if (response.success === false && response.passwordRequired) {
         const password = prompt("Enter password");
         socket.emit('submitPassword', { channelName: channelName, userId: currentUser.id, password: password }, (response) => {
-          if (response.success === true)
-              console.log(`welcome to ${channelName}`);
-        const newChat = { name: channelName, messages: [] };
-        chats.value.push(newChat);
-        selectChat(channelName);
-        socket.emit('getUserList', { channel: channelName });
+          if (response.success === false) {
+            alert("Wrong password");
+            return;
+          }
+          console.log(`welcome to ${channelName}`);
+          const newChat = { name: channelName, messages: [] };
+          chats.value.push(newChat);
+          selectChat(channelName);
+          socket.emit('getUserList', { channel: channelName });
         })
       } else {
         alert(response.message);
