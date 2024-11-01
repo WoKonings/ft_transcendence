@@ -15,6 +15,8 @@ import { ChannelRole } from '@prisma/client';
 import { channel, subscribe } from 'diagnostics_channel';
 import { DEFAULT_FACTORY_CLASS_METHOD_KEY } from '@nestjs/common/module-utils/constants';
 import { serializeWithBufferAndIndex } from 'typeorm/driver/mongodb/bson.typings';
+import { JwtService } from '@nestjs/jwt';
+import e from 'express';
 
 @WebSocketGateway({ cors: true })
 @UseGuards(AuthGuard)
@@ -26,37 +28,12 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private readonly chatService: ChatService,
     private readonly userService: UserService,
     private readonly prisma: PrismaService,
+    private readonly jwtService: JwtService,
   ) {}
 
   async handleConnection(client: Socket) {
 
-    // const userId = client['user']?.sub; 
-    // if (!userId) {
-    //   console.error('User ID not found on connection');
-    //   client.disconnect();
-    //   return;
-    // }
 
-
-    // const userChannels = await this.prisma.userChannel.findMany({
-    //   where: { userId },
-    //   include: { channel: true },
-    // });
-
-    // if (userChannels.length === 1)
-    // {
-    //   return null;
-    // }
-
-    // const channels = userChannels.map(userChannel => ({
-    //   channelId: userChannel.channel.id,
-    //   channelName: userChannel.channel.name,
-    //   userRole: userChannel.role,
-    // }));
-
-    // client.emit('restoreChannels', channels);
-
-    //emit the array of userchannels to the frontend 
 
   }
 

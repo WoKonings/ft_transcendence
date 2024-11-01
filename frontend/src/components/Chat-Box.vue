@@ -103,7 +103,7 @@ import { ref, onMounted, onUpdated, watch } from 'vue';
 import { useStore } from 'vuex';
 
 //to do: DMs , 
-// handle connection -> re-display all channels that the user was in upon reconnecting
+// handle disconnect; leave all channels
 // socket parsing (every event)
 // useroption modal position
 // dms
