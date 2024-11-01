@@ -51,7 +51,6 @@ export class GameGateway {
   }
 
   async handleConnection(client: Socket) {
-      console.log(`Client connected in game: ${client.id}`);
   }
 
   @SubscribeMessage('leaveGame')
@@ -512,7 +511,6 @@ async handleInviteGame(client: Socket, data: InviteGameDto): Promise<void> {
   }
 
   async handleDisconnect(client: Socket) {
-    console.log("Handle disconnect in game gateway!");
     try {
       // Find the session the client belongs to and remove them
       this.gameSessions.forEach((session, sessionId) => {

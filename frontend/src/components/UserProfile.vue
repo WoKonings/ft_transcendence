@@ -234,9 +234,14 @@ const changeUsername = async () => {
 
     if (response.ok) {
       const data = await response.json();
-      alert('Username updated successfully!');
+      alert('Username updated successfully! Please re-login :)');
       sessionStorage.removeItem('access_token');
-      sessionStorage.setItem('access_token', data.access_token)
+      // socket.value.disconnect();
+      store.dispatch('logOut');
+      sessionStorage.setItem('access_token', data.access_token);
+      router.push('/login');
+
+      // sessionStorage.setItem('access_token', data.access_token)
       console.log(`TEST: ${data.access_token}`);
 
     } else {

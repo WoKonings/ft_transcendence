@@ -115,6 +115,10 @@ onMounted(() => {
   } else {
     console.log(`loginstatus: ${isLoggedIn.value}`)
   }
+  const access_token = sessionStorage.getItem('access_token');
+  if (access_token) {
+    router.push('/');
+  }
   init();
   // handleCallback();
   animate();

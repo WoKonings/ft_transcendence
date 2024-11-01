@@ -20,12 +20,10 @@ export class UserGateway {
   }
 
   async handleConnection(client: Socket) {
-      console.log(`Client connected in user gateway: ${client.id}`);
   }
 
 
   async handleDisconnect(client: Socket) {
-    console.log("Handle disconnect in user gateway!");
   }
 
   async emitToSocketByUserId(userId: number, event: string, data: any) {
