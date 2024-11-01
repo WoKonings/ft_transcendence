@@ -24,9 +24,9 @@
       <!-- Chat box for selected channel -->
       <div v-if="selectedChat" class="chat-box">
         <div class="chat-header">
-          <h2># {{ selectedChat.name }}</h2>
+          <h2>{{ selectedChat.isDM ? '@' : '#' }}{{ selectedChat.name }}</h2>
           <button v-if="selectedChat.name !== 'General'" @click="leaveChat" class="leave-button">
-            Leave Chat
+            {{ selectedChat.isDM ? 'Leave Chat' : 'Leave Channel' }}
           </button>
           <button v-if="currentRole === 'ADMIN'" @click="setPassword" class="set-password-button">
             Set Channel Password
@@ -65,7 +65,7 @@
 
     <!-- User list -->
     <div class="user-list-window">
-      <h3>Users in {{ selectedChat?.name || 'Chat' }}</h3>
+      <h3>{{ selectedChat?.isDM ? 'Chat with' : 'Users in' }} {{ selectedChat?.name || 'Chat' }}</h3>
       <div v-if="userListError" class="error-message">{{ userListError }}</div>
 
       <!-- Single user list rendering -->
@@ -136,6 +136,9 @@ const openUserOptions = (user, event) => {
  // modalPosition.value = { x: event.clientX, y: event.clientY };
   console.log("Right-clicked user:", user); 
   console.log(`${currentUser.username} is ${currentRole.value}`);
+  if (currentRole.value != "ADMIN") {
+    return;
+  }
   showUserOptions.value = true;
   console.log("Modal should be visible:", showUserOptions.value);
 };
@@ -199,6 +202,9 @@ const selectChat = (name) => {
   selectedChat.value = chats.value.find(chat => chat.name === name);
   const user = userList.value.find(user => user.username === currentUser.username);
   currentRole.value = user.role;
+  if (!currentRole.value) {
+    currentRole.value == "MEMBER";
+  }
 };
 
 watch(() => selectedChat.value, (newChat) => {
