@@ -28,7 +28,7 @@
           <button v-if="selectedChat.name !== 'General'" @click="leaveChat" class="leave-button">
             {{ selectedChat.isDM ? 'Leave Chat' : 'Leave Channel' }}
           </button>
-          <button v-if="currentRole === 'ADMIN'" @click="setPassword" class="set-password-button">
+          <button v-if="currentRole === 'ADMIN' || currentRole === 'OWNER'" @click="setPassword" class="set-password-button">
             Set Channel Password
           </button>
         </div>
@@ -47,6 +47,9 @@
         </div>
 
         <!-- Input form to send new message -->
+        <span v-if="selectedChat.timeout && new Date() < selectedChat.timeout" class="timeout-message">
+          You are timed out until: {{ formatTimeout(selectedChat.timeout) }}
+        </span>
         <form @submit.prevent="sendMessage" class="input-container">
           <input 
             v-model="newMessage" 
@@ -73,7 +76,7 @@
         <div 
           v-for="user in userList" 
           :key="user.id" 
-          :class="['user-item', { 'admin-item': user.role === 'ADMIN' }]" 
+          :class="['user-item', { 'admin-item': user.role === 'ADMIN' }, { 'owner-item': user.role === 'OWNER'}]" 
           @contextmenu.prevent="openUserOptions(user, $event)"
         >
           <span class="profile-picture">
@@ -89,9 +92,12 @@
 
       <!-- Modal for User Options (Assign Role, Kick) -->
       <div v-if="showUserOptions" class="user-options-modal" @click="closeUserOptions">
-        <button v-if="currentRole === 'ADMIN'" @click="assignRole('ADMIN')">Assign Admin</button>
-        <button v-if="currentRole === 'ADMIN'" @click="assignRole('MEMBER')">Assign User</button>
-        <button v-if="currentRole === 'ADMIN'" @click="kickUser()">Kick from Channel</button>
+        <button v-if="currentRole === 'ADMIN' || currentRole === 'OWNER'" @click="assignRole('ADMIN')">Assign Admin</button>
+        <button v-if="currentRole === 'ADMIN' || currentRole === 'OWNER'" @click="assignRole('MEMBER')">Assign User</button>
+        <button v-if="currentRole === 'ADMIN' || currentRole === 'OWNER'" @click="kickUser()">Kick from Channel</button>
+        <button @click="timeoutUser()">Timeout</button>
+        <button v-if="currentRole === 'ADMIN' || currentRole === 'OWNER'" @click="timeoutUser()">Timeout</button>
+        <button v-if="currentRole === 'ADMIN' || currentRole === 'OWNER'" @click="kickUser()">Ban</button>
       </div>
     </div>
   </div>
@@ -99,16 +105,14 @@
 
 
 <script setup>
-import { ref, onMounted, onUpdated, watch, defineProps } from 'vue';
+import { ref, onMounted, onUpdated, watch, defineProps, onBeforeUnmount } from 'vue';
 import { useStore } from 'vuex';
 
 //to do: DMs , 
 // handle disconnect; leave all channels
 // socket parsing (every event)
 // useroption modal position
-// dms
 // add private
-// add owner - > aka; set the admin array[0] to the userId of the person who created it (in service?)
 
 const store = useStore();
 const socket = store.state.socket;
@@ -122,6 +126,7 @@ const showUserOptions = ref(false);
 // const modalPosition = ref({ x: 0, y: 0 });
 const selectedUser = ref(null);
 const currentRole = ref('MEMBER');
+// const timeout = ref(null);
 
 const props = defineProps({
   directMessage: {
@@ -136,7 +141,7 @@ const openUserOptions = (user, event) => {
  // modalPosition.value = { x: event.clientX, y: event.clientY };
   console.log("Right-clicked user:", user); 
   console.log(`${currentUser.username} is ${currentRole.value}`);
-  if (currentRole.value != "ADMIN") {
+  if (currentRole.value != 'ADMIN' && currentRole.value != 'OWNER') {
     return;
   }
   showUserOptions.value = true;
@@ -162,7 +167,7 @@ const assignRole = (role) => {
 };
 
 const kickUser = () => {
-  if (currentRole.value === 'ADMIN') {
+  if (currentRole.value === 'ADMIN' || currentRole.value === 'OWNER') {
     console.log(`kicking ${selectedUser.value.id} from ${selectedChat.value.name}`);
     socket.emit('kickUser', { channelName: selectedChat.value.name, userId: selectedUser.value.id }, (response) => {
       if (response.success) {
@@ -176,6 +181,20 @@ const kickUser = () => {
   }
 };
 
+const timeoutUser = () => {
+  if (currentRole.value === 'ADMIN' || currentRole.value === 'OWNER') {
+    console.log(`timing out ${selectedUser.value.id} from ${selectedChat.value.name}`);
+    socket.emit('timeoutUser', { channelName: selectedChat.value.name, targetId: selectedUser.value.id }, (response) => {
+      if (response.success) {
+        console.log(response.message);
+      } else {
+        console.error('Failed to kick user:', response.error);
+      }
+    });
+  } else {
+    console.error('You do not have permission to kick users');
+  }
+};
 
 document.addEventListener('click', (event) => {
   const modal = document.querySelector('.user-options-modal');
@@ -388,9 +407,20 @@ const getStatusClass = (user) => {
   return 'status-offline';
 };
 
+const formatTimeout = (timestamp) => {
+  return new Date(timestamp).toLocaleTimeString();
+};
+
 onUpdated(() => {
   scrollToBottom();
 });
+
+onBeforeUnmount(() => {
+  console.log("UNMOUNTING CHAT!");
+  socket.off('receiveMessage');
+	socket.off('updateUserList');
+	socket.off('directMessage');
+})
 
 onMounted(async () => {
   await fetchInitialChat();
@@ -509,6 +539,16 @@ onMounted(async () => {
     } else {
     // Update the user list for other users still in the channel
     userList.value = userList.value.filter(user => user.id !== userId);
+    }
+  });
+
+  socket.on('userTimeout', ({userId, channelName, timeoutEnd}) => {
+    if (userId === currentUser.id && selectedChat.value.name === channelName) {
+      alert('You have been timed out in this channel.');
+      console.log(`time test: ${timeoutEnd}`);
+      selectedChat.value.timeout = new Date(timeoutEnd);
+    } else {
+      console.log('timeout for someone else')
     }
   });
 
@@ -814,6 +854,22 @@ input {
 	font-weight: bold;
 }
 
+.owner-item {
+	border: 2px solid #ff1e1e;
+	border-radius: 10px;
+}
+
+.owner-item:hover {
+	background-color: #ff02025d;
+	font-weight: bold;
+}
+
+.owner-item .user-name {
+	color: #ff1e1e;
+	font-weight: bold;
+}
+
+
 .status-indicator {
   width: 12px;
   height: 12px;
@@ -844,6 +900,12 @@ input {
 
 .user-status.online {
   background-color: #4CAF50;
+}
+
+.timeout-message {
+	color: red;
+	margin-left: 10px;
+	font-weight: bold;
 }
 
 .error-message {

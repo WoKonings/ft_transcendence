@@ -55,6 +55,7 @@ model UserChannel {
   role      ChannelRole
   channel   Channel     @relation(fields: [channelId], references: [id])
   user      User        @relation(fields: [userId], references: [id])
+  timeout   DateTime?
 
   @@unique([userId, channelId])
 }
@@ -71,6 +72,8 @@ model Game {
 }
 
 enum ChannelRole {
+  OWNER
   ADMIN
   MEMBER
+  BANNED
 }

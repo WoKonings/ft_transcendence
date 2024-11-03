@@ -36,11 +36,13 @@
           <PongGame v-if="isLoggedIn && currentUser" />
         </div>
         <div class="chat-box-container">
-          <ChatBox v-if="isLoggedIn && currentUser" :directMessage="directMessager" />
+          <KeepAlive>
+            <ChatBox v-if="isLoggedIn && currentUser" :directMessage="directMessager" />
+          </KeepAlive>
         </div>
       </div>
       <div class="sidebar">
-        <UserProfile v-if="isLoggedIn && currentUser" />
+        <UserProfileButton v-if="isLoggedIn && currentUser" />
         <div class="friends-list-container">
           <FriendsList v-if="isLoggedIn && currentUser" @directMessage="directMessage" />
         </div>
@@ -63,7 +65,7 @@ import PongGame from './PongGame.vue';
 import ChatBox from './Chat-Box.vue';
 import UserList from './UserList.vue';
 import FriendsList from './FriendsList.vue';
-import UserProfile from './UserProfileButton.vue';
+import UserProfileButton from './UserProfileButton.vue';
 import router from '@/router/router';
 
 const store = useStore();

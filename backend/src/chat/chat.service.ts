@@ -124,6 +124,22 @@ export class ChatService {
     console.log(`User ${userId} added to channel ${channelId} with role ${role}`);
   }
 
+  async isPriviledged(channelId: number, userId: number) {
+    const channel = await this.getChannelById(channelId);
+    if (!channel) {
+      console.log('user isnt even in channel, let alone priviledged');
+      return false;
+    }
+
+    const userInChannel = await this.getUserChannel(channelId, userId);
+    if (!userInChannel || (userInChannel.userChannel.role != 'ADMIN' && userInChannel.userChannel.role != 'OWNER')) {
+      console.log('user is NOT priviledged')
+      return false;
+    }
+
+    return true;
+  }
+
   // Join an existing channel or create a new one if it doesn't exist
   async joinChannel(channelName: string, userId: number, password: string) {
     const user = await this.userService.getUserById(userId);
