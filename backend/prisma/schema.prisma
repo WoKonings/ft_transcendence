@@ -40,11 +40,11 @@ model User {
 model Channel {
   id           Int           @id @default(autoincrement())
   messages     String[]
-  banned       String[]
   name         String        @unique
   private      Boolean
   password     String?
   admin        Int[]
+  banned       Int[]
   userChannels UserChannel[]
   users        User[]        @relation("UserChannels")
 }
@@ -75,5 +75,4 @@ enum ChannelRole {
   OWNER
   ADMIN
   MEMBER
-  BANNED
 }

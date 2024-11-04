@@ -4,6 +4,7 @@ import { Channel, ChannelRole } from '@prisma/client';
 import { UserService } from 'src/user/user.service';
 import { Prisma } from '@prisma/client'; // Importing Prisma to access the ChannelRole enum
 import { channel } from 'diagnostics_channel';
+import e from 'express';
 
 @Injectable()
 export class ChatService {
@@ -99,7 +100,7 @@ export class ChatService {
     const newChannel = await this.prisma.channel.create({
       data: {
         name: channelName,
-        private: !!password,
+        private: false,
         password: password || null,
       },
     });
@@ -132,7 +133,8 @@ export class ChatService {
     }
 
     const userInChannel = await this.getUserChannel(channelId, userId);
-    if (!userInChannel || (userInChannel.userChannel.role != 'ADMIN' && userInChannel.userChannel.role != 'OWNER')) {
+    console.log('test USER CHANNEL ', userInChannel);
+    if (!userInChannel?.userChannel || (userInChannel.userChannel.role !== 'ADMIN' && userInChannel.userChannel.role !== 'OWNER')) {
       console.log('user is NOT priviledged')
       return false;
     }
@@ -148,8 +150,9 @@ export class ChatService {
     }
 
     const userInChannel = await this.getUserChannel(channelId, userId);
-    if (!userInChannel || userInChannel.userChannel.role != 'OWNER') {
-      console.log('user is NOT priviledged')
+    console.log('test OWNER CHANNEL ', userInChannel);
+    if (!userInChannel?.userChannel || userInChannel.userChannel.role !== 'OWNER') {
+      console.log('user is NOT owner')
       return false;
     }
 
@@ -169,6 +172,16 @@ export class ChatService {
     // If channel doesn't exist, create it
     if (!channel) {
       return await this.createChannel(channelName, userId, password);
+    }
+
+    if (channel.banned.includes(userId)) {
+      console.log('User is banned from channel');
+      return { success: false, message: 'You have been permanently banned from this channel' };
+    }
+
+    if (channel.private) {
+      console.log('Channel is private!');
+      return { success: false, message: 'channel is private, you cannot join' };
     }
 
     if (password !== channel.password) {
@@ -234,6 +247,8 @@ export class ChatService {
       where: { channelId: channel.id },
     });
   
+    console.log('remaining users?: ', remainingUsers);
+
     if (remainingUsers.length === 0) {
       await this.prisma.channel.delete({
         where: { id: channel.id },
@@ -257,21 +272,38 @@ export class ChatService {
 
   async setChannelPassword(channelName: string, password: string)
   {
-    const channel = this.getChannelByName(channelName);
+    const channel = await this.getChannelByName(channelName);
 
-    if(!channel) {
+    if (!channel) {
       console.log("channel does not exist");
       return null;
     }
 
     await this.prisma.channel.update({
-      
       where : { name: channelName},
       data : { password: password},
     });
 
     return{ success: true, message: `password succesfully set to ${password}`};
   }
+
+  async setChannelPrivacy(channelName: string)
+  {
+    const channel = await this.getChannelByName(channelName);
+    if (!channel) {
+      return false;
+    }
+
+    await this.prisma.channel.update({
+      where : { name: channelName},
+      data : { private: !channel.private},
+    });
+
+    console.log(`changed privacy! ${channel.name} is now private? ${!channel.private}`);
+    return (!channel.private);
+    // return{ success: true, message: `privacy changed to ${!channel.private}`};
+  }
+
   // Get all users in a channel
   async getAllUsers(channelName: string) {
     console.log('getAllUsers called');
@@ -333,6 +365,31 @@ export class ChatService {
     return channel;
   }
 
+  async getAllUserChannels(userId: number) {
+    try {
+      // Find all channels the user is part of
+      const userChannels = await this.prisma.userChannel.findMany({
+        where: { userId },
+        include: {
+          channel: true,
+        },
+      });
+  
+      // Map to return only the relevant channel info
+      const channels = userChannels.map(uc => ({
+        id: uc.channel.id,
+        name: uc.channel.name,
+        isPrivate: uc.channel.private,
+        role: uc.role,
+        timeout: uc.timeout,
+      }));
+  
+      return { channels };
+    } catch (error) {
+      console.error('Failed to retrieve user channels:', error.message);
+      return { message: 'Failed to retrieve channels' };
+    }
+  }
 
   async updateUserRole(channelName: string, userId: number, newRole: ChannelRole) {
     try {

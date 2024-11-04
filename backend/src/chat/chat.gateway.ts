@@ -17,7 +17,6 @@ import { channel, subscribe } from 'diagnostics_channel';
 import { DEFAULT_FACTORY_CLASS_METHOD_KEY } from '@nestjs/common/module-utils/constants';
 import { serializeWithBufferAndIndex } from 'typeorm/driver/mongodb/bson.typings';
 import { JwtService } from '@nestjs/jwt';
-import e from 'express';
 
 @WebSocketGateway({ cors: true })
 @UseGuards(AuthGuard)
@@ -32,50 +31,95 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private readonly jwtService: JwtService,
   ) {}
 
+  @UseGuards(AuthGuard)
   async handleConnection(client: Socket) {
+    let decoded;
+    try {
+      const token = client.handshake.auth.token as string;
+      decoded = this.jwtService.verify(token);
+      if (!decoded) {
+        return;
+      }
+    } catch {
+      console.log('Invalid token in gateway');
+      return;
+    }
+    // const user = await this.prisma.user.findFirst({ where: { socket: client.id }});
 
+    const channels = await this.chatService.getAllUserChannels(decoded.id);
 
+    console.log("CHANNELS?!", channels);
 
+    const channelList = channels.channels;
+    // Loop through each channel and join the corresponding room
+    for (let i = 0; i < channelList.length; i++) {
+      const channelName = channelList[i].name;
+      client.join(channelName);
+      console.log(`${decoded.username} re-joined room: ${channelName}`);
+    }
+
+    client.emit('receiveChatList', { channels });
   }
 
   async handleDisconnect(client: Socket) {
-    const user = await this.prisma.user.findFirst({
-      where: { socket: client.id },
-    });
+    // const user = await this.prisma.user.findFirst({
+    //   where: { socket: client.id },
+    // });
 
-    if (!user) {
-      console.log('User not found for disconnect event');
-      return;
-    }
+    // if (!user) {
+    //   console.log('User not found for disconnect event');
+    //   return;
+    // }
 
-    const userChannels = await this.prisma.userChannel.findMany({
-      where: { userId: user.id },
-      include: { channel: true },
-    });
+    // const userChannels = await this.prisma.userChannel.findMany({
+    //   where: { userId: user.id },
+    //   include: { channel: true },
+    // });
 
-    for (const userChannel of userChannels) {
-      console.log(`Client ${client.id} disconnected from channel: ${userChannel.channel.name}`);
-      await this.prisma.userChannel.delete({
-        where: {
-          userId_channelId: { userId: user.id, channelId: userChannel.channelId },
-        },
-      });
-    }
+    // for (const userChannel of userChannels) {
+    //   console.log(`Client ${client.id} disconnected from channel: ${userChannel.channel.name}`);
+    //   await this.prisma.userChannel.delete({
+    //     where: {
+    //       userId_channelId: { userId: user.id, channelId: userChannel.channelId },
+    //     },
+    //   });
+    // }
+  }
 
-    
+  @SubscribeMessage('getChannels')
+  async getChannels(client: Socket) {
+    const userId = client['user']?.id;
+    const channels = await this.chatService.getAllUserChannels(userId);
 
+    console.log("CHANNELS?! WUT", channels);
+
+    client.emit('receiveChatList', { channels });
   }
 
   @SubscribeMessage('setChannelPassword')
-  async setChannelPassword(client: Socket, payload: { role: string, channelName: string, password: string}) {
+  async setChannelPassword(client: Socket, payload: { channelName: string, password: string}) {
     // console.log(`current role trying to change pass = ${payload.role}`);
-    // if (payload.role != "ADMIN")
-    // {
-    //   console.log("invalid");
-    //   return null;
-    // }
 
     return this.chatService.setChannelPassword(payload.channelName, payload.password);
+  }
+
+  @SubscribeMessage('setChannelPrivacy')
+  async setChannelPrivacy(client: Socket, payload: { channelName: string }) {
+    console.log(`trying to change privacy for ${payload.channelName}`);
+
+    const channel = await this.chatService.getChannelByName(payload.channelName);
+    if (!channel) {
+      console.log("channel does not exist");
+      return;
+    }
+
+    const privacy = await this.chatService.setChannelPrivacy(payload.channelName);
+
+    this.server.to(channel.name).emit('channelPrivacy', {
+      isPrivate: privacy,
+      channel: payload.channelName,
+    });
+    return;
   }
   
   @SubscribeMessage('sendMessage')
@@ -139,14 +183,21 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('kickUser')
-  async handleKickUser(client: Socket, payload: { channelName: string, userId: number }) {
-    console.log(`KICK: ${payload.channelName}, ${payload.userId}`)
+  async handleKickUser(client: Socket, payload: { channelName: string, targetId: number }) {
+    console.log(`KICK: ${payload.channelName}, ${payload.targetId}`)
     const channel = await this.chatService.getChannelByName(payload.channelName);
-    const user = await this.userService.getUserById(payload.userId);
-
-
-    if(!user) {
-      console.log(`user ${user.username} does no exist`);
+    const target = await this.userService.getUserById(payload.targetId);
+    const callerId = client['user']?.id
+    if (!await this.chatService.isPriviledged(channel.id, callerId)) {
+      console.log(`Need admin to kick`);
+      return null;
+    }
+    if (await this.chatService.isOwner(channel.id, target.id)) {
+      console.log(`Cannot kick owner`);
+      return null;
+    }
+    if(!target) {
+      console.log(`target ${target.username} does not exist`);
       return null;
     }
     if (!channel) {
@@ -154,16 +205,42 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return null;
     }
 
-    const response = await this.chatService.leaveChannel(channel.name, payload.userId);
+    const response = await this.chatService.leaveChannel(channel.name, payload.targetId);
 
-    console.log(`kicking ${user.username} from ${channel.name}`)
+    console.log(`kicking ${target.username} from ${channel.name}`)
 
-    if (response.success === true)
-    {
-      if (response.success) {
-        this.server.to(channel.name).emit('userKicked', { userId: user.id, channelName: channel.name });
-      }
+    if (response.success === true) {
+        this.server.to(channel.name).emit('userKicked', { targetId: target.id, channelName: channel.name });
     }
+  }
+
+  @SubscribeMessage('banUser')
+  async handleBanUser(client: Socket, payload: { channelName: string, targetId: number }) {
+    const channel = await this.chatService.getChannelByName(payload.channelName);
+
+    const callerId = client['user']?.id
+    if (!await this.chatService.isPriviledged(channel.id, callerId)) {
+      console.log(`Need admin to ban`);
+      return null;
+    }
+    if (await this.chatService.isOwner(channel.id, payload.targetId)) {
+      console.log(`Cannot ban owner`);
+      return null;
+    }
+
+    this.handleKickUser(client, payload);
+    console.log('Updating channel with banned targetId:', payload.targetId);
+
+    await this.prisma.channel.update({
+      where: { name: payload.channelName },
+      data: {
+        banned: {
+          push: payload.targetId,
+        },
+      },
+    });
+  
+    console.log(`target with ID ${payload.targetId} has been banned from channel ${payload.channelName}`);
   }
 
   //todo: check for admin
@@ -174,9 +251,13 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const channel = await this.chatService.getChannelByName(payload.channelName);
     const target = await this.userService.getUserById(payload.targetId);
     const userId = client['user']?.id;
-    if (!this.chatService.isPriviledged(channel.id, userId)) {
+    if (!await this.chatService.isPriviledged(channel.id, userId)) {
       console.log('unauthorized to timeout');
       return;
+    }
+    if (await this.chatService.isOwner(channel.id, payload.targetId)) {
+      console.log(`Cannot ban owner`);
+      return null;
     }
     if (!target) {
       console.log(`user ${target.username} does not exist`);
@@ -237,11 +318,8 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
             message: "Assigned as MEMBER on channel creation",
           });
         }
-
-      client.join(payload.channelName);
-      
-      console.log(`${user.username} joined channel: ${payload.channelName} \n and is now in ${client.rooms}`);
-
+        client.join(payload.channelName);
+        console.log(`${user.username} joined channel: ${payload.channelName} \n and is now in ${client.rooms}`);
         await this.updateUserList(payload.channelName);
       }
     }
@@ -265,8 +343,8 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   @SubscribeMessage('directMessage')
   async handleDirectMessage(client: Socket, payload: { targetId: number, message: string }) {
-    const senderId = client['user'].id;
-    const senderName = client['user'].username;
+    const senderId = client['user']?.id;
+    const senderName = client['user']?.username;
     console.log(`trying to message ${payload.targetId}`);
     const target = await this.userService.getUserById(payload.targetId);
     if (!target) {

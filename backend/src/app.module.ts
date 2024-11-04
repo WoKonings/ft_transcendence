@@ -29,16 +29,16 @@ import { join } from 'path';
       AuthModule, 
       PrismaModule, 
       PassportModule.register({ defaultStrategy: 'jwt'}), 
-	  JwtModule.registerAsync({
-		imports: [ConfigModule],
-		useFactory: async (configService: ConfigService) => ({
-		  secret: configService.get<string>('JWT_SECRET'),
-		  signOptions: { expiresIn: '4h' }, //todo increase this to like 1d instead of 5 min
-		}),
-		inject: [ConfigService],
-	  }),
+      JwtModule.registerAsync({
+      imports: [ConfigModule],
+      useFactory: async (configService: ConfigService) => ({
+        secret: configService.get<string>('JWT_SECRET'),
+        signOptions: { expiresIn: '4h' }, //todo increase this to like 1d instead of 5 min
+        }),
+        inject: [ConfigService],
+      }),
       GameModule,
-	    ChatModule,
+      ChatModule,
     ],
   controllers: [AppController, HelloController],
   providers: [AppService, HelloService, AppGateway, JwtModule],
