@@ -125,6 +125,7 @@ const showUserOptions = ref(false);
 // const modalPosition = ref({ x: 0, y: 0 });
 const selectedUser = ref(null);
 const currentRole = ref('MEMBER');
+const blocked = ref([]);
 // const timeout = ref(null);
 
 const props = defineProps({
@@ -211,6 +212,26 @@ const fetchInitialChat = async () => {
     socket.emit('joinChannel', { channelName: 'General', userId: currentUser.id, password: null });
   } catch (error) {
     console.error(`Failed to fetch initial chat for ${currentUser.username}`, error);
+  }
+};
+
+const fetchBlocked = async () => {
+  try {
+    const response = await fetch('http://localhost:3000/user/blocked', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${sessionStorage.getItem('access_token')}`,
+        'Content-Type': 'application/json',
+      }
+    });
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.error);
+    }
+    const data = await response.json();
+    blocked.value = data;
+  } catch (err) {
+    console.error('Error fetching blocked:', err);
   }
 };
 
@@ -423,31 +444,35 @@ onBeforeUnmount(() => {
 
 onMounted(async () => {
   await fetchInitialChat();
+  await fetchBlocked();
 
   socket.on('receiveMessage', (message) => {
     console.log(`Message received in frontend:`, message);
+    if (blocked.value.some(friend => friend.id === message.userId)) {
+      console.log ('blocked message receieved');
+      return;
+    }
     console.log('Available chats:', chats.value.map(c => c.name))
     console.log('looking for: ', message.channelName);
-  // Find the chat (channel) that corresponds to the received message
-  const chat = chats.value.find(c => c.name === message.channel);
-  if (chat) {
-    // Add the new message to the chat's message list
-    console.log(`${chat.channelName} recieved ${message}`);
-    chat.messages.push({
-      sender: message.sender,
-      text: message.message,
-      timestamp: new Date()
-    });
-  }
-  else
-  {
-    console.log(`chat is invalid`);
-  }
-  // Ensure selectedChat exists and matches the message channel
-  if (selectedChat.value?.name === message.channel) {
-    scrollToBottom();
-  }
-});
+    // Find the chat (channel) that corresponds to the received message
+    const chat = chats.value.find(c => c.name === message.channel);
+    if (chat) {
+      // Add the new message to the chat's message list
+      console.log(`${chat.channelName} recieved ${message}`);
+      chat.messages.push({
+        sender: message.sender,
+        text: message.message,
+        timestamp: new Date()
+      });
+    } else {
+      console.log(`chat is invalid`);
+    }
+    // Ensure selectedChat exists and matches the message channel
+    if (selectedChat.value?.name === message.channel) {
+      scrollToBottom();
+    }
+  });
+
   socket.on('updateUserList', (userListData) => {
     userList.value = userListData;
 
@@ -471,6 +496,10 @@ onMounted(async () => {
 
   socket.on('directMessage', (data) => {
     console.log(`surely DM: ${data.userId}: ${data.message}`);
+    if (blocked.value.some(friend => friend.id === data.userId)) {
+      console.log ('blocked message receieved');
+      return;
+    }
     const chat = chats.value.find(chat => chat.userId === data.userId);
     if (chat) {
       console.log('dm already exists');
@@ -549,6 +578,15 @@ onMounted(async () => {
       console.log('timeout for someone else')
     }
   });
+
+  socket.on('block', (data) => {
+    blocked.value.push(data);
+  });
+  
+  socket.on('unblock', (data) => {
+    blocked.value = blocked.value.filter(friend => friend.id !== data.id);
+  });
+
 
 //   socket.on('restoreChannels', (channels) => {
 //   console.log('Restoring channels:', channels);

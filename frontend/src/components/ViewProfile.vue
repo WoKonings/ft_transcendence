@@ -31,6 +31,8 @@
           <button class="button" v-if="!props.isFriend" @click="addAsFriend(selectedUser)">Add as Friend</button>
           <button class="button" v-if="props.isFriend" @click="inviteToPlay(selectedUser)">Invite to Play</button>
           <button class="button-red" v-if="props.isFriend" @click="removeFriend(selectedUser)">Remove Friend</button>
+          <button class="button-red" v-if="!props.isBlocked" @click="blockUser(selectedUser)">Block Chat</button>
+          <button class="button-red" v-if="props.isBlocked" @click="unblockUser(selectedUser)">Unblock Chat</button>
         </div>
         <!-- <button @click="todo" v-if="isInviteSender(selectedUser.id)">Accept Invite</button>
         <button @click="todo" v-if="isInviteSender(selectedUser.id)">Decline Invite</button> -->
@@ -109,7 +111,7 @@ import { ref, watch, defineEmits, defineProps } from 'vue';
 const userProfile = ref({});
 const loading = ref(false);
 const matchHistory = ref([]);
-const emit = defineEmits(['close', 'friendRemoved', 'invite', 'directMessage']);
+const emit = defineEmits(['close', 'friendRemoved', 'invite', 'directMessage', 'blockUser', 'unblockUser']);
 const props = defineProps({
   selectedUser: {
     type: Object,
@@ -120,6 +122,10 @@ const props = defineProps({
     default: false,
   },
   isFriend: {
+    type: Boolean,
+    default: false,
+  },
+  isBlocked: {
     type: Boolean,
     default: false,
   }
@@ -218,6 +224,7 @@ const addAsFriend = (user) => {
   .catch(error => {
     console.error('Error adding friend:', error);
   });
+  emit('close');
 };
 
 const removeFriend = async (friend) => {
@@ -225,8 +232,19 @@ const removeFriend = async (friend) => {
   emit('close');
 };
 
+const blockUser = async (user) => {
+  emit('blockUser', user);
+  emit('close');
+};
+
+const unblockUser = async (user) => {
+  emit('unblockUser', user);
+  emit('close');
+};
+
 const inviteToPlay = (friend) => {
   emit('invite', friend);
+  emit('close');
   // console.log(`friend?: ${friend} ??:`, friend);
   // socket.value.emit('sendGameInvite', {
   //   targetName: friend.username,

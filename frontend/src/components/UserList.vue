@@ -12,8 +12,11 @@
     <ViewProfile
       :selectedUser="selectedUser"
       :isVisible="isProfileVisible"
+      :isBlocked="isBlocked"
       @close="isProfileVisible = false"
       @directMessage="directMessage"
+      @blockUser="blockUser"
+      @unblockUser="unblockUser"
     />
   </div>
 </template>
@@ -30,9 +33,11 @@ const currentUser = computed(() => store.state.currentUser);
 const emit = defineEmits(['directMessage']);
 
 const users = ref([]);
+const blocked = ref([]);
 const error = ref('');
 const selectedUser = ref(null);
 const isProfileVisible = ref(false);
+const isBlocked = ref(false);
 
 const getUsers = () => {
   error.value = '';
@@ -60,7 +65,28 @@ const getUsers = () => {
     });
 };
 
-//todo: add avatar
+const fetchBlocked = async () => {
+  error.value = '';
+  try {
+    const response = await fetch('http://localhost:3000/user/blocked', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${sessionStorage.getItem('access_token')}`,
+        'Content-Type': 'application/json',
+      }
+    });
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.error);
+    }
+    const data = await response.json();
+    blocked.value = data;
+  } catch (err) {
+    console.error('Error fetching blocked:', err);
+    error.value = err.message;
+  }
+};
+
 const updateUserStatus = (username, userId, isOnline, isInGame, isInQueue, avatar) => {
   console.log(`user: ${username} / ${userId} has changed status: online? ${isOnline} ingame? ${isInGame} inqueue? ${isInQueue}`);
   const user = users.value.find(u => u.id === userId);
@@ -120,8 +146,65 @@ const getStatusClass = (user) => {
 
 const viewProfile = (user) => {
   selectedUser.value = user;
+  if (selectedUser.value.id && blocked.value.some(user => user.id === selectedUser.value.id)) {
+    isBlocked.value = true;
+  } else {
+    isBlocked.value = false;
+  }
   isProfileVisible.value = true;
   console.log(`viewing ${user.username}`); 
+};
+
+const blockUser = async (friend) => {
+  console.log (`blocking user: ${friend}` );
+  try {
+    const response = await fetch('http://localhost:3000/user/block', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${sessionStorage.getItem('access_token')}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        targetId: friend.id,
+      }),
+    });
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const data = await response.json();
+    if (data.error) {
+      throw new Error(data.error);
+    }
+  } catch (error) {
+    console.error('Error blocking friend:', error);
+    error.value = error.message;
+  }
+};
+
+const unblockUser = async (friend) => {
+  console.log (`blocking user: ${friend}` );
+  try {
+    const response = await fetch('http://localhost:3000/user/unblock', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${sessionStorage.getItem('access_token')}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        targetId: friend.id,
+      }),
+    });
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const data = await response.json();
+    if (data.error) {
+      throw new Error(data.error);
+    }
+  } catch (error) {
+    console.error('Error blocking friend:', error);
+    error.value = error.message;
+  }
 };
 
 const directMessage = (user) => {
@@ -132,9 +215,19 @@ const directMessage = (user) => {
 
 onMounted(() => {
   getUsers();
+  fetchBlocked();
   socket.value.on('userStatusUpdate', (data) => {
     updateUserStatus(data.username, data.userId, data.isOnline, data.isInGame, data.isInQueue, data.avatar);
   });
+
+  socket.value.on('block', (data) => {
+    blocked.value.push(data);
+  });
+  
+  socket.value.on('unblock', (data) => {
+    blocked.value = blocked.value.filter(friend => friend.id !== data.id);
+  });
+
 });
 </script>
 

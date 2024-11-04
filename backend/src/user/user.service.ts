@@ -108,6 +108,72 @@ export class UserService {
     return { message: 'Friend request sent' };
   }
 
+  async blockUser(targetId: number, userId: number) {
+	  console.log('targetId:', targetId, 'userId:', userId);
+    if (!targetId || !userId || targetId == userId) {
+      throw new Error('Invalid user IDs provided');
+    }
+
+    const targetUser = await this.getUserById(targetId);
+
+    if (!targetUser) {
+      throw new BadRequestException('Target user not found');
+    }
+
+    const user = await this.getUserById(userId);
+
+    if (user.blocked.includes(targetId)) {
+      console.log ("user is already blocked");
+      throw new BadRequestException(`Already blocked ${targetUser.username}`);
+    }
+
+    // Update the user's blocklist
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        blocked: {
+          push: targetId,
+        },
+      },
+    });
+
+    this.userGateway.emitToSocketByUserId(userId, 'block', { id: targetUser.id, username: targetUser.username });
+    return { message: `blocked ${targetUser.username}` };
+  }
+
+  async unblockUser(targetId: number, userId: number) {
+	  console.log('targetId:', targetId, 'userId:', userId);
+    if (!targetId || !userId || targetId == userId) {
+      throw new Error('Invalid user IDs provided');
+    }
+
+    const targetUser = await this.getUserById(targetId);
+
+    if (!targetUser) {
+      throw new BadRequestException('Target user not found');
+    }
+
+    const user = await this.getUserById(userId);
+
+    if (!user.blocked.includes(targetId)) {
+      console.log ("user is already unblocked");
+      throw new BadRequestException(`${targetUser.username} is not blocked`);
+    }
+
+    // Update the target user's blocklist
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        blocked: {
+          set: user.blocked.filter(id => id !== targetId),
+        },
+      },
+    });
+    this.userGateway.emitToSocketByUserId(userId, 'unblock', { id: targetUser.id, username: targetUser.username });
+    return { message: `unblocked ${targetUser.username}` };
+  }
+
+
   async removeFriend(targetId: number, userId: number) {
     const target = await this.getUserById(targetId);
     const user = await this.getUserById(userId);
@@ -221,36 +287,64 @@ export class UserService {
     return friendsList;
   }
 
-async getIncomingPendingFriends(userId: number) {
-	// Fetch the user with their friends' IDs
-	const user = await this.prisma.user.findUnique({
-		where: { id: userId },
-		select: { pending: true },
-	});
+  async getIncomingPendingFriends(userId: number) {
+    // Fetch the user with their friends' IDs
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { pending: true },
+    });
 
-	if (!user) {
-		throw new BadRequestException('User not found');
-	}
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
 
-	// Retrieve each friend's information
-	const pendingList = await Promise.all(
-		user.pending.map(async (pendingId) => {
-			const pending = await this.prisma.user.findUnique({
-				where: { id: pendingId },
-				select: {
-					id: true,
-					username: true,
-					isOnline: true,
-					isInGame: true,
-					isInQueue: true,
-					// avatar: true,
-				},
-			});
-			return pending;
-		}),
-	);
-	return pendingList;
-}
+    // Retrieve each friend's information
+    const pendingList = await Promise.all(
+      user.pending.map(async (pendingId) => {
+        const pending = await this.prisma.user.findUnique({
+          where: { id: pendingId },
+          select: {
+            id: true,
+            username: true,
+            isOnline: true,
+            isInGame: true,
+            isInQueue: true,
+            // avatar: true,
+          },
+        });
+        return pending;
+      }),
+    );
+    return pendingList;
+  }
+
+  async getBlocked(userId: number) {
+    // Fetch the user with their blocked' IDs
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { blocked: true },
+    });
+
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+    console.log (`fetching blocked for user: ${userId}`);
+    // Retrieve each blocked users's relevant information
+    const blockList = await Promise.all(
+      user.blocked.map(async (friendId) => {
+        const friend = await this.prisma.user.findUnique({
+          where: { id: friendId },
+          select: {
+            id: true,
+            username: true,
+          },
+        });
+        return friend;
+      }),
+    );
+
+    return blockList;
+  }
 
   //todo: error catching if no user?
   async getUserById(userId: number) {

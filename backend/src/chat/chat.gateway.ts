@@ -114,6 +114,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     this.server.to(channel.name).emit('receiveMessage', {
       message: payload.message,
       sender: sender.username,
+      userId: sender.id,
       channel: payload.channelName,
     });
   }

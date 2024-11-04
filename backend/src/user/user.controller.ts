@@ -39,19 +39,37 @@ export class UserController {
   @UseGuards(AuthGuard)
   @Post('add')
   async addUserAsFriend(@Body() addFriendDto: AddFriendDto, @Req() req: Request) {
-    const userPayload = req['user'];
-    console.log(`req:  ${userPayload}`);
+    const userId = req['user']?.id
+    console.log(`user id?: ${userId}`);
 
-    return this.userService.addUserAsFriend(addFriendDto.targetId, userPayload.sub);
+    return this.userService.addUserAsFriend(addFriendDto.targetId, userId);
   }
 
   @UseGuards(AuthGuard)
   @Post('remove')
   async removeFriend(@Body() addFriendDto: AddFriendDto, @Req() req: Request) {
-    const userPayload = req['user'];
-    console.log(`req:  ${userPayload}`);
+    const userId = req['user']?.id
+    console.log(`user id?: ${userId}`);
 
-    return this.userService.removeFriend(addFriendDto.targetId, userPayload.sub);
+    return this.userService.removeFriend(addFriendDto.targetId, userId);
+  }
+
+  @UseGuards(AuthGuard)
+  @Post('block')
+  async addBlocked(@Body() addFriendDto: AddFriendDto, @Req() req: Request) {
+    const userId = req['user']?.id
+    console.log(`blocking id?: ${userId}`);
+
+    return this.userService.blockUser(addFriendDto.targetId, userId)
+  }
+
+  @UseGuards(AuthGuard)
+  @Post('unblock')
+  async removeBlocked(@Body() addFriendDto: AddFriendDto, @Req() req: Request) {
+    const userId = req['user']?.id
+    console.log(`unblocking id?: ${userId}`);
+
+    return this.userService.unblockUser(addFriendDto.targetId, userId)
   }
 
   @UseGuards(AuthGuard)
@@ -63,15 +81,22 @@ export class UserController {
   @UseGuards(AuthGuard)
   @Post('friends')
   async getFriends(@Req() req: Request) {
-    const userPayload = req['user'];
-    return this.userService.getFriends(userPayload.sub);
+    const userId = req['user']?.id
+    return this.userService.getFriends(userId);
   }
 
   @UseGuards(AuthGuard)
   @Post('pending')
   async getIncomingPendingFriends(@Req() req: Request) {
-    const userPayload = req['user'];
-    return this.userService.getIncomingPendingFriends(userPayload.sub);
+    const userId = req['user']?.id
+    return this.userService.getIncomingPendingFriends(userId);
+  }
+
+  @UseGuards(AuthGuard)
+  @Post('blocked')
+  async getBlocked(@Req() req: Request) {
+    const userId = req['user']?.id
+    return this.userService.getBlocked(userId);
   }
 
   @UseGuards(AuthGuard)
@@ -97,7 +122,7 @@ export class UserController {
   async updateUsername(@Body('newUsername') newUsername: string, @Req() req: Request) {
     const userPayload = req['user'];
     
-    console.log(`updating username for ID: ${userPayload.sub} N: ${userPayload.username} req: ${newUsername}`);
+    console.log(`updating username for ID: ${userPayload.id} N: ${userPayload.username} req: ${newUsername}`);
     if (!newUsername || newUsername.trim() === '') {
       throw new BadRequestException('Username cannot be empty');
     }
@@ -108,8 +133,8 @@ export class UserController {
       throw new BadRequestException('Username must be at least 3 characters');
     }
 
-    console.log (`updating user specs: id: ${userPayload.sub}, newName: ${newUsername}`);
-    return this.userService.updateUsername(userPayload.sub, newUsername);
+    console.log (`updating user specs: id: ${userPayload.id}, newName: ${newUsername}`);
+    return this.userService.updateUsername(userPayload.id, newUsername);
   }
 
   @UseGuards(AuthGuard)
@@ -132,9 +157,7 @@ export class UserController {
     },
   }))
   async uploadAvatar(@UploadedFile() file: Express.Multer.File, @Req() req: Request) {
-    const userPayload = req['user'];
-
-    console.log('wtf: ', userPayload);
+    const userId = req['user']?.id
 
     // Validate image dimensions
     const dimensions = imageSize(file.path);
@@ -144,7 +167,7 @@ export class UserController {
     }
 
     // Fetch the current user to check for an existing avatar
-    const user = await this.userService.getUserById(userPayload.id);
+    const user = await this.userService.getUserById(userId);
 
     // If the user already has an avatar, delete the old file from the server
     if (user.avatar) {

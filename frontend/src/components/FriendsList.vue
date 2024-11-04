@@ -33,10 +33,13 @@
       :selectedUser="selectedUser"
       :isVisible="isProfileVisible"
       :isFriend="true"
+      :isBlocked="isBlocked"
       @close="isProfileVisible = false" 
       @friendRemoved="removeFriend"
       @invite="inviteToPlay"
       @directMessage="directMessage"
+      @blockUser="blockUser"
+      @unblockUser="unblockUser"
     />
     </div>
 
@@ -82,6 +85,7 @@ const socket = computed(() => store.state.socket);
 const emit = defineEmits(['directMessage']);
 
 const friends = ref([]);
+const blocked = ref([]);
 const pendingFriendRequests = ref([]);
 const invites = ref([]);
 const error = ref('');
@@ -90,11 +94,11 @@ const showInvitesModal = ref(false);
 const selectedUser = ref(null);
 const inviteSenders = ref(new Set()); // To keep track of users who sent invites
 const isProfileVisible = ref(false); // State to manage profile visibility
+const isBlocked = ref(false);
 
 
 const fetchFriends = async () => {
   error.value = '';
-  // const userId = currentUser.value.id;
   try {
     const response = await fetch('http://localhost:3000/user/friends', {
       method: 'POST',
@@ -102,7 +106,6 @@ const fetchFriends = async () => {
         'Authorization': `Bearer ${sessionStorage.getItem('access_token')}`,
         'Content-Type': 'application/json',
       },
-      // body: JSON.stringify({ userId })
     });
     if (!response.ok) {
       const err = await response.json();
@@ -116,9 +119,30 @@ const fetchFriends = async () => {
   }
 };
 
+const fetchBlocked = async () => {
+  error.value = '';
+  try {
+    const response = await fetch('http://localhost:3000/user/blocked', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${sessionStorage.getItem('access_token')}`,
+        'Content-Type': 'application/json',
+      }
+    });
+    if (!response.ok) {
+      const err = await response.json();
+      throw new Error(err.error);
+    }
+    const data = await response.json();
+    blocked.value = data;
+  } catch (err) {
+    console.error('Error fetching blocked:', err);
+    error.value = err.message;
+  }
+};
+
 const fetchPendingRequests = async () => {
   error.value = '';
-  // const userId = currentUser.value.id;
   try {
     const response = await fetch('http://localhost:3000/user/pending', {
       method: 'POST',
@@ -126,7 +150,6 @@ const fetchPendingRequests = async () => {
         'Authorization': `Bearer ${sessionStorage.getItem('access_token')}`,
         'Content-Type': 'application/json',
       },
-      // body: JSON.stringify({ userId })
     });
     if (!response.ok) {
       const err = await response.json();
@@ -154,6 +177,14 @@ const initializeSocketListeners = () => {
 
   socket.value.on('removedFriend', (data) => {
     friends.value = friends.value.filter(friend => friend.id !== data.userId && friend.username !== data.username);
+  });
+
+  socket.value.on('block', (data) => {
+    blocked.value.push(data);
+  });
+  
+  socket.value.on('unblock', (data) => {
+    blocked.value = blocked.value.filter(friend => friend.id !== data.id);
   });
 
   socket.value.on('gameInvite', (data) => {
@@ -218,7 +249,12 @@ const viewInvites = () => {
 
 const viewProfile = (user) => {
   selectedUser.value = user;
-  isProfileVisible.value = true; // Show the profile modal
+  if (selectedUser.value.id && blocked.value.some(user => user.id === selectedUser.value.id)) {
+    isBlocked.value = true;
+  } else {
+    isBlocked.value = false;
+  }
+  isProfileVisible.value = true;
   console.log(`viewing ${user.username}`); 
 };
 
@@ -309,7 +345,6 @@ const inviteToPlay = (friend) => {
   socket.value.emit('sendGameInvite', {
     targetName: friend.username,
   });
-  // store.dispatch('toggleShowGame', true);
   closeOptions();
 };
 
@@ -317,6 +352,62 @@ const directMessage = (user) => {
   emit('directMessage', user);
   console.log('FRIENDSLIST LAYER');
   console.log(`DM CHECK?: ${user} ??:`);
+};
+
+const blockUser = async (friend) => {
+  console.log (`blocking user: ${friend}` );
+  try {
+    const response = await fetch('http://localhost:3000/user/block', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${sessionStorage.getItem('access_token')}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        targetId: friend.id,
+      }),
+    });
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const data = await response.json();
+    if (data.error) {
+      throw new Error(data.error);
+    }
+  } catch (error) {
+    console.error('Error blocking friend:', error);
+    error.value = error.message;
+  } finally {
+    closeOptions();
+  }
+};
+
+const unblockUser = async (friend) => {
+  console.log (`blocking user: ${friend}` );
+  try {
+    const response = await fetch('http://localhost:3000/user/unblock', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${sessionStorage.getItem('access_token')}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        targetId: friend.id,
+      }),
+    });
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const data = await response.json();
+    if (data.error) {
+      throw new Error(data.error);
+    }
+  } catch (error) {
+    console.error('Error blocking friend:', error);
+    error.value = error.message;
+  } finally {
+    closeOptions();
+  }
 };
 
 const removeFriend = async (friend) => {
@@ -362,6 +453,7 @@ const getStatusClass = (friend) => {
 
 onMounted(() => {
   fetchFriends();
+  fetchBlocked();
   fetchPendingRequests();
   initializeSocketListeners();
 });
