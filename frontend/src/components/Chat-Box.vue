@@ -57,6 +57,7 @@
           <input 
             v-model="newMessage" 
             placeholder="Type a message..."
+            maxlength="300"
           />
           <button type="submit" class="send-button">
             <i class="fas fa-paper-plane"></i>
@@ -483,7 +484,7 @@ onBeforeUnmount(() => {
 })
 
 onMounted(async () => {
-  
+  console.log('xd token: ', sessionStorage.getItem('access_token'))
   socket.on('receiveMessage', (message) => {
     console.log(`Message received in frontend:`, message);
     if (blocked.value.some(friend => friend.id === message.userId)) {

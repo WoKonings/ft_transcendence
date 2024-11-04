@@ -22,7 +22,6 @@ export class AppGateway implements OnGatewayInit, OnGatewayConnection, OnGateway
     console.log('WebSocket server initialized');
   }
 
-  @UseGuards(AuthGuard)
   async handleConnection(client: Socket) {
     try {
       const token = client.handshake.auth.token as string;
@@ -165,6 +164,7 @@ export class AppGateway implements OnGatewayInit, OnGatewayConnection, OnGateway
 
 
   // Method to send messages or data to a specific user using the socket object
+  //todo: check for removal?
   async sendMessageToUser(userId: number, event: string, data: any) {
 	const user = await this.prisma.user.findUnique({
 		where: { id: userId },

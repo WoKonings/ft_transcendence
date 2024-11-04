@@ -9,11 +9,8 @@ Fix send icon not existing
 Fix user online status not updating
 Improve admin button CSS
 OPEN VIEWPROFILE IN CHAT USERLIST
+ENCRYPT CHANNEL PASSWORDS!
 
-SECURITY SECURITY SECURITY!
-Need to double check admin/owner roles.
-Need to constrain input
-NEED TO DOUBLE CHECK THAT WE ARE NOT RETURNING WHOLE USER CLASSES IN EMITS!!
 
 BUGS:
 
@@ -32,11 +29,8 @@ ONLINE GAME:
 Copy offline game CSS carefully
 
 ---- BACKEND ----
-Ensure we are not returning more than needed everywhere.
-Ensure all forms of input are validated.
-Ensure channels get deleted properly.
+Ensure all forms of input are validated. (SOCKETS DONE, NEED TO CHECK ENDPOINTS)
 Ensure everything is locked down.
-Ensure only admins can use admin commands.
 
 
 MAYBE:
@@ -53,6 +47,5 @@ Actual Elo implementation.
 
 FINALLY:
 re-enable all guards that have been disabled.
-raise JWT token time by a lot (or build refresh tokens)
 disable fake logins
 REMOVE CHAT GPT COMMENTS

@@ -10,6 +10,7 @@ import { PlayerMoveDto } from './dto/player-move.dto';
 import { LeaveGameDto } from './dto/leave-game.dto';
 import { InviteGameDto } from './dto/invite-game.dto';
 import { AcceptInviteDto } from './dto/accept-invite.dto';
+import { PayloadSizeGuard } from 'src/auth/payload-size.guard';
 
 interface Player {
   username: string;
@@ -32,7 +33,7 @@ interface GameSession {
 }
 
 @WebSocketGateway({ cors: true })
-@UseGuards(AuthGuard)
+@UseGuards(AuthGuard, PayloadSizeGuard)
 @Injectable()
 export class GameGateway {
   @WebSocketServer() server: Server;

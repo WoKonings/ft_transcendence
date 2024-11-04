@@ -2,17 +2,15 @@ import { BadRequestException, forwardRef, Inject, Injectable, NotFoundException,
 import { UserGateway } from './user.gateway';
 import { PrismaService } from '../prisma.service';
 import { Prisma, User, Channel } from '@prisma/client';
-import { AuthGuard } from '@nestjs/passport';
 import { AuthService } from 'src/auth/auth.service';
 
 @Injectable()
 export class UserService {
   constructor(
     private prisma: PrismaService, 
-    // private authService: AuthService,
     @Inject(forwardRef(() => UserGateway)) private readonly userGateway: UserGateway,
     @Inject(forwardRef(() => AuthService)) private readonly authService: AuthService,
-  ) {} // Inject the gateway) {}
+  ) {}
 
   async createUser(data: Prisma.UserCreateInput): Promise<User> {
     try {
@@ -81,16 +79,33 @@ export class UserService {
           }
         }
       })
-      // notify both users of new friend
-      this.userGateway.emitToSocketByUserId(userId, 'newFriend', targetUser);
-      this.userGateway.emitToSocketByUserId(targetId, 'newFriend', user);
-      // this.userGateway.emitToSocketByUserId(user.id, 'newFriend', user);
+
+      const minimalUser = {
+        id: user.id,
+        username: user.username,
+        avatar: user.avatar,
+        isOnline: user.isOnline,
+        isInGame: user.isInGame,
+        isInQueue: user.isInQueue,
+      };
+  
+      const minimalTargetUser = {
+        id: targetUser.id,
+        username: targetUser.username,
+        avatar: targetUser.avatar,
+        isOnline: targetUser.isOnline,
+        isInGame: targetUser.isInGame,
+        isInQueue: targetUser.isInQueue,
+      };
+
+      console.log("SECURITY CONCERN CHECK: ", minimalTargetUser, minimalUser)
+      this.userGateway.emitToSocketByUserId(userId, 'newFriend', minimalTargetUser);
+      this.userGateway.emitToSocketByUserId(targetId, 'newFriend', minimalUser);
       return { message: `You are now friends with ${targetUser.username} ` };
     }
 
     // Check if userId is already in the pending list
     if (targetUser.pending.includes(userId)) {
-      // throw new BadRequestException('Friend request already sent');
       return { message: 'Friend request already sent'};
     }
 
@@ -103,8 +118,15 @@ export class UserService {
         },
       },
     });
-    this.userGateway.emitToSocketByUserId(targetId, 'newFriendRequest', user);
-    // this.userGateway.emitToSocketByUserId(userId, 'newFriendRequest', targetUser);
+    const minimalUser = {
+      id: user.id,
+      username: user.username,
+      avatar: user.avatar,
+      isOnline: user.isOnline,
+      isInGame: user.isInGame,
+      isInQueue: user.isInQueue,
+    };
+    this.userGateway.emitToSocketByUserId(targetId, 'newFriendRequest', minimalUser);
     return { message: 'Friend request sent' };
   }
 
@@ -205,8 +227,27 @@ export class UserService {
         }
       }
     });
-    this.userGateway.emitToSocketByUserId(targetId, 'removedFriend', user);
-    this.userGateway.emitToSocketByUserId(userId, 'removedFriend', target);
+
+    const minimalUser = {
+      id: user.id,
+      username: user.username,
+      avatar: user.avatar,
+      isOnline: user.isOnline,
+      isInGame: user.isInGame,
+      isInQueue: user.isInQueue,
+    };
+
+    const minimalTargetUser = {
+      id: target.id,
+      username: target.username,
+      avatar: target.avatar,
+      isOnline: target.isOnline,
+      isInGame: target.isInGame,
+      isInQueue: target.isInQueue,
+    };
+
+    this.userGateway.emitToSocketByUserId(targetId, 'removedFriend', minimalUser);
+    this.userGateway.emitToSocketByUserId(userId, 'removedFriend', minimalTargetUser);
     return { message: `Removed ${target.username} succesfully` };
 	}
 
