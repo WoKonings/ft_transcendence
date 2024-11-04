@@ -2,9 +2,8 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { Channel, ChannelRole } from '@prisma/client';
 import { UserService } from 'src/user/user.service';
-import { Prisma } from '@prisma/client'; // Importing Prisma to access the ChannelRole enum
-import { channel } from 'diagnostics_channel';
-import e from 'express';
+import * as bcrypt from 'bcryptjs';
+
 
 @Injectable()
 export class ChatService {
@@ -96,12 +95,17 @@ export class ChatService {
       return { success: false, message: 'Invalid username or channel name' };
     }
   
+    let hashedPassword = null;
+    if (password) {
+      hashedPassword = await bcrypt.hash(password, 10);
+    }
+  
     // Create the channel itself
     const newChannel = await this.prisma.channel.create({
       data: {
         name: channelName,
         private: false,
-        password: password || null,
+        password: hashedPassword || null,
       },
     });
   
@@ -182,9 +186,11 @@ export class ChatService {
       return { success: false, message: 'channel is private, you cannot join' };
     }
 
-    if (password !== channel.password) {
-      console.log('Incorrect password');
-      return { success: false, message: 'please input password', passwordRequired: true };
+    if (channel.password) {
+      if (!password || !(await bcrypt.compare(password, channel.password))) {
+        console.log('Incorrect password');
+        return { success: false, message: 'please input password', passwordRequired: true };
+      }
     }
 
     // Check if the user is already in the channel
@@ -261,7 +267,7 @@ export class ChatService {
   {
     const channel = await this.getChannelByName(channelName);
 
-    if (password != channel.password) {
+    if (!password || !(await bcrypt.compare(password, channel.password))) {
       return { success: false, message: "invalid password, please try again"};
     }
 
@@ -276,13 +282,14 @@ export class ChatService {
       console.log("channel does not exist");
       return null;
     }
-
+  
+    const hashedPassword = await bcrypt.hash(password, 10);
     await this.prisma.channel.update({
       where : { name: channelName},
-      data : { password: password},
+      data : { password: hashedPassword},
     });
 
-    return{ success: true, message: `password succesfully set to ${password}`};
+    return{ success: true, message: `password succesfully set`};
   }
 
   async setChannelPrivacy(channelName: string)

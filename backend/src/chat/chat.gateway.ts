@@ -61,6 +61,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   @SubscribeMessage('getChannels')
   async getChannels(client: Socket) {
+    console.log('REQUESTED CHANNELS!');
     const userId = client['user']?.id;
     const channels = await this.chatService.getAllUserChannels(userId);
 

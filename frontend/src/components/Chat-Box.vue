@@ -82,6 +82,7 @@
           :key="user.id" 
           :class="['user-item', { 'admin-item': user.role === 'ADMIN' }, { 'owner-item': user.role === 'OWNER'}]" 
           @contextmenu.prevent="openUserOptions(user, $event)"
+          @click="viewProfile(user)"
         >
           <span class="profile-picture">
             <img 
@@ -103,6 +104,15 @@
         <button v-if="(currentRole === 'ADMIN' || currentRole === 'OWNER')" @click="banUser()">Ban</button>
       </div>
     </div>
+    <ViewProfile
+      :selectedUser="selectedUser"
+      :isVisible="isProfileVisible"
+      :isBlocked="isBlocked"
+      @close="isProfileVisible = false"
+      @directMessage="directMessage"
+      @blockUser="blockUser"
+      @unblockUser="unblockUser"
+    />
   </div>
 </template>
 
@@ -110,16 +120,13 @@
 <script setup>
 import { ref, onMounted, onUpdated, watch, defineProps, onBeforeUnmount } from 'vue';
 import { useStore } from 'vuex';
-
-//to do: DMs , 
-// handle disconnect; leave all channels
-// socket parsing (every event)
-// useroption modal position
-// add private
+import ViewProfile from './ViewProfile.vue';
 
 const store = useStore();
 const socket = store.state.socket;
 const currentUser = store.state.currentUser;
+const isProfileVisible = ref(false);
+const isBlocked = ref(false);
 const chats = ref([]);
 const selectedChat = ref(null);
 const newMessage = ref('');
@@ -138,6 +145,17 @@ const props = defineProps({
     default: () => (null)
   }
 });
+
+const viewProfile = (user) => {
+  selectedUser.value = user;
+  if (selectedUser.value.id && blocked.value.some(user => user.id === selectedUser.value.id)) {
+    isBlocked.value = true;
+  } else {
+    isBlocked.value = false;
+  }
+  isProfileVisible.value = true;
+  console.log(`viewing ${user.username}`); 
+};
 
 const openUserOptions = (user, event) => {
   selectedUser.value = user;
@@ -234,8 +252,8 @@ const fetchInitialChat = async () => {
     const generalChat = { name: 'General', messages: [] };
     chats.value.push(generalChat);
     selectedChat.value = generalChat;
-    socket.emit('joinChannel', { channelName: 'General', userId: currentUser.id, password: null });
     socket.emit('getChannels');
+    socket.emit('joinChannel', { channelName: 'General', userId: currentUser.id, password: null });
   } catch (error) {
     console.error(`Failed to fetch initial chat for ${currentUser.username}`, error);
   }
@@ -258,6 +276,59 @@ const fetchBlocked = async () => {
     blocked.value = data;
   } catch (err) {
     console.error('Error fetching blocked:', err);
+  }
+};
+
+
+const blockUser = async (friend) => {
+  console.log (`blocking user: ${friend}` );
+  try {
+    const response = await fetch('http://localhost:3000/user/block', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${sessionStorage.getItem('access_token')}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        targetId: friend.id,
+      }),
+    });
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const data = await response.json();
+    if (data.error) {
+      throw new Error(data.error);
+    }
+  } catch (error) {
+    console.error('Error blocking friend:', error);
+    error.value = error.message;
+  }
+};
+
+const unblockUser = async (friend) => {
+  console.log (`blocking user: ${friend}` );
+  try {
+    const response = await fetch('http://localhost:3000/user/unblock', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${sessionStorage.getItem('access_token')}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        targetId: friend.id,
+      }),
+    });
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+    const data = await response.json();
+    if (data.error) {
+      throw new Error(data.error);
+    }
+  } catch (error) {
+    console.error('Error blocking friend:', error);
+    error.value = error.message;
   }
 };
 
@@ -489,7 +560,6 @@ onBeforeUnmount(() => {
 })
 
 onMounted(async () => {
-  console.log('xd token: ', sessionStorage.getItem('access_token'))
   socket.on('receiveMessage', (message) => {
     console.log(`Message received in frontend:`, message);
     if (blocked.value.some(friend => friend.id === message.userId)) {
@@ -658,32 +728,6 @@ onMounted(async () => {
     chat.isPrivate = data.isPrivate;
   });
   
-
-//   socket.on('restoreChannels', (channels) => {
-//   console.log('Restoring channels:', channels);
-  
-//   // Clear existing channels and populate with restored channels
-//   chats.value = channels.map(channel => ({
-//     name: channel.name,
-//     messages: channel.messages || [],
-//   }));
-
-//   // Auto-select the first chat or keep the previously selected chat if it exists
-//   const previouslySelectedChat = selectedChat.value;
-//   if (previouslySelectedChat && channels.some(c => c.name === previouslySelectedChat.name)) {
-//     selectedChat.value = chats.value.find(chat => chat.name === previouslySelectedChat.name);
-//   } else {
-//     selectedChat.value = chats.value[0] || null;
-//   }
-
-//   // Fetch user list for selected chat if any
-//   if (selectedChat.value) {
-//     socket.emit('getUserList', { channel: selectedChat.value.name });
-//   }
-
-//   console.log('Restoring channels:', channels);
-
-// });
   await fetchInitialChat();
   await fetchBlocked();
 });
@@ -1070,19 +1114,20 @@ input {
 
 /* Modal CSS */
 .user-options-modal {
-  position: fixed; /* Change to fixed for centering */
-  top: 50%; /* Center vertically */
-  left: 50%; /* Center horizontally */
-  transform: translate(-50%, -50%); /* Adjust for its own dimensions */
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   background-color: white;
   border: 1px solid #ccc;
   padding: 10px;
   border-radius: 4px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   z-index: 8000;
-  width: 200px; /* Optional: Set a width for the modal */
+  width: 200px;
   display: block;
 }
+
 .user-options-modal button {
   display: block;
   width: 100%;
