@@ -5,9 +5,10 @@ import { AuthGuard } from './auth/auth.guard';
 import { PrismaService } from './prisma.service';
 import { JwtService } from '@nestjs/jwt';
 import e from 'express';
+import { PayloadSizeGuard } from './auth/payload-size.guard';
 
 @WebSocketGateway({ cors: true })
-@UseGuards(AuthGuard)
+@UseGuards(AuthGuard, PayloadSizeGuard)
 @Injectable()
 export class AppGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer() server: Server;
@@ -15,7 +16,6 @@ export class AppGateway implements OnGatewayInit, OnGatewayConnection, OnGateway
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
-    // private readonly socketManager: SocketManagerService, // Inject SocketManagerService
   ) {}
 
   afterInit(server: Server) {
@@ -97,23 +97,6 @@ export class AppGateway implements OnGatewayInit, OnGatewayConnection, OnGateway
       console.log(`SOCKET DISCONNECTED: ${client.id}`);
     } catch (error) {
       console.log('Error handling disconnect:', error);
-    }
-  }
-
-  // Method to send messages or data to a specific user using the socket object
-  //todo: check for removal?
-  async sendMessageToUser(userId: number, event: string, data: any) {
-	const user = await this.prisma.user.findUnique({
-		where: { id: userId },
-		select: {
-			socket: true,
-		}
-	})
-	if (!user)
-		return;
-    const socket = this.server.sockets.sockets.get(user.socket);
-    if (socket) {
-      socket.emit(event, data);
     }
   }
 }

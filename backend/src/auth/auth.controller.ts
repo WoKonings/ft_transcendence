@@ -63,7 +63,6 @@ export class AuthController {
 
     const url = `https://api.intra.42.fr/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=${responseType}&scope=${scope}`;
 
-    console.log("42 Skibidi");
     // Redirect the client to 42 authorization page
     res.redirect(url);
   }
@@ -129,7 +128,6 @@ export class AuthController {
   @UseGuards(TwoFAuthGuard)
   @Post('2fa/authenticate')
   async authenticateWithTwoFactor(@Body() body: { username: string, password: string, token: string }) {
-    // const user = await this.authService.verifyUser(body.username, body.password);
     const user = await this.userService.getUserForAuth(body.username);
     console.log ('authenitcating 2fa');
     if (!user) {

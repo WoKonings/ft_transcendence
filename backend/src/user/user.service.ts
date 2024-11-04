@@ -257,7 +257,6 @@ export class UserService {
     });
   }
 
-  //todo: delete the email part?
   async getUserByUsername(username: string): Promise<User | null> {
     if (username == null)
       return null;
@@ -385,7 +384,6 @@ export class UserService {
     return blockList;
   }
 
-  //todo: error catching if no user?
   async getUserById(userId: number) {
     if (!userId) {
       console.log('caught null userId');

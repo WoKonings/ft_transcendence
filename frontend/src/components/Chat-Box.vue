@@ -879,7 +879,7 @@ body {
 .messages {
   flex: 1;
   padding: 2%;
-  overflow-y: auto; /* Enables scrolling when content overflows */
+  overflow-y: auto;
   max-height: calc(80vh - 100px);
 }
 

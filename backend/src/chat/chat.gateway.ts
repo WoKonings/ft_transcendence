@@ -56,7 +56,6 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   async handleDisconnect(client: Socket) {
-    // client.disconnect(); //todo:?
   }
 
   @SubscribeMessage('getChannels')
@@ -159,12 +158,6 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       console.log("channel does not exist for submitting password");
       return null;
     }
-
-    // const callerId = client['user']?.id
-    // if (!await this.chatService.isOwner(channel.id, callerId)) {
-    //   console.log(`Need owner to set password`);
-    //   return null;
-    // }
 
     const response =  await this.chatService.submitPassword(channel.name, payload.password);
 

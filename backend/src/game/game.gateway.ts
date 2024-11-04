@@ -388,7 +388,6 @@ async handleInviteGame(client: Socket, data: InviteGameDto): Promise<void> {
         return session;
       }
     }
-    // console.log('CANNOT FIND USERS SESSION'); //todo: some way to detect the user is not actually ingame and reset their state?
     return undefined;
   }
 
@@ -471,7 +470,6 @@ async handleInviteGame(client: Socket, data: InviteGameDto): Promise<void> {
       });
   
       console.log(`Game over: ${winner.username} won against ${loser.username}`);
-      //todo: display changes n stuff?
       winner.socket.emit('gameWon');
       loser.socket.emit('gameLost');
 

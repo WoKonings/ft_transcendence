@@ -12,31 +12,11 @@ import { diskStorage } from 'multer';
 import { promises as fs } from 'fs';
 import { imageSize } from 'image-size';
 
-
-//todo: make authguard global on the controller for cleanliness
+@UseGuards(AuthGuard)
 @Controller('user')
 export class UserController {
   constructor(private readonly userService: UserService) {}
 
-  // @Post()
-  // async createUser(@Body() createUserDto: CreateUserDto) {
-  // 	try {
-  // 		return await this.userService.createUser(createUserDto);
-  // 	} catch (error) {
-  // 		if (error.message.includes('Unique constraint violation')) {
-  // 			throw new HttpException({
-  // 				status: HttpStatus.CONFLICT,
-  // 				error: error.message,
-  // 			}, HttpStatus.CONFLICT);
-  // 		}
-  // 		throw new HttpException({
-  // 			status: HttpStatus.INTERNAL_SERVER_ERROR,
-  // 			error: 'Internal Server Error',
-  // 		}, HttpStatus.INTERNAL_SERVER_ERROR);
-  // 	}
-  // }
-
-  @UseGuards(AuthGuard)
   @Post('add')
   async addUserAsFriend(@Body() addFriendDto: AddFriendDto, @Req() req: Request) {
     const userId = req['user']?.id
@@ -45,7 +25,6 @@ export class UserController {
     return this.userService.addUserAsFriend(addFriendDto.targetId, userId);
   }
 
-  @UseGuards(AuthGuard)
   @Post('remove')
   async removeFriend(@Body() addFriendDto: AddFriendDto, @Req() req: Request) {
     const userId = req['user']?.id
@@ -54,7 +33,6 @@ export class UserController {
     return this.userService.removeFriend(addFriendDto.targetId, userId);
   }
 
-  @UseGuards(AuthGuard)
   @Post('block')
   async addBlocked(@Body() addFriendDto: AddFriendDto, @Req() req: Request) {
     const userId = req['user']?.id
@@ -63,7 +41,6 @@ export class UserController {
     return this.userService.blockUser(addFriendDto.targetId, userId)
   }
 
-  @UseGuards(AuthGuard)
   @Post('unblock')
   async removeBlocked(@Body() addFriendDto: AddFriendDto, @Req() req: Request) {
     const userId = req['user']?.id
@@ -72,52 +49,46 @@ export class UserController {
     return this.userService.unblockUser(addFriendDto.targetId, userId)
   }
 
-  @UseGuards(AuthGuard)
   @Get('all')
   async getAllUsers() {
     return this.userService.getAllUsers();
   }
 
-  @UseGuards(AuthGuard)
   @Post('friends')
   async getFriends(@Req() req: Request) {
     const userId = req['user']?.id
     return this.userService.getFriends(userId);
   }
 
-  @UseGuards(AuthGuard)
   @Post('pending')
   async getIncomingPendingFriends(@Req() req: Request) {
     const userId = req['user']?.id
     return this.userService.getIncomingPendingFriends(userId);
   }
 
-  @UseGuards(AuthGuard)
   @Post('blocked')
   async getBlocked(@Req() req: Request) {
     const userId = req['user']?.id
     return this.userService.getBlocked(userId);
   }
 
-  @UseGuards(AuthGuard)
   @Get('search/:username')
   async getUserByUsername(@Param('username') username: string) {
     return this.userService.getUserByUsername(username);
   }
 
-  @UseGuards(AuthGuard)
   @Get(':id')
   async getUserById(@Param('id') id: string) {
     return this.userService.getUserById(Number(id));
   }
 
+  /*  delete is commented out, because of matchhistory. */
   // @UseGuards(AuthGuard)
   // @Delete(':id')
   // async deleteUser(@Param('id') id: string) {
   //   return this.userService.deleteUser(Number(id));
   // }
 
-  @UseGuards(AuthGuard)
   @Post('update-username')
   async updateUsername(@Body('newUsername') newUsername: string, @Req() req: Request) {
     const userPayload = req['user'];
@@ -137,7 +108,6 @@ export class UserController {
     return this.userService.updateUsername(userPayload.id, newUsername);
   }
 
-  @UseGuards(AuthGuard)
   @Post('upload-avatar')
   @UseInterceptors(FileInterceptor('file', {
     storage: diskStorage({
