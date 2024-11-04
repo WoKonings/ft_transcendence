@@ -96,7 +96,7 @@
       </div>
 
       <!-- Modal for User Options (Assign Role, Kick) -->
-      <div v-if="showUserOptions" class="user-options-modal" @click="closeUserOptions">
+      <div v-if="showUserOptions" class="user-options-modal" @click="closeUserOptions" :style="{ top: modalPosition.y + 'px', left: modalPosition.x + 'px'}">
         <button v-if="currentRole === 'OWNER' && selectedUser.role == 'MEMBER'" @click="assignRole('ADMIN')">Assign Admin</button>
         <button v-if="currentRole === 'OWNER' && selectedUser.role == 'ADMIN'" @click="assignRole('MEMBER')">Assign User</button>
         <button v-if="(currentRole === 'ADMIN' || currentRole === 'OWNER')" @click="kickUser()">Kick from Channel</button>
@@ -133,7 +133,7 @@ const newMessage = ref('');
 const userList = ref([]);
 const userListError = ref(null);
 const showUserOptions = ref(false);
-// const modalPosition = ref({ x: 0, y: 0 });
+const modalPosition = ref({ x: 0, y: 0 });
 const selectedUser = ref(null);
 const currentRole = ref('MEMBER');
 const blocked = ref([]);
@@ -159,10 +159,17 @@ const viewProfile = (user) => {
 
 const openUserOptions = (user, event) => {
   selectedUser.value = user;
-  event; //only here to remove error.
- // modalPosition.value = { x: event.clientX, y: event.clientY };
+  event.preventDefault(); //only here to remove error.
+
   console.log("Right-clicked user:", user); 
   console.log(`${currentUser.username} is ${currentRole.value}`);
+
+  modalPosition.value = {
+		x: event.clientX,
+		y: event.clientY,
+	};
+  console.log('opened modal at: ', modalPosition.value);
+ // modalPosition.value = { x: event.clientX, y: event.clientY };
   if (currentRole.value != 'ADMIN' && currentRole.value != 'OWNER') {
     showUserOptions.value = false;
     return;
@@ -877,6 +884,7 @@ body {
 }
 
 .message {
+  background-color: #2c2c2c;
   margin-bottom: 2%;
   padding: 1.5%;
   border-radius: 8px;
@@ -1114,20 +1122,16 @@ input {
 
 /* Modal CSS */
 .user-options-modal {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  background-color: white;
-  border: 1px solid #ccc;
-  padding: 10px;
-  border-radius: 4px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  z-index: 8000;
-  width: 200px;
-  display: block;
+	position: absolute;
+	background-color: white;
+	border: 1px solid #ccc;
+	padding: 10px;
+	border-radius: 4px;
+	box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+	z-index: 8000;
+	width: 200px;
+	display: block;
 }
-
 .user-options-modal button {
   display: block;
   width: 100%;

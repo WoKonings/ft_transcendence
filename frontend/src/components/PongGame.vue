@@ -7,10 +7,10 @@
       <div class="score"> {{ player2}}: {{ player2Score }}</div>
     </div>
     <div class="pong-game" ref="container"></div>
-    <button @click="stopGame" class="cancel-button">Forfeit Game</button>
+    <button @click="stopGame" class="button">Forfeit Game</button>
     <div v-if="showEnd && endScreenMessage" class="end-screen">
       <div class="end-screen-message"> {{ endScreenMessage }}</div>
-      <button @click="exitGame()" class="button">Ok</button>
+      <button @click="exitGame()" class="button green">Ok</button>
     </div>
   </div>
   
@@ -29,18 +29,16 @@ import PongGameAgainstAI from './PongGameAgainstAI.vue';
 const store = useStore();
 const socket = computed(() => store.state.socket);
 const currentUser = computed(() => store.state.currentUser);
-// const inQueue = computed(() => store.state.inQueue);
 
 const container = ref(null);
 let scene, camera, renderer, composer;
 let player1, player2; //as username
 let paddle1, paddle2, ball;
-// let playerPosition = { y: 0 };
 const waitingForOpponent = ref(false);
 const gameStarted = ref(false);
 const player1Score = ref(0);
 const player2Score = ref(0);
-const gameMode = ref('classic'); // New reactive property for game mode
+const gameMode = ref('classic');
 const showEnd = ref(false);
 const endScreenMessage = ref('xd');
 
@@ -289,6 +287,7 @@ const initSocket = () => {
   console.log('socket initialized for pong game!');
 
   socket.value.on('gameJoined', (whichPlayer) => {
+    showEnd.value = false;
     if (whichPlayer == 1) {
       player1 = currentUser.value.username;
     } else if (whichPlayer == 2) {
@@ -321,12 +320,7 @@ const initSocket = () => {
   });
 
   socket.value.on('opponentLeft', (username) => {
-    console.log(`${username} left, game is now paused`);
-    if (player1 == username) {
-      player1 = null;
-    } else if (player2 == username) {
-      player2 = null;
-    }
+    console.log(`${username} left, game is ended`);
     waitingForOpponent.value = true;
   });
 
@@ -339,29 +333,13 @@ const initSocket = () => {
     }
     gameStarted.value = true;
     waitingForOpponent.value = false;
+    showEnd.value = false;
     
     nextTick(() => {
       initGame();
     });
   });
 };
-
-// const queueForPong = (mode) => {
-//   if (socket && !waitingForOpponent.value) {
-//     gameMode.value = mode; // Set the game mode
-//     socket.value.emit('joinGame', {
-//       userId: currentUser.value.id,
-//       username: currentUser.value.username,
-//       // gameMode: mode // Send the game mode to the server
-//     });
-//     waitingForOpponent.value = true;
-//     endScreenMessage.value = null;
-//     showEnd.value = false;
-//     console.log(`sent joinGame from socket.value: ${socket.id}, with UID: ${currentUser.id}, name: ${currentUser.username}, mode: ${mode}`);
-//   } else {
-//     console.log('somehow no socket.value');
-//   }
-// };
 
 const stopGame = () => {
   waitingForOpponent.value = false;
@@ -377,17 +355,6 @@ const stopGame = () => {
   }
   exitGame();
 };
-
-// const handleMouseMove = (event) => {
-//   const rect = container.value.getBoundingClientRect();
-//   playerPosition.y = (rect.bottom - event.clientY) / (rect.bottom - rect.top) * 30 - 15;
-//   if (socket) {
-//     socket.value.emit('playerMove', {
-//       userId: currentUser.value.id,
-//       y: playerPosition.y,
-//     });
-//   }
-// };
 
 let moving = false;
 
@@ -432,13 +399,11 @@ onBeforeUnmount(() => {
     renderer.dispose();
   }
   window.removeEventListener('resize', onWindowResize);
-  // window.removeEventListener('mousemove', handleMouseMove);
   window.removeEventListener('keydown', handlePlayerMove);
   window.removeEventListener('keyup', handlePlayerMove);
 });
 </script>
 
-<!-- height: 100vh; -->
 <style scoped>
 .game-container {
   display: flex;
@@ -461,27 +426,19 @@ onBeforeUnmount(() => {
   border-radius: 6px;
 }
 
-/*.pong-game {
-  width: 800px;
-  height: 600px;
-  overflow: hidden;
-  position: relative;
-  margin: 0 auto;
-} */
-
 .waiting-overlay {
   position: fixed;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  background-color: rgba(0, 0, 0, 0.6); /* Lighter overlay */
+  background-color: rgba(0, 0, 0, 0.6);
   padding: 20px 40px;
   border-radius: 10px;
   color: white;
   font-size: 24px;
   text-align: center;
   box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.3);
-  z-index: 1000; /* Ensure it stays on top */
+  z-index: 1000;
 }
 
 .cancel-button {
@@ -500,109 +457,98 @@ onBeforeUnmount(() => {
   background-color: #ff3333;
 }
 
+.button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 10px;
+  height: 3vh;
+  width: 15vw;
+  margin-bottom: 10px;
+  background-color: #e0e0e0;
+  transition: background-color 0.3s;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: calc(0.6vw + 0.6vh);
+  text-align: center;
+}
+
+.button:hover {
+  background-color: #942213; 
+}
+
+.green {
+  background-color: #319413; 
+}
+
+.green:hover {
+  background-color: #28740a; 
+}
+
 .queue-container {
   display: flex;
-	flex-direction: row;
-	align-items: center; /* Center horizontally */
-	justify-content: center; /* Center vertically */
-	padding-top: 1px; /* Adjust to your preference */
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  padding-top: 1px;
   width: 100%;
 }
 
 .queue-button {
-	/* padding: 10px; */
+  /* padding: 10px; */
   padding: 1vh 2vw;
   height: 3vh;
-	width: 15vw;
-	margin-bottom: 10px;
-	background-color: #e0e0e0;
-	/* background-color: #4CAF50; */
-	transition: background-color 0.3s;
-	border: none;
-	border-radius: 8px;
-	cursor: pointer;
-	font-size: 1vw 1vh;
+  width: 15vw;
+  margin-bottom: 10px;
+  background-color: #e0e0e0;
+  /* background-color: #4CAF50; */
+  transition: background-color 0.3s;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1vw 1vh;
 }
 
 .queue-button:hover {
-	background-color: #3a8d3e; /* Brightened on hover */
+  background-color: #3a8d3e;
 }
 
 .scoreboard {
-	display: flex;
-	justify-content: space-between;
-	width: 100%;
-	padding: 20px;
-	font-size: 24px;
-	color: #ffffff;
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  padding: 20px;
+  font-size: 24px;
+  color: #ffffff;
 }
 
 .score {
-	flex: 1;
-	text-align: center;
+  flex: 1;
+  text-align: center;
 }
 
 .end-screen {
-	display: flex;  /* Hidden by default */
-	position: absolute;
-	top: 0;
-	left: 0;
-	width: 100%;
-	height: 100%;
-	background-color: rgba(0, 0, 0, 0.7);  /* Semi-transparent black */
-	justify-content: center;
-	align-items: center;
-	z-index: 9999;  /* Ensure it's on top of other elements */
+  display: flex;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.7);
+  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+  z-index: 9999;
 }
 
 .end-screen-message {
-	font-size: 4rem;
-	color: white;
-	font-family: 'Arial', sans-serif;
-	text-align: center;
-	padding: 20px;
-	border-radius: 10px;
-	background-color: rgba(0, 0, 0, 0.8);  /* Solid background for the text */
+  font-size: 4rem;
+  color: white;
+  font-family: 'Arial', sans-serif;
+  text-align: center;
+  padding: 20px;
+  border-radius: 10px;
+  background-color: rgba(0, 0, 0, 0.8);
 }
-
-/* spinner loading animation */
-/* .half-circle-spinner, .half-circle-spinner * {
-  box-sizing: border-box;
-}
-
-.half-circle-spinner {
-  width: 60px;
-  height: 60px;
-  border-radius: 100%;
-  position: relative;
-  margin: 20px auto;
-}
-
-.half-circle-spinner .circle {
-  content: "";
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  border-radius: 100%;
-  border: calc(60px / 10) solid transparent;
-}
-
-.half-circle-spinner .circle.circle-1 {
-  border-top-color: #ff1d5e;
-  animation: half-circle-spinner-animation 1s infinite;
-}
-
-.half-circle-spinner .circle.circle-2 {
-  border-bottom-color: #ff1d5e;
-  animation: half-circle-spinner-animation 1s infinite alternate;
-}
-
-@keyframes half-circle-spinner-animation {
-  0% {
-    transform: rotate(0deg);
-  }
-  100%{
-    transform: rotate(360deg);
-  }
-} */
 </style>

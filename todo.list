@@ -4,18 +4,13 @@ Clean any useless console.logs
 
  ---- FRONTEND ----
 CHAT:
-USERMODAL LOCATION
+Received message look less shit
 
 USER PROFILE BUTTON:
 change/remove red dropshadow - 1min
 
-
-FRIENDLIST / USERLIST:
-ensure CSS is same - 5 min
-
-
 ONLINE GAME:
-Copy offline game CSS carefully - 5 min
+
 
 ---- BACKEND ----
 Ensure all forms of input are validated. (SOCKETS DONE, NEED TO CHECK ENDPOINTS)
@@ -28,9 +23,6 @@ MAYBE:
 Delay on game start in PvP
 
 FUN:
-ARG
-More Pong Levelsw
-Insane AI
 Actual Elo implementation.
 
 FINALLY:

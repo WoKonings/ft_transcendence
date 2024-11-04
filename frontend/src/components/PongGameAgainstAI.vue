@@ -172,11 +172,9 @@ const animate = (currentTime) => {
 const colorMilestones = [0xFFFFFF, 0xF5F5DC, 0xFFFF00, 0xFFA500, 0xFF0000, 0x800080]; // White, Beige, Yellow, Orange, Red, Purple
 
 const updateGameState = () => {
-  // Move the ball
   ball.position.x += ballVelocity.x;
   ball.position.y += ballVelocity.y;
 
-  // Ball collision with top and bottom
   if ((ball.position.y + ballScale.value > 16 && ballVelocity.y > 0) || (ball.position.y - ballScale.value < -16 && ballVelocity.y < 0)) {
     ballVelocity.y *= -1;
   }
@@ -222,7 +220,7 @@ const updateGameState = () => {
       console.log(`ball grows: ${ballScale.value}`);
     }
     // ball.radius = parseFloat(ball.radius.toFixed(1));
-    // Calculate dynamic angle for AI paddle collision
+    // calculate dynamic angle for AI paddle collision
     let relativeIntersectY = ball.position.y - aiPaddle.position.y;
     let normalizedRelativeIntersectionY = relativeIntersectY / 2; // 2 is half the paddle height
     normalizedRelativeIntersectionY = Math.max(-1, Math.min(1, normalizedRelativeIntersectionY));
@@ -230,7 +228,7 @@ const updateGameState = () => {
     
     let speed = Math.sqrt(ballVelocity.x * ballVelocity.x + ballVelocity.y * ballVelocity.y);
     ballVelocity.y = speed * Math.sin(bounceAngle);
-    ballVelocity.x = -Math.abs(speed * Math.cos(bounceAngle)); // Ensure it's moving left
+    ballVelocity.x = -Math.abs(speed * Math.cos(bounceAngle));
   }
 
   // Scoring
@@ -243,28 +241,22 @@ const updateGameState = () => {
     checkAndUpdateAiPaddleColor();
   }
 
-  // Move player paddle.
   playerPaddle.position.y += playerMovement;
-  playerPaddle.position.y = Math.max(Math.min(playerPaddle.position.y, 14), -14); // Keep within bounds
+  playerPaddle.position.y = Math.max(Math.min(playerPaddle.position.y, 14), -14);
 
-  // Move AI paddle
   aiMovement(deltaTime);
 
-  // Move player paddle if not moved yet
   if (!playerHasMovedPaddle.value) {
     playerAIMovement(deltaTime);
   }
 };
 
 const checkAndUpdateAiPaddleColor = () => {
-  // Determine the new color based on the player's score milestone
-  const milestone = Math.floor(playerScore.value / 1); // For 5, 10, 15, etc.
+  const milestone = Math.floor(playerScore.value / 1);
   
   if (milestone < colorMilestones.length) {
-    console.log('new milestone!');
     const newColor = colorMilestones[milestone];
 
-    // Create new material for the AI paddle
     const newMaterial = new THREE.MeshPhongMaterial({
       color: newColor,
       emissive: newColor,
@@ -272,7 +264,6 @@ const checkAndUpdateAiPaddleColor = () => {
       shininess: 100,
     });
 
-    // Apply the new material to the AI paddle
     aiPaddle.material = newMaterial;
     aiPaddle.material.needsUpdate = true;
   }
@@ -296,49 +287,43 @@ const resetBall = () => {
   ball.position.set(0, 0, 0);
   ballScale.value = 0.5;
   ball.scale.set(ballScale.value / 0.5 , ballScale.value / 0.5, ballScale.value / 0.5);
-  // Generate a random angle between 15 and 75 degrees
+  // generate a random angle between 15 and 75 degrees
   const angle = (Math.random() * 60 + 15) * (Math.PI / 180);
   
   const speed = 0.25;
   
-  // Calculate the ball's velocity (dx, dy) based on the random angle
+  // calculate the ball's velocity (dx, dy) based on the random angle
   ballVelocity.x = speed * Math.cos(angle) * (Math.random() < 0.5 ? 1 : -1);
   ballVelocity.y = speed * Math.sin(angle) * (Math.random() < 0.5 ? 1 : -1);
 };
 
 const predictBallPosition = (paddle) => {
-  // Predict time for the ball to reach the AI paddle based on its velocity
   const distanceToPaddle = paddle.position.x - ball.position.x;
-  const timeToReachPaddle = Math.abs(distanceToPaddle / ballVelocity.x); // time = distance / velocity
+  const timeToReachPaddle = Math.abs(distanceToPaddle / ballVelocity.x);
 
-  // Predict future Y position of the ball considering bounces
   let predictedY = ball.position.y + ballVelocity.y * timeToReachPaddle;
 
-  // Safeguard against infinite bouncing: limit number of bounces we predict (e.g., 2)
   const maxBounces = 2;
   let bounces = 0;
 
   while ((predictedY + 0.5 > 16 || predictedY - 0.5 < -16) && bounces < maxBounces) {
     if (predictedY + 0.5 > 16) {
-      predictedY = 16 - (predictedY - 16); // Reflect off top wall
+      predictedY = 16 - (predictedY - 16);
     } else if (predictedY - 0.5 < -16) {
-      predictedY = -16 + (-16 - predictedY); // Reflect off bottom wall
+      predictedY = -16 + (-16 - predictedY);
     }
     bounces++;
   }
 
-  // If bounces exceed the max limit, stop predicting further (optional safety limit)
   if (bounces >= maxBounces) {
-    predictedY = Math.max(Math.min(predictedY, 16), -16); // Limit to the range
+    predictedY = Math.max(Math.min(predictedY, 16), -16);
   }
 
   return predictedY;
 };
 
-// Track the last dx to detect changes in ball direction
 let lastBallDX = ballVelocity.x;
 
-// Store the AI's current offset
 let aiCurrentOffset = 0;
 
 const generateRandomOffset = () => {
@@ -351,16 +336,11 @@ const generateRandomOffset = () => {
 const aiMovement = (deltaTime) => {
   // Check if the ball's direction (dx) has changed
   if (ballVelocity.x !== lastBallDX && ballVelocity.x > 0) {
-    // Ball direction has changed (e.g., after a bounce), so pick a new offset
     aiCurrentOffset = generateRandomOffset();
-    // console.log('new offset: ', aiCurrentOffset);
     lastBallDX = ballVelocity.x;  // Update the last known dx
   }
 
-  // Predict where the ball will be when it reaches the AI paddle
   let aiTargetY = predictBallPosition(aiPaddle)
-
-  // Apply the current offset to the AI's target position
   aiTargetY += aiCurrentOffset;
 
   // Calculate AI speed based on score difference (more difficulty with increasing score)
@@ -369,19 +349,15 @@ const aiMovement = (deltaTime) => {
   const speedIncrease = 0.01 * scoreDifference;
   const aiSpeed = (baseSpeed + speedIncrease) * deltaTime * 60;
 
-  // Move AI paddle towards the (offset) predicted Y position
   const direction = Math.sign(aiTargetY - aiPaddle.position.y);
 
   if (aiPaddle.position.y - aiTargetY > 0.2 || aiPaddle.position.y - aiTargetY < -0.2)
     aiPaddle.position.y += direction * aiSpeed;
 
-  // Keep AI paddle within bounds
   aiPaddle.position.y = Math.max(Math.min(aiPaddle.position.y, 14), -14);
 };
 
 const playerAIMovement = (deltaTime) => {
-  // Simple AI for player paddle (similar to aiMovement but slower)
-
   let   target = predictBallPosition(playerPaddle);
   const playerAISpeed = 0.10 * deltaTime * 60;
   const direction = Math.sign(target - playerPaddle.position.y);
@@ -390,7 +366,6 @@ const playerAIMovement = (deltaTime) => {
   if (playerPaddle.position.y - target > 0.2 || playerPaddle.position.y - target < -0.2)
     playerPaddle.position.y += direction * playerAISpeed;
 
-  // Keep player paddle within bounds
   playerPaddle.position.y = Math.max(Math.min(playerPaddle.position.y, 14), -14);
 };
 
@@ -474,7 +449,6 @@ onBeforeUnmount(() => {
   window.removeEventListener('keydown', handlePlayerMove);
   window.removeEventListener('keyup', handleStopPlayerMove);
 
-  // Clear any other references if necessary
 });
 </script>
 
@@ -495,17 +469,17 @@ onBeforeUnmount(() => {
 }
 
 .scoreboard {
-	display: flex;
-	justify-content: space-between;
-	width: 100%;
-	padding: 20px;
-	font-size: 24px;
-	color: #ffffff;
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  padding: 20px;
+  font-size: 24px;
+  color: #ffffff;
 }
 
 .score {
-	flex: 1;
-	text-align: center;
+  flex: 1;
+  text-align: center;
 }
 
 /* queue stuff */
@@ -523,33 +497,33 @@ onBeforeUnmount(() => {
 
 .queue-container {
   display: flex;
-	flex-direction: row;
-	align-items: center; /* Center horizontally */
-	justify-content: center; /* Center vertically */
-	padding-top: 1px; /* Adjust to your preference */
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  padding-top: 1px;
   height: 10%;
   width: 100%;
 }
 
 .queue-button {
-	display: flex; /* Centers text horizontally and vertically */
-	align-items: center;
-	justify-content: center;
-	padding: 10px 10px;
-	height: 3vh;
-	width: 15vw;
-	margin-bottom: 10px;
-	background-color: #e0e0e0;
-	transition: background-color 0.3s;
-	border: none;
-	border-radius: 8px;
-	cursor: pointer;
-	font-size: calc(0.6vw + 0.6vh); /* Responsive font size */
-	text-align: center; /* Ensures text is centered */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 10px;
+  height: 3vh;
+  width: 15vw;
+  margin-bottom: 10px;
+  background-color: #e0e0e0;
+  transition: background-color 0.3s;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: calc(0.6vw + 0.6vh);
+  text-align: center;
 }
 
 .queue-button:hover {
-	background-color: #3a8d3e; /* Brightened on hover */
+  background-color: #3a8d3e; 
 }
 
 .cancel-button {
@@ -574,8 +548,6 @@ onBeforeUnmount(() => {
 }
 
 .half-circle-spinner {
-  /* width: 60%; */
-  /* height: 60%; */
   width: 60px;
   height: 60px;
   border-radius: 100%;

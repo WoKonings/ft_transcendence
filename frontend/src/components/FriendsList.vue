@@ -18,17 +18,6 @@
       <div class="username">{{ friend.username }}</div>
     </div>
 
-    <!-- Options Overlay -->
-    <!-- <div v-if="selectedUser" class="options-overlay" @click="closeOptions">
-      <div class="options" @click.stop>
-        <button @click="inviteToPlay(selectedUser)">Invite to Play</button>
-        <button @click="sendMessage(selectedUser)">Send Message</button>
-        <button @click="viewProfile(selectedUser)">Profile</button>
-        <button @click="removeFriend(selectedUser)">Remove Friend</button>
-        <button @click="todo" v-if="isInviteSender(selectedUser.id)">Accept Invite</button>
-        <button @click="todo" v-if="isInviteSender(selectedUser.id)">Decline Invite</button>
-      </div>
-    </div> -->
     <ViewProfile
       :selectedUser="selectedUser"
       :isVisible="isProfileVisible"
