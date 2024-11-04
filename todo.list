@@ -4,19 +4,15 @@ Clean any useless console.logs
 
  ---- FRONTEND ----
 CHAT:
-Improve admin button CSS - 4 min
 OPEN VIEWPROFILE IN CHAT USERLIST - 15 min
 ENCRYPT CHANNEL PASSWORDS! - 5 min
-
-
-BUGS:
+ASSIGN ADMIN???
 
 USER PROFILE:
 
 USER PROFILE BUTTON:
 change/remove red dropshadow - 1min
 
-GAME:
 
 FRIENDLIST / USERLIST:
 ensure CSS is same - 5 min
@@ -33,16 +29,13 @@ REMOVE THE HELLOWORLD SHIT
 
 
 MAYBE:
-Ladder
 Delay on game start in PvP
 
 FUN:
 ARG
 More Pong Levelsw
 Insane AI
-VS AI highscore.
 Actual Elo implementation.
-
 
 FINALLY:
 re-enable all guards that have been disabled.

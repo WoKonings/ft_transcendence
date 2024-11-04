@@ -25,14 +25,14 @@
       <div v-if="selectedChat" class="chat-box">
         <div class="chat-header">
           <h2>{{ selectedChat.isDM ? '@' : '#' }}{{ selectedChat.name }}</h2>
-          <button v-if="selectedChat.name !== 'General'" @click="leaveChat" class="leave-button">
-            {{ selectedChat.isDM ? 'Leave Chat' : 'Leave Channel' }}
-          </button>
-          <button v-if="currentRole === 'OWNER' && !selectedChat.isPrivate" @click="setPassword" class="set-password-button">
+          <button v-if="currentRole === 'OWNER' && !selectedChat.isPrivate" @click="setPassword" class="admin-button">
             Set Channel Password
           </button>
-          <button v-if="currentRole === 'OWNER'" @click="setPrivate" class="set-password-button">
-           {{ selectedChat.isPrivate != true ? 'Set Private' : 'Set Unprivate' }}
+          <button v-if="currentRole === 'OWNER'" @click="setPrivate" class="admin-button">
+            {{ selectedChat.isPrivate != true ? 'Set Private' : 'Set Unprivate' }}
+          </button>
+          <button v-if="selectedChat.name !== 'General'" @click="leaveChat" class="leave-button">
+            {{ selectedChat.isDM ? 'Leave Chat' : 'Leave Channel' }}
           </button>
         </div>
         <div class="messages" ref="messagesContainer">
@@ -96,11 +96,11 @@
 
       <!-- Modal for User Options (Assign Role, Kick) -->
       <div v-if="showUserOptions" class="user-options-modal" @click="closeUserOptions">
-        <button v-if="currentRole === 'ADMIN' || currentRole === 'OWNER'" @click="assignRole('ADMIN')">Assign Admin</button>
-        <button v-if="currentRole === 'ADMIN' || currentRole === 'OWNER'" @click="assignRole('MEMBER')">Assign User</button>
-        <button v-if="currentRole === 'ADMIN' || currentRole === 'OWNER'" @click="kickUser()">Kick from Channel</button>
-        <button v-if="currentRole === 'ADMIN' || currentRole === 'OWNER'" @click="timeoutUser()">Timeout</button>
-        <button v-if="currentRole === 'ADMIN' || currentRole === 'OWNER'" @click="banUser()">Ban</button>
+        <button v-if="currentRole === 'OWNER' && selectedUser.role == 'MEMBER'" @click="assignRole('ADMIN')">Assign Admin</button>
+        <button v-if="currentRole === 'OWNER' && selectedUser.role == 'ADMIN'" @click="assignRole('MEMBER')">Assign User</button>
+        <button v-if="(currentRole === 'ADMIN' || currentRole === 'OWNER')" @click="kickUser()">Kick from Channel</button>
+        <button v-if="(currentRole === 'ADMIN' || currentRole === 'OWNER')" @click="timeoutUser()">Timeout</button>
+        <button v-if="(currentRole === 'ADMIN' || currentRole === 'OWNER')" @click="banUser()">Ban</button>
       </div>
     </div>
   </div>
@@ -146,6 +146,11 @@ const openUserOptions = (user, event) => {
   console.log("Right-clicked user:", user); 
   console.log(`${currentUser.username} is ${currentRole.value}`);
   if (currentRole.value != 'ADMIN' && currentRole.value != 'OWNER') {
+    showUserOptions.value = false;
+    return;
+  }
+  if (selectedUser.value.role == 'OWNER') {
+    showUserOptions.value = false;
     return;
   }
   showUserOptions.value = true;
@@ -161,7 +166,7 @@ const assignRole = (role) => {
   if (selectedUser.value) {
     socket.emit('updateUserRole', {
       channelName: selectedChat.value.name,
-      userId: selectedUser.value.id,
+      targetId: selectedUser.value.id,
       role: role
     });
   }
@@ -784,6 +789,21 @@ body {
   margin: 0;
 }
 
+.admin-button {
+  padding: 1% 2%;
+  background-color: #1e88e5;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  font-size: 0.8em;
+}
+
+.admin-button:hover {
+  background-color: #1565c0;
+}
+
 .leave-button {
   padding: 1% 2%;
   background-color: #f44336;
@@ -796,7 +816,7 @@ body {
 }
 
 .leave-button:hover {
-  background-color: #d32f2f;
+  background-color: #a01f1f;
 }
 
 .chat-box {

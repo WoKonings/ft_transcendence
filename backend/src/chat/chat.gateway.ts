@@ -361,10 +361,9 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   }
 
   @SubscribeMessage('updateUserRole')
-  async handleUpdateUserRole(client: Socket, payload: { channelName: string, role: string }) {
-    const userId = client['user']?.id;
-    console.log(`seeking to update user ${userId} in channel: ${payload.channelName} to ${payload.role}`);
-    
+  async handleUpdateUserRole(client: Socket, payload: { channelName: string, targetId: number, role: string }) {
+    const userId = client['target']?.id;
+    console.log(`seeking to update target ${payload.targetId} in channel: ${payload.channelName} to ${payload.role}`);
     const channel = await this.prisma.channel.findFirst({
       where: { name: payload.channelName},
       include: { userChannels: { include: { user: true } } },
@@ -375,9 +374,19 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return;
     }
 
-    const user = await this.userService.getUserById(userId);
-    if (!user) {
-      console.log('User not found');
+    const target = await this.userService.getUserById(payload.targetId);
+    if (!target) {
+      console.log('target not found');
+      return;
+    }
+
+    if (!await this.chatService.isOwner(channel.id, userId)) {
+      console.log('Need to be channel owner to change roles');
+      return;
+    }
+
+    if (await this.chatService.isOwner(channel.id, payload.targetId)) {
+      console.log('cannot change owners role');
       return;
     }
     
@@ -386,27 +395,27 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return client.emit('error', 'Invalid role');
     }
 
-    console.log('Updating role for user:', user.id, 'in channel:', channel.id);
-    const userChannelRecord = await this.chatService.getUserChannel(channel.id, user.id);
+    console.log('Updating role for target:', target.id, 'in channel:', channel.id);
+    const userChannelRecord = await this.chatService.getUserChannel(channel.id, target.id);
 
     console.log('UserChannel Record:', userChannelRecord);
 
     const newRoleEnumValue = ChannelRole[payload.role as keyof typeof ChannelRole];
-    // Update the user's role in the specified channel
+    // Update the target's role in the specified channel
     await this.prisma.userChannel.update({
       where: {
-        userId_channelId: { userId: user.id, channelId: channel.id },
+        userId_channelId: { userId: target.id, channelId: channel.id },
       },
       data: {
         role: newRoleEnumValue, // Assuming role is a string, possibly enum value
       },
     });
 
-    console.log(`Updated role for ${user.username} to ${payload.role} in channel: ${channel.name}`);
+    console.log(`Updated role for ${target.username} to ${payload.role} in channel: ${channel.name}`);
 
     // Notify users in the channel about the role update
     this.server.to(channel.name).emit('userRoleUpdated', {
-      username: user.username,
+      username: target.username,
       newRole: payload.role,
     });
 

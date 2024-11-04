@@ -133,7 +133,6 @@ export class ChatService {
     }
 
     const userInChannel = await this.getUserChannel(channelId, userId);
-    console.log('test USER CHANNEL ', userInChannel);
     if (!userInChannel?.userChannel || (userInChannel.userChannel.role !== 'ADMIN' && userInChannel.userChannel.role !== 'OWNER')) {
       console.log('user is NOT priviledged')
       return false;
@@ -150,7 +149,6 @@ export class ChatService {
     }
 
     const userInChannel = await this.getUserChannel(channelId, userId);
-    console.log('test OWNER CHANNEL ', userInChannel);
     if (!userInChannel?.userChannel || userInChannel.userChannel.role !== 'OWNER') {
       console.log('user is NOT owner')
       return false;
