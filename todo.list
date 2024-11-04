@@ -4,11 +4,9 @@ Clean any useless console.logs
 
  ---- FRONTEND ----
 CHAT:
-Fix send icon not existing
-Fix user online status not updating
-Improve admin button CSS
-OPEN VIEWPROFILE IN CHAT USERLIST
-ENCRYPT CHANNEL PASSWORDS!
+Improve admin button CSS - 4 min
+OPEN VIEWPROFILE IN CHAT USERLIST - 15 min
+ENCRYPT CHANNEL PASSWORDS! - 5 min
 
 
 BUGS:
@@ -16,16 +14,16 @@ BUGS:
 USER PROFILE:
 
 USER PROFILE BUTTON:
-change/remove red dropshadow
+change/remove red dropshadow - 1min
 
 GAME:
 
 FRIENDLIST / USERLIST:
-ensure CSS is same
+ensure CSS is same - 5 min
 
 
 ONLINE GAME:
-Copy offline game CSS carefully
+Copy offline game CSS carefully - 5 min
 
 ---- BACKEND ----
 Ensure all forms of input are validated. (SOCKETS DONE, NEED TO CHECK ENDPOINTS)

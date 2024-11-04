@@ -31,14 +31,13 @@ export class AppGateway implements OnGatewayInit, OnGatewayConnection, OnGateway
         client.emit('disconnected', { message: 'Need 2FA' });
         client.disconnect();
       }
-      // console.log(`test: ${decoded.sub}`);
 
       // see if user is already logged in
       const userAlreadyLoggedIn = await this.prisma.user.findUnique({
-        where: { username: decoded.username },
+        where: { id: decoded.id },
         select: { isOnline: true, socket: true },
       })
-      if (userAlreadyLoggedIn.isOnline == true) {
+      if (userAlreadyLoggedIn.isOnline === true) {
         console.log (`User: ${decoded.username} is already online!`);
         const userSocket = this.server.sockets.sockets.get(userAlreadyLoggedIn.socket);
         if (userSocket) {
@@ -60,7 +59,7 @@ export class AppGateway implements OnGatewayInit, OnGatewayConnection, OnGateway
       client.emit('connected', { message: 'Welcome to Transcendence!' });
       client.broadcast.emit('userStatusUpdate', {
         username: decoded.username,
-        userId: decoded.sub,
+        userId: decoded.id,
         isOnline: true,
         isInGame: false,
         isInQueue: false,
@@ -70,11 +69,8 @@ export class AppGateway implements OnGatewayInit, OnGatewayConnection, OnGateway
       console.log('Invalid token, disconnecting client');
       client.disconnect();
     }
-
-
   }
 
-  //todo: figure out why juicer is not found
   async handleDisconnect(client: Socket) {
     try {
       const user = await this.prisma.user.findFirst({
@@ -85,9 +81,7 @@ export class AppGateway implements OnGatewayInit, OnGatewayConnection, OnGateway
         return;
       }
       
-      //todo: maybe move to seperate findUserFromSocketIdToday
-      // Find the user by ID and clear the socket ID field
-      this.prisma.user.update({
+     await this.prisma.user.update({
         where: { id: user.id },
         data: { socket: null, isOnline: false, isInGame: false, isInQueue: false },
       });
@@ -105,63 +99,6 @@ export class AppGateway implements OnGatewayInit, OnGatewayConnection, OnGateway
       console.log('Error handling disconnect:', error);
     }
   }
-
-
-
-  // Handle "joinGame" event from client
-  @SubscribeMessage('logOut')
-  async handleLogOut(client: Socket, userId: number): Promise<void> {
-    // this.handleDisconnect(client);
-    // console.log(`logging out user:  `, userId);
-    // if (!client) {
-    //   console.log('No socket');
-    //   return;
-    // }
-    // if (!userId) {
-    //   console.log('No userId provided for logOut');
-    //   return;
-    // }
-
-    // const user = await this.prisma.user.findUnique({
-    //   where: { id: userId }
-    // })
-    // if (!user) {
-    //   console.log('User is not real, and therefore cannot logout')
-    //   return;
-    // }
-    // //set user status
-    // await this.prisma.user.update({
-    //   where: {
-    //     id: userId,
-    //   },
-    //   data: {
-    //     isInGame: false,
-    //     isInQueue: false,
-    //     isOnline: false,
-    //   }
-    // })
-
-    // //disconnect user from channels
-    // const channels = await this.prisma.channel.findMany({
-    //   where: {
-    //     users: {
-    //       has: user.username
-    //     }
-    //   }
-    // })
-
-    // for (const channel of channels) {
-    //   await this.prisma.channel.update({
-    //     where: { id: channel.id },
-    //     data: {
-    //       users: {
-    //         set: channel.users.filter((username) => username !== user.username)
-    //       }
-    //     }
-    //   })
-    // }
-  }
-
 
   // Method to send messages or data to a specific user using the socket object
   //todo: check for removal?

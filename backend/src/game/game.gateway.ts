@@ -113,7 +113,6 @@ export class GameGateway {
     const userId = client['user']?.sub;
     const username = client['user']?.username;
 
-    console.log(`received data: `, data);
     if (!client) {
       console.log('No socket');
       return;

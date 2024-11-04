@@ -13,7 +13,6 @@ export class AppService implements OnModuleInit {
         isInGame: false,
       },
     });
-    console.log("all users have been reset to being offline.");
   }
   getHello(): string {
     return 'test test!';

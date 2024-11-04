@@ -306,7 +306,6 @@ export class UserService {
     if (!user) {
       throw new BadRequestException('User not found');
     }
-    console.log (`fetching friends for user: ${userId}`);
     // Retrieve each friend's information
     const friendsList = await Promise.all(
       user.friends.map(async (friendId) => {
@@ -369,7 +368,6 @@ export class UserService {
     if (!user) {
       throw new BadRequestException('User not found');
     }
-    console.log (`fetching blocked for user: ${userId}`);
     // Retrieve each blocked users's relevant information
     const blockList = await Promise.all(
       user.blocked.map(async (friendId) => {

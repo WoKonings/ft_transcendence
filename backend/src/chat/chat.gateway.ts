@@ -302,6 +302,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
           await this.chatService.updateUserRole(payload.channelName, user.id, ChannelRole.OWNER);
           this.server.to(payload.channelName).emit('userRoleUpdated', {
             username: user.username,
+            userId: user.id,
             newRole: "OWNER",
             message: "Assigned as admin on channel creation",
           });
@@ -312,6 +313,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
           await this.chatService.updateUserRole(payload.channelName, user.id, ChannelRole.MEMBER);
           this.server.to(payload.channelName).emit('userRoleUpdated', {
             username: user.username,
+            userId: user.id,
             newRole: "MEMBER",
             message: "Assigned as MEMBER on channel creation",
           });
@@ -426,6 +428,8 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       id: userChannel.user.id,
       username: userChannel.user.username,
       isOnline: userChannel.user.isOnline,
+      isInGame: userChannel.user.isInGame,
+      isInQueue: userChannel.user.isInQueue,
       role: userChannel.role, 
       avatar: userChannel.user.avatar,
     }));
@@ -459,7 +463,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       where: { channelId: channel.id },
       include: {
         user: {
-          select: { id: true, username: true, avatar: true, isOnline: true },
+          select: { id: true, username: true, avatar: true, isOnline: true, isInGame: true, isInQueue: true, },
         },
       },
     });
@@ -469,6 +473,9 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       username: uc.user.username,
       avatar: uc.user.avatar,
       isOnline: uc.user.isOnline,
+      isInGame: uc.user.isInGame,
+      isInQueue: uc.user.isInQueue,
+      
       role: uc.role, // Include role in the user list
     }));
 
@@ -480,7 +487,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const userId = client['user']?.sub;
     const targetUser = await this.prisma.user.findFirst({
       where: { id: payload.userId },
-      select: { id: true, username: true, avatar: true, isOnline: true },
+      select: { id: true, username: true, avatar: true, isOnline: true, isInGame: true, isInQueue: true },
     });
   
     if (!targetUser) {
@@ -489,7 +496,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   
     const currentUser = await this.prisma.user.findFirst({
       where: { id: userId },
-      select: { id: true, username: true, avatar: true, isOnline: true },
+      select: { id: true, username: true, avatar: true, isOnline: true, isInGame: true, isInQueue: true },
     });
 
     const userList = [targetUser, currentUser];

@@ -201,8 +201,8 @@ const initializeSocketListeners = () => {
 
 const updateUserStatus = (username, userId, isOnline, isInGame, isInQueue, avatar) => {
   console.log(`friend: ${username} / ${userId} has changed status on friends: online? ${isOnline} ingame? ${isInGame} inqueue? ${isInQueue}`);
-	const friend = friends.value.find(u => u.id === userId);
-	if (friend) {
+  const friend = friends.value.find(u => u.id === userId);
+  if (friend) {
     if (isOnline != null)
       friend.isOnline = isOnline;
     if (isInGame != null)
@@ -213,9 +213,9 @@ const updateUserStatus = (username, userId, isOnline, isInGame, isInQueue, avata
       friend.username = username;
     if (avatar != null)
       friend.avatar = avatar;
-		// Trigger reactivity
-		friends.value = [...friends.value];
-	} else {
+    // Trigger reactivity
+    friends.value = [...friends.value];
+  } else {
     friends.value.push({
       id: userId,
       username: username,

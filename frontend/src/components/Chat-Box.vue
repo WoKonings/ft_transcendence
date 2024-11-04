@@ -538,7 +538,6 @@ onMounted(async () => {
       currentRole.value = "MEMBER";
       return;
     }
-    console.log(`currentuser Role ${currentUserInList.role}`);
     currentRole.value = currentUserInList.role;
   });
 
@@ -582,14 +581,20 @@ onMounted(async () => {
   });
 
   socket.on('userStatusUpdate', (data) => {
-    const user = userList.value.find((user) => user.id === data.id);
+    const user = userList.value.find((user) => user.id === data.userId);
     if (user) {
+      console.log("FOUND CORRECT USER!");
       if (data.username != null)
         user.username = data.username;
       if (data.avatar != null)
         user.avatar = data.avatar;
+      if (data.isOnline != null)
+        user.isOnline = data.isOnline;
+      if (data.isInGame != null)
+        user.isInGame = data.isInGame;
+      if (data.isInQueue != null)
+        user.isInQueue = data.isInQueue;
     }
-
   });
 
   socket.on('userRoleUpdated', ({ username, newRole, message }) => {
@@ -967,7 +972,6 @@ input {
 	font-weight: bold;
 }
 
-
 .status-indicator {
   width: 12px;
   height: 12px;
@@ -977,7 +981,6 @@ input {
   bottom: 5px;
   left: 35px;
 }
-
 
 .status-online {
   background-color: #4CAF50;
@@ -994,7 +997,6 @@ input {
 .status-in-game {
   background-color: #2196F3;
 }
-
 
 .user-status.online {
   background-color: #4CAF50;
