@@ -4,7 +4,6 @@ Clean any useless console.logs
 
  ---- FRONTEND ----
 CHAT:
-IMAGE NOT EXISTING?
 Fix send icon not existing
 Fix user online status not updating
 Improve admin button CSS
@@ -31,6 +30,8 @@ Copy offline game CSS carefully
 ---- BACKEND ----
 Ensure all forms of input are validated. (SOCKETS DONE, NEED TO CHECK ENDPOINTS)
 Ensure everything is locked down.
+
+REMOVE THE HELLOWORLD SHIT
 
 
 MAYBE:

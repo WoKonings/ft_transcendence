@@ -427,6 +427,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       username: userChannel.user.username,
       isOnline: userChannel.user.isOnline,
       role: userChannel.role, 
+      avatar: userChannel.user.avatar,
     }));
 
     this.server.to(channel.name).emit('updateUserList', usersInChannel);
