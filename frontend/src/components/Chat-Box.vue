@@ -95,7 +95,6 @@
         <button v-if="currentRole === 'ADMIN' || currentRole === 'OWNER'" @click="assignRole('ADMIN')">Assign Admin</button>
         <button v-if="currentRole === 'ADMIN' || currentRole === 'OWNER'" @click="assignRole('MEMBER')">Assign User</button>
         <button v-if="currentRole === 'ADMIN' || currentRole === 'OWNER'" @click="kickUser()">Kick from Channel</button>
-        <button @click="timeoutUser()">Timeout</button>
         <button v-if="currentRole === 'ADMIN' || currentRole === 'OWNER'" @click="timeoutUser()">Timeout</button>
         <button v-if="currentRole === 'ADMIN' || currentRole === 'OWNER'" @click="kickUser()">Ban</button>
       </div>
@@ -544,7 +543,6 @@ onMounted(async () => {
 
   socket.on('userTimeout', ({userId, channelName, timeoutEnd}) => {
     if (userId === currentUser.id && selectedChat.value.name === channelName) {
-      alert('You have been timed out in this channel.');
       console.log(`time test: ${timeoutEnd}`);
       selectedChat.value.timeout = new Date(timeoutEnd);
     } else {

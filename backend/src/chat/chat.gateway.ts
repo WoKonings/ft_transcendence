@@ -169,12 +169,22 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage('timeoutUser')
   async handleTimeoutUser(client: Socket, payload: { channelName: string, targetId: number }) {
     console.log(`TIMEOUT: ${payload.channelName}, ${payload.targetId}`)
+
     const channel = await this.chatService.getChannelByName(payload.channelName);
     const target = await this.userService.getUserById(payload.targetId);
-
-    if(!target) {
-      console.log(`user ${target.username} does no exist`);
+    const userId = client['user']?.id;
+    if (!this.chatService.isPriviledged(channel.id, userId)) {
+      console.log('unauthorized to timeout');
+      return;
+    }
+    if (!target) {
+      console.log(`user ${target.username} does not exist`);
       return null;
+    }
+    const targetUserChannel = await this.chatService.getUserChannel(channel.id, target.id);
+    if (!targetUserChannel || targetUserChannel.userChannel.role == 'OWNER') {
+      console.log(`cannot timeout ${target.username}`);
+      return;
     }
     if (!channel) {
       console.error("channel does not exist in timeout");
