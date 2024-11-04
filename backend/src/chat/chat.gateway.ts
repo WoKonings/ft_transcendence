@@ -12,6 +12,7 @@ import { PrismaService } from 'src/prisma.service';
 import { UserService } from 'src/user/user.service';
 import { Injectable, UseGuards } from '@nestjs/common';
 import { AuthGuard } from '../auth/auth.guard';
+import { PayloadSizeGuard } from '../auth/payload-size.guard';
 import { ChannelRole } from '@prisma/client';
 import { channel, subscribe } from 'diagnostics_channel';
 import { DEFAULT_FACTORY_CLASS_METHOD_KEY } from '@nestjs/common/module-utils/constants';
@@ -19,7 +20,7 @@ import { serializeWithBufferAndIndex } from 'typeorm/driver/mongodb/bson.typings
 import { JwtService } from '@nestjs/jwt';
 
 @WebSocketGateway({ cors: true })
-@UseGuards(AuthGuard)
+@UseGuards(AuthGuard, PayloadSizeGuard)
 @Injectable()
 export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @WebSocketServer() server: Server;
@@ -99,6 +100,17 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage('setChannelPassword')
   async setChannelPassword(client: Socket, payload: { channelName: string, password: string}) {
     // console.log(`current role trying to change pass = ${payload.role}`);
+    const channel = await this.chatService.getChannelByName(payload.channelName);
+    if (!channel) {
+      console.log("channel does not exist");
+      return;
+    }
+
+    const callerId = client['user']?.id
+    if (!await this.chatService.isOwner(channel.id, callerId)) {
+      console.log(`Need owner to set password`);
+      return null;
+    }
 
     return this.chatService.setChannelPassword(payload.channelName, payload.password);
   }
@@ -111,6 +123,12 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     if (!channel) {
       console.log("channel does not exist");
       return;
+    }
+
+    const callerId = client['user']?.id
+    if (!await this.chatService.isOwner(channel.id, callerId)) {
+      console.log(`Need owner to set privacy`);
+      return null;
     }
 
     const privacy = await this.chatService.setChannelPrivacy(payload.channelName);
@@ -169,6 +187,12 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     if(!channel) {
       console.log("channel does not exist for submitting password");
+      return null;
+    }
+
+    const callerId = client['user']?.id
+    if (!await this.chatService.isOwner(channel.id, callerId)) {
+      console.log(`Need owner to set password`);
       return null;
     }
 
@@ -256,7 +280,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return;
     }
     if (await this.chatService.isOwner(channel.id, payload.targetId)) {
-      console.log(`Cannot ban owner`);
+      console.log(`Cannot timeout owner`);
       return null;
     }
     if (!target) {

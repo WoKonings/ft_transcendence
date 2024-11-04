@@ -28,8 +28,11 @@
           <button v-if="selectedChat.name !== 'General'" @click="leaveChat" class="leave-button">
             {{ selectedChat.isDM ? 'Leave Chat' : 'Leave Channel' }}
           </button>
-          <button v-if="currentRole === 'ADMIN' || currentRole === 'OWNER'" @click="setPassword" class="set-password-button">
+          <button v-if="currentRole === 'OWNER' && !selectedChat.isPrivate" @click="setPassword" class="set-password-button">
             Set Channel Password
+          </button>
+          <button v-if="currentRole === 'OWNER'" @click="setPrivate" class="set-password-button">
+           {{ selectedChat.isPrivate != true ? 'Set Private' : 'Set Unprivate' }}
           </button>
         </div>
         <div class="messages" ref="messagesContainer">
@@ -96,7 +99,7 @@
         <button v-if="currentRole === 'ADMIN' || currentRole === 'OWNER'" @click="assignRole('MEMBER')">Assign User</button>
         <button v-if="currentRole === 'ADMIN' || currentRole === 'OWNER'" @click="kickUser()">Kick from Channel</button>
         <button v-if="currentRole === 'ADMIN' || currentRole === 'OWNER'" @click="timeoutUser()">Timeout</button>
-        <button v-if="currentRole === 'ADMIN' || currentRole === 'OWNER'" @click="kickUser()">Ban</button>
+        <button v-if="currentRole === 'ADMIN' || currentRole === 'OWNER'" @click="banUser()">Ban</button>
       </div>
     </div>
   </div>
@@ -169,7 +172,7 @@ const assignRole = (role) => {
 const kickUser = () => {
   if (currentRole.value === 'ADMIN' || currentRole.value === 'OWNER') {
     console.log(`kicking ${selectedUser.value.id} from ${selectedChat.value.name}`);
-    socket.emit('kickUser', { channelName: selectedChat.value.name, userId: selectedUser.value.id }, (response) => {
+    socket.emit('kickUser', { channelName: selectedChat.value.name, targetId: selectedUser.value.id }, (response) => {
       if (response.success) {
         console.log(response.message);
       } else {
@@ -180,6 +183,22 @@ const kickUser = () => {
     console.error('You do not have permission to kick users');
   }
 };
+
+const banUser = () => {
+  if (currentRole.value === 'ADMIN' || currentRole.value === 'OWNER') {
+    console.log(`banning ${selectedUser.value.id} from ${selectedChat.value.name}`);
+    socket.emit('banUser', { channelName: selectedChat.value.name, targetId: selectedUser.value.id }, (response) => {
+      if (response.success) {
+        console.log(response.message);
+      } else {
+        console.error('Failed to ban user:', response.error);
+      }
+    });
+  } else {
+    console.error('You do not have permission to ban users');
+  }
+};
+
 
 const timeoutUser = () => {
   if (currentRole.value === 'ADMIN' || currentRole.value === 'OWNER') {
@@ -210,6 +229,7 @@ const fetchInitialChat = async () => {
     chats.value.push(generalChat);
     selectedChat.value = generalChat;
     socket.emit('joinChannel', { channelName: 'General', userId: currentUser.id, password: null });
+    socket.emit('getChannels');
   } catch (error) {
     console.error(`Failed to fetch initial chat for ${currentUser.username}`, error);
   }
@@ -240,7 +260,9 @@ console.log('Socket in chat:', socket);
 const selectChat = (name) => {
   selectedChat.value = chats.value.find(chat => chat.name === name);
   const user = userList.value.find(user => user.username === currentUser.username);
-  currentRole.value = user.role;
+  if (user && user.role) {
+    currentRole.value = user.role;
+  }
   if (!currentRole.value) {
     currentRole.value == "MEMBER";
   }
@@ -297,7 +319,7 @@ const setPassword = async () => {
   const password = prompt("Enter new password for this channel (leave blank for no password):");
   
   // Emit event to server to set the channel password
-  socket.emit('setChannelPassword', {channelName: selectedChat.value.name, userId: currentUser.id, password: password || null }, (response) => {
+  socket.emit('setChannelPassword', {channelName: selectedChat.value.name, password: password || null }, (response) => {
     if (response.success) {
       alert(response.message);
     } else {
@@ -306,6 +328,15 @@ const setPassword = async () => {
   });
 };
 
+const setPrivate= async () => {
+  socket.emit('setChannelPrivacy', {channelName: selectedChat.value.name }, (response) => {
+    if (response.success) {
+      console.log('changed privacy');
+    } else {      
+      console.log('failed to change privacy');
+    }
+  });
+};
 
 const sendMessage = () => {
   if (newMessage.value.trim() !== '' && selectedChat.value) {
@@ -438,14 +469,21 @@ onUpdated(() => {
 onBeforeUnmount(() => {
   console.log("UNMOUNTING CHAT!");
   socket.off('receiveMessage');
+  socket.off('receiveChatList');
 	socket.off('updateUserList');
+  socket.off('updateDMUserList');
 	socket.off('directMessage');
+  socket.off('userStatusUpdate');
+  socket.off('userRoleUpdated');
+  socket.off('userKicked');
+  socket.off('userTimeout');
+  socket.off('block');
+  socket.off('unblock');
+  socket.off('channelPrivacy');
 })
 
 onMounted(async () => {
-  await fetchInitialChat();
-  await fetchBlocked();
-
+  
   socket.on('receiveMessage', (message) => {
     console.log(`Message received in frontend:`, message);
     if (blocked.value.some(friend => friend.id === message.userId)) {
@@ -472,7 +510,25 @@ onMounted(async () => {
       scrollToBottom();
     }
   });
-
+  
+  socket.on('receiveChatList', (chatList) => {
+    
+    const channels = chatList.channels.channels;
+    
+    for (let i = 0; i < channels.length; i++) {
+      const channel = channels[i];
+      const channelExists = chats.value.some(chat => chat.name === channel.name);
+      if (!channelExists) {
+        chats.value.push({
+          name: channel.name,
+          messages: [],
+          isPrivate: channel.isPrivate,
+          timeout: channel.timeout,
+        });
+      }
+    }
+  });
+  
   socket.on('updateUserList', (userListData) => {
     userList.value = userListData;
 
@@ -519,22 +575,18 @@ onMounted(async () => {
       chats.value.push(directChat);
     }
 
-
     // const currentUserInList= userList.value.find(user => user.id === currentUser.id)
     // console.log(`currentuser Role ${currentUserInList.role}`);
     // currentRole.value = currentUserInList.role;
   });
 
-
   socket.on('userStatusUpdate', (data) => {
-    console.log(`USER STATUS UDPATE event called: User ${data.username}`);
-
     const user = userList.value.find((user) => user.id === data.id);
     if (user) {
       if (data.username != null)
-          user.username = data.username;
-        if (data.avatar != null)
-          user.avatar = data.avatar;
+        user.username = data.username;
+      if (data.avatar != null)
+        user.avatar = data.avatar;
     }
 
   });
@@ -554,19 +606,17 @@ onMounted(async () => {
 
   });
   
-  socket.on('userKicked', ({userId, channelName}) => {
-    if (userId === currentUser.id && selectedChat.value.name === channelName) {
+  socket.on('userKicked', ({targetId, channelName}) => {
+    if (targetId === currentUser.id && selectedChat.value.name === channelName) {
       chats.value = chats.value.filter(chat => chat.name !== channelName);
       if (chats.value.length > 0) {
         selectedChat.value = chats.value[0];
       } else {
         selectedChat.value = null;
       }
-    userList.value = [];
-    // alert('You have been removed from this channel.');
+      userList.value = [];
     } else {
-    // Update the user list for other users still in the channel
-    userList.value = userList.value.filter(user => user.id !== userId);
+      userList.value = userList.value.filter(user => user.id !== targetId);
     }
   });
 
@@ -587,6 +637,16 @@ onMounted(async () => {
     blocked.value = blocked.value.filter(friend => friend.id !== data.id);
   });
 
+  socket.on('channelPrivacy', (data) => {
+    console.log('best');
+    console.log('channelPrivacy change to ', data.isPrivate)
+    const chat = chats.value.find(c => c.name === data.channel);
+    if (!chat) {
+      return;
+    }
+    chat.isPrivate = data.isPrivate;
+  });
+  
 
 //   socket.on('restoreChannels', (channels) => {
 //   console.log('Restoring channels:', channels);
@@ -613,7 +673,8 @@ onMounted(async () => {
 //   console.log('Restoring channels:', channels);
 
 // });
-
+  await fetchInitialChat();
+  await fetchBlocked();
 });
 
 </script>

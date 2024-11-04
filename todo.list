@@ -1,19 +1,42 @@
 PRIO:
 Check if all forms of user input are validated.
+Clean any useless console.logs
 
+ ---- FRONTEND ----
 CHAT:
-Fix all members leaving not causing channel to be deleted
-Add bans for Admins and channel owners. OWNERS ARE IMMUNE TO KICK, BAN, AND TIMEOUTS
+IMAGE NOT EXISTING?
+Fix send icon not existing
+Fix user online status not updating
+Improve admin button CSS
+OPEN VIEWPROFILE IN CHAT USERLIST
+
+SECURITY SECURITY SECURITY!
+Need to double check admin/owner roles.
+Need to constrain input
+NEED TO DOUBLE CHECK THAT WE ARE NOT RETURNING WHOLE USER CLASSES IN EMITS!!
 
 BUGS:
 
 USER PROFILE:
 
+USER PROFILE BUTTON:
+change/remove red dropshadow
+
 GAME:
+
+FRIENDLIST / USERLIST:
+ensure CSS is same
+
 
 ONLINE GAME:
 Copy offline game CSS carefully
 
+---- BACKEND ----
+Ensure we are not returning more than needed everywhere.
+Ensure all forms of input are validated.
+Ensure channels get deleted properly.
+Ensure everything is locked down.
+Ensure only admins can use admin commands.
 
 
 MAYBE:
