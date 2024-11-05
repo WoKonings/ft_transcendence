@@ -70,7 +70,6 @@ import router from '@/router/router';
 
 const store = useStore();
 
-// const message = ref('User Authentication');
 const newUser = ref({
   username: '',
   email: '',
@@ -338,8 +337,6 @@ const logoutUser = () => {
 };
 
 const directMessage = (user) => {
-  console.log('LAYER 3');
-  console.log(`DM CHECK?: ${user} ??:`);
   directMessager.value = user;
 };
 

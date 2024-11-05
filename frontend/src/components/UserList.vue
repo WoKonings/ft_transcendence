@@ -208,8 +208,6 @@ const unblockUser = async (friend) => {
 };
 
 const directMessage = (user) => {
-  console.log('ye');
-  console.log(`DM CHECK?: ${user} ??:`);
   emit('directMessage', user);
 };
 

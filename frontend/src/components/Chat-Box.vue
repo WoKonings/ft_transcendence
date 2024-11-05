@@ -109,7 +109,7 @@
       :isVisible="isProfileVisible"
       :isBlocked="isBlocked"
       @close="isProfileVisible = false"
-      @directMessage="directMessage"
+      @directMessage="directMessageInternal"
       @blockUser="blockUser"
       @unblockUser="unblockUser"
     />
@@ -387,15 +387,14 @@ watch(userList, (newUserList) => {
 
 watch(() => props.directMessage, (directMessage) => {
   if (directMessage) {
-    if (!chats.value.find(chat => chat.id === directMessage.id));
+    if (!chats.value.find(chat => chat.id === directMessage.id)) {
       const directChat = { name: directMessage.username, isDM: true, userId: directMessage.id, messages: [] };
       console.log(`ya: ${directMessage.id}`);
       chats.value.push(directChat);
       socket.emit('getDMUserList', { userId: directChat.userId });
       selectChat(directChat.name);
-      // Handle the direct message
       console.log('Received direct message:', newMessage);
-      // You can add logic to display the direct message in your chat
+    }
   }
 });
 
@@ -420,6 +419,20 @@ const setPrivate= async () => {
       console.log('failed to change privacy');
     }
   });
+};
+
+const directMessageInternal = (directMessage) => {
+  console.log('INTERNAL DM SENTED');
+  if (!chats.value.find(chat => chat.id === directMessage.id)) {
+
+    const directChat = { name: directMessage.username, isDM: true, userId: directMessage.id, messages: [] };
+    console.log(`ya: ${directMessage.id}`);
+    chats.value.push(directChat);
+    socket.emit('getDMUserList', { userId: directChat.userId });
+    selectChat(directChat.name);
+    // Handle the direct message
+    console.log('Received direct message FROM WITHIN:', newMessage);
+  }
 };
 
 const sendMessage = () => {

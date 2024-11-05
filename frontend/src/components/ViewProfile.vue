@@ -254,7 +254,6 @@ const inviteToPlay = (friend) => {
 };
 
 const sendMessage = (selectedUser) => {
-  console.log('DM: ', selectedUser.username);
   emit('directMessage', selectedUser);
   emit('close');
 }
