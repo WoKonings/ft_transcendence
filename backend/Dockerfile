@@ -1,15 +1,9 @@
 # Use an official Node.js runtime as the base image
 FROM node:19-alpine
 
-# Set the working directory in the container
+# Set the working directory in the container and create a non-root user
 WORKDIR /usr/src/app
-
-# Create a non-root user with UID 1100 (matching your backend setup)
-RUN adduser -D -u 1100 appuser
-
-# Set the working directory and set ownership to the new user
-WORKDIR /usr/src/app
-RUN chown appuser:appuser /usr/src/app
+RUN adduser -D -u 1100 appuser && chown appuser:appuser /usr/src/app
 
 # Switch to the non-root user
 USER appuser
