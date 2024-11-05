@@ -312,6 +312,7 @@ const logoutUser = () => {
   socket.value.on('disconnected', (message) => {
     socket.value.disconnect();
     socket.value = null;
+    console.log(message);
     logoutUser();
   });
 
