@@ -319,8 +319,6 @@ const logoutUser = () => {
   socket.value.on('disconnect', (reason) => {
     console.log('Disconnected:', reason);
     disconnected_error.value = 'Disconnected from server.';
-    // alert('Disconnected from server');
-    // handleReconnect();
   });
 
   socket.value.on('connect_error', () => {
@@ -345,9 +343,7 @@ onMounted(() => {
     }
     console.log('RELOGGED!');
   }
-  //todo: re-enable
-  // if (!isLoggedIn.value)
-  //   router.push('/login');
+
   handleCallback();
 });
 </script>
@@ -393,7 +389,7 @@ onMounted(() => {
 }
 
 .friends-list-container {
-  margin-bottom: 20px; /* Space between friends list and user list */
+  margin-bottom: 20px;
 }
 
 .user-list-container {
@@ -403,17 +399,17 @@ onMounted(() => {
 .disconnect-container {
 	width: 100%;
 	height: 3vh;
-	background-color: #ff4c4c85; /* Red color to indicate disconnection */
-	color: white; /* Text color for contrast */
+	background-color: #ff4c4c85;
+	color: white;
 	display: flex;
 	justify-content: center;
 	align-items: center;
 	font-size: 2vh;
 	font-weight: bold;
-	position: absolute; /* So it floats above other content */
-	top: 0; /* Stick it to the top of the page */
+	position: absolute;
+	top: 0;
 	left: 0;
-	z-index: 1000; /* Ensures it stays above other elements */
+	z-index: 1000;
 }
 
 /* 2FA */
