@@ -260,6 +260,8 @@ const logoutUser = () => {
     socket.value = null;
 
     router.push('/login');
+  } else {
+    console.log('NOT LOGGED IN TRYING TO LOGGIN OUT!!');
   }
 };
 
@@ -312,6 +314,7 @@ const logoutUser = () => {
   socket.value.on('disconnected', (message) => {
     socket.value.disconnect();
     socket.value = null;
+    console.log('you were disconnected: ', message);
     logoutUser();
   });
 
@@ -337,9 +340,9 @@ onMounted(() => {
     console.log("should request re-login");
     fetchMe();
     initializeSocket();
-    if (!isLoggedIn.value) {
-      sessionStorage.removeItem('access_token');
-      console.log('WIPED ACCESS TOKEN!');
+    if (!isLoggedIn.value && !socket.value) {
+      // sessionStorage.removeItem('access_token');
+      // console.log('WIPED ACCESS TOKEN!');
       logoutUser();
     }
     console.log('RELOGGED!');
