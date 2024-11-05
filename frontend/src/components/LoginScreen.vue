@@ -38,14 +38,13 @@ const init = () => {
   renderer.setSize(window.innerWidth, window.innerHeight);
   mountRef.value.appendChild(renderer.domElement);
 
-  // resize
+
   window.addEventListener('resize', () => {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
   });
 
-  // Camera position
   camera.position.z = 20;
 
   composer = new EffectComposer(renderer);
@@ -69,12 +68,6 @@ const init = () => {
 
   // Ball
   const ballGeometry = new THREE.SphereGeometry(0.5, 32, 32);
-  // const ballMaterial = new THREE.MeshPhongMaterial({
-  //   color: 0xff00ff,
-  //   emissive: 0x550055,
-  //   emissiveIntensity: 0.5,
-  //   shininess: 100
-  // });
   ball = new THREE.Mesh(ballGeometry, paddleMaterial);
   scene.add(ball);
 
@@ -86,9 +79,6 @@ const init = () => {
   pointLight2.position.set(14, 0, 0);
   scene.add(pointLight2);
 
-  // Lighting
-  // const ambientLight = new THREE.AmbientLight(0x404040);
-  // scene.add(ambientLight);
   const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
   directionalLight.position.set(1, 1, 1).normalize();
   scene.add(directionalLight);
@@ -97,11 +87,9 @@ const init = () => {
 const animate = () => {
   animationFrameId = requestAnimationFrame(animate);
 
-  // Animate ball
   ball.position.x = Math.sin(Date.now() * 0.002) * 13;
   ball.position.y = Math.cos(Date.now() * 0.003) * 9;
 
-  // Animate paddles
   paddle1.position.y = Math.sin(Date.now() * 0.001) * 8;
   paddle2.position.y = Math.sin(Date.now() * 0.001 + Math.PI) * 8;
 
@@ -120,7 +108,6 @@ onMounted(() => {
     router.push('/');
   }
   init();
-  // handleCallback();
   animate();
 });
 
@@ -135,7 +122,6 @@ onBeforeUnmount(() => {
 const loginUser = async () => {
   console.log('Login clicked');
   window.location.href = 'http://localhost:3000/auth/42';
-  // router.push('/')
 };
 
 
@@ -162,10 +148,9 @@ const loginUser = async () => {
   z-index: 1;
 }
 
-/* Existing styles for .pong-title, .login-form, and .fancy-login-button */
 .login-form {
-  position: relative; /* Add this to allow z-index to work */
-  z-index: 2; /* Ensure it's above .pong-animation */
+  position: relative;
+  z-index: 2;
 }
 
 .fancy-login-button {

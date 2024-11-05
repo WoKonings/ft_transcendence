@@ -12,7 +12,6 @@
       <button v-if="!currentUser.twoFactorEnabled" class="action-button" @click="enableTwoFactor">Enable 2FA</button>
       <button v-else class="action-button delete" @click="disableTwoFactor">Disable 2FA</button>
       <button class="action-button delete" @click="logoutUser">Logout</button>
-      <!-- <button class="action-button delete" @click="deleteAccount">Delete Account</button> -->
     </div>
 
     <!-- QR Code Modal -->
@@ -45,7 +44,6 @@
       </div>
       <div class="info-row">
         <span class="info-label">Games Played:</span>
-        <!-- <span class="info-value">{{ currentUser.gamesPlayed }}</span> -->
         <span class="info-value">{{ matchHistory.length }}</span>
       </div>
       <div class="info-row">
@@ -127,8 +125,6 @@ const qrCodeUrl = ref('');
 const verificationCode = ref('');
 const twoFactorError = ref('');
 
-//todo: fix reload causing relog if on /profile
-
 const goToDashboard = () => {
   router.push('/');
 }
@@ -143,14 +139,12 @@ const enableTwoFactor = async () => {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        // body: JSON.stringify({ newUsername }),
     });
     const data = await response.json()
     qrCodeUrl.value = data.qrCode;
     showQRCode.value = true;
   } catch (error) {
     console.error('Error generating 2FA:', error);
-    // Handle error (e.g., show an error message to the user)
   }
 }
 
@@ -179,7 +173,6 @@ const verifyAndEnableTwoFactor = async () => {
     alert('2FA verified and enabled :D');
   } catch (error) {
     console.error('Error verifying 2FA:', error);
-    // Handle error (e.g., show an error message to the user)
   }
 };
 
@@ -199,7 +192,6 @@ const disableTwoFactor = async () => {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        // body: JSON.stringify({ newUsername }),
       });
     if (!response.ok)
       console.error( 'wtf bad');
@@ -209,7 +201,6 @@ const disableTwoFactor = async () => {
 
   } catch (error) {
     console.error('Error disabling 2FA:', error);
-    // Handle error (e.g., show an error message to the user)
   }
 };
 
@@ -240,12 +231,10 @@ const changeUsername = async () => {
       const data = await response.json();
       alert('Username updated successfully! Please re-login :)');
       sessionStorage.removeItem('access_token');
-      // socket.value.disconnect();
       store.dispatch('logOut');
       sessionStorage.setItem('access_token', data.access_token);
       router.push('/login');
 
-      // sessionStorage.setItem('access_token', data.access_token)
       console.log(`TEST: ${data.access_token}`);
 
     } else {
@@ -281,11 +270,8 @@ const uploadAvatar = async (event) => {
     });
 
     if (response.ok) {
-      // const data = await response.json();
-      alert('Avatar uploaded successfully!');
 
-      // No need to manually commit or update currentUser directly.
-      // The socket will handle this through 'userStatusUpdate'
+      alert('Avatar uploaded successfully!');
     } else {
       alert('Failed to update avatar.');
     }
@@ -297,16 +283,13 @@ const uploadAvatar = async (event) => {
 
 const logoutUser = () => {
   if (currentUser.value){
-    // if (socket.value)
-    //   socket.value.emit('logOut', { id: currentUser.value.id})
-    
+
     sessionStorage.removeItem('access_token');
 
     store.dispatch('logOut');
     socket.value = null;
 
     router.push('/');
-    // router.push('/login');
   }
 };
 
@@ -344,7 +327,6 @@ onMounted(async () => {
   console.log('current user!: ', currentUser.value);
   console.log('current username: ', currentUser.value.username);
   console.log('current avatar: ', currentUser.value.avatar);
-  // loading.value = true;
   try {
     // Fetch the user profile
     const userResponse = await fetch(`http://localhost:3000/user/search/${currentUser.value.username}`, {
@@ -384,7 +366,6 @@ onMounted(async () => {
       }
     });
     console.log ('fetched match history!: ', matchHistory);
-    // loading.value = false
   } catch (error) {
     console.error(error);
   }
@@ -534,8 +515,6 @@ onMounted(async () => {
   width: 300px;
   height: 50vh;
   min-height: 500px;
-  /* width: 40%;
-  min-width: 300px; */
 }
 
 .match-history-content {

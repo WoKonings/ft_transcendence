@@ -147,22 +147,18 @@ const handle2FA = async () => {
     // If 2FA authentication succeeds, store the new access token
     sessionStorage.removeItem('access_token');
     sessionStorage.setItem('access_token', data.access_token);
-    // loginDetails.value.username = null;
-    // loginDetails.value.password = null;
     console.log('2FA authentication succeeded:', data.access_token);
     
     // Proceed with authenticated state
     
-    fetchMe();  // Fetch user details after 2FA authentication
-    initializeSocket();  // Initialize WebSocket connection
+    fetchMe(); 
+    initializeSocket();
     
     // Clear the 2FA input
     twoFactorCode.value = '';
     show2FAInput.value = false;  // Hide the 2FA input
   } catch (error) {
     console.error('Error during 2FA authentication:', error);
-    // loginDetails.value.username = null;
-    // loginDetails.value.password = null;
     error.value = error.message;
   }
 };

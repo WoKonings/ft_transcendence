@@ -34,8 +34,6 @@
           <button class="button-red" v-if="!props.isBlocked" @click="blockUser(selectedUser)">Block Chat</button>
           <button class="button-red" v-if="props.isBlocked" @click="unblockUser(selectedUser)">Unblock Chat</button>
         </div>
-        <!-- <button @click="todo" v-if="isInviteSender(selectedUser.id)">Accept Invite</button>
-        <button @click="todo" v-if="isInviteSender(selectedUser.id)">Decline Invite</button> -->
       </div>
       <div v-if="loading" class="loading">Loading...</div>
       <div v-else class="profile-info">
@@ -205,8 +203,6 @@ watch(() => props.isVisible, (newVal) => {
 
 const addAsFriend = (user) => {
   console.log(`Adding ${userProfile.value.username}, id: ${userProfile.value.id} as a friend`);
-  // console.log(`Current user ID: ${currentUser.value.id}`);
-  // console.log(`token?: ${sessionStorage.getItem('access_token')}`);
   fetch('http://localhost:3000/user/add', {
     method: 'POST',
     headers: {
@@ -249,12 +245,6 @@ const unblockUser = async (user) => {
 const inviteToPlay = (friend) => {
   emit('invite', friend);
   emit('close');
-  // console.log(`friend?: ${friend} ??:`, friend);
-  // socket.value.emit('sendGameInvite', {
-  //   targetName: friend.username,
-  // });
-  // store.dispatch('toggleShowGame', true);
-  // closeOptions();
 };
 
 const sendMessage = (selectedUser) => {
@@ -262,8 +252,6 @@ const sendMessage = (selectedUser) => {
   emit('close');
 }
 
-// Fetch user profile when component mounts (if needed)
-// fetchUserProfile();
 </script>
 
 <style scoped>

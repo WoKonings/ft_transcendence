@@ -302,12 +302,9 @@ const declineRequest = async (requestId) => {
 };
 
 const acceptGameInvite = async (invite) => {
-  // Handle invite acceptance logic
   console.log('Accepted invite:', invite);
   socket.value.emit('acceptInvite', {
     gameId: invite.gameId,
-    // username: currentUser.value.username,
-    // userId: currentUser.value.id,
   })
   invites.value = invites.value.filter(i => i.gameId !== invite.gameId);
   closeInvites();
@@ -320,10 +317,6 @@ const declineGameInvite = async (invite) => {
   invites.value = invites.value.filter(i => i.gameId !== invite.gameId);
   inviteSenders.value.delete(invite.sender);
 };
-
-// const selectUser = (user) => {
-//   selectedUser.value = user;
-// };
 
 const closeOptions = () => {
   selectedUser.value = null;
@@ -400,7 +393,6 @@ const unblockUser = async (friend) => {
 };
 
 const removeFriend = async (friend) => {
-  console.log (`removing friend: ${friend}` );
   try {
     const response = await fetch('http://localhost:3000/user/remove', {
       method: 'POST',
