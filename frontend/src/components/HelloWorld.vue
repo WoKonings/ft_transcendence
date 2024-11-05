@@ -36,9 +36,7 @@
           <PongGame v-if="isLoggedIn && currentUser" />
         </div>
         <div class="chat-box-container">
-          <KeepAlive>
-            <ChatBox v-if="isLoggedIn && currentUser" :directMessage="directMessager" />
-          </KeepAlive>
+          <ChatBox v-if="isLoggedIn && currentUser" :directMessage="directMessager" />
         </div>
       </div>
       <div class="sidebar">
@@ -223,7 +221,7 @@ const loginUser = async () => {
       initializeSocket();
     }
   } catch (error) {
-    console.error('Error logging in:', error);
+    console.error('Error logging in!');
     error.value = error.message;
   }
 };
@@ -252,7 +250,6 @@ const fetchMe = async () => {
     store.dispatch('logIn', data.user);
   } catch {
     console.error('error fetching user profile');
-
   }
 }
 
