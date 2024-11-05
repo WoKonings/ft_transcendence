@@ -18,7 +18,7 @@ USER appuser
 
 # Copy package files and install dependencies as the non-root user
 COPY --chown=appuser:appuser package*.json ./
-RUN npm install
+RUN npm ci
 
 # Copy application files with correct ownership
 COPY --chown=appuser:appuser . .

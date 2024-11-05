@@ -10,7 +10,7 @@ USER appuser
 
 # Copy package files and install dependencies
 COPY --chown=appuser:appuser package*.json ./
-RUN npm install
+RUN npm ci
 
 COPY . .
 
