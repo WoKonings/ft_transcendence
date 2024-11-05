@@ -6,10 +6,22 @@ WORKDIR /app
 
 COPY package*.json ./
 
-# # Install dependencies
-RUN npm install
+# Create a non-root user with UID 1200 (matching your frontend setup)
+RUN adduser -D -u 1200 appuser
 
-COPY . .
+# Set the working directory and set ownership to the new user
+WORKDIR /app
+RUN chown appuser:appuser /app
+
+# Switch to the non-root user
+USER appuser
+
+# Copy package files and install dependencies as the non-root user
+COPY --chown=appuser:appuser package*.json ./
+RUN npm ci
+
+# Copy application files with correct ownership
+COPY --chown=appuser:appuser . .
 
 # Expose port 8080 to the host
 EXPOSE 8080

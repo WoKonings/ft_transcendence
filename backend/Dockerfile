@@ -1,13 +1,16 @@
 # Use an official Node.js runtime as the base image
 FROM node:19-alpine
 
-# Set the working directory in the container
+# Set the working directory in the container and create a non-root user
 WORKDIR /usr/src/app
+RUN adduser -D -u 1100 appuser && chown appuser:appuser /usr/src/app
 
-# Copy necessary files
-COPY package*.json ./
+# Switch to the non-root user
+USER appuser
 
-RUN npm install
+# Copy package files and install dependencies
+COPY --chown=appuser:appuser package*.json ./
+RUN npm ci
 
 COPY . .
 
