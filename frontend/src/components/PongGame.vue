@@ -21,8 +21,6 @@
 import { ref, onMounted, onBeforeUnmount, nextTick, computed } from 'vue';
 import { useStore } from 'vuex';
 import * as THREE from 'three';
-import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer';
-import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass';
 import PongGameAgainstAI from './PongGameAgainstAI.vue';
 
 const store = useStore();
@@ -62,9 +60,6 @@ const initThreeJS = () => {
 
   renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setSize(width, height);
-
-  composer = new EffectComposer(renderer);
-  composer.addPass(new RenderPass(scene, camera));
 
   const ambientLight = new THREE.AmbientLight(0x404040);
   scene.add(ambientLight);
