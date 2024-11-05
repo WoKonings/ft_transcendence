@@ -167,7 +167,6 @@ const openUserOptions = (user, event) => {
 		x: event.clientX,
 		y: event.clientY,
 	};
- // modalPosition.value = { x: event.clientX, y: event.clientY };
   if (currentRole.value != 'ADMIN' && currentRole.value != 'OWNER') {
     showUserOptions.value = false;
     return;

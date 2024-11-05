@@ -68,7 +68,6 @@ import { useStore } from 'vuex';
 import ViewProfile from './ViewProfile.vue';
 
 const store = useStore();
-const currentUser = computed(() => store.state.currentUser);
 const socket = computed(() => store.state.socket);
 
 const emit = defineEmits(['directMessage']);
