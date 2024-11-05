@@ -1,8 +1,6 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { HelloController } from './hello/hello.controller';
-import { HelloService } from './hello/hello.service';
 import { UserModule } from './user/user.module';
 import { PrismaModule } from './prisma.module';
 import { AuthModule } from './auth/auth.module';
@@ -33,14 +31,14 @@ import { join } from 'path';
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
         secret: configService.get<string>('JWT_SECRET'),
-        signOptions: { expiresIn: '4h' }, //todo increase this to like 1d instead of 5 min
+        signOptions: { expiresIn: '4h' },
         }),
         inject: [ConfigService],
       }),
       GameModule,
       ChatModule,
     ],
-  controllers: [AppController, HelloController],
-  providers: [AppService, HelloService, AppGateway, JwtModule],
+  controllers: [AppController],
+  providers: [AppService, AppGateway, JwtModule],
 })
 export class AppModule {}
