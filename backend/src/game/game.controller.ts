@@ -6,13 +6,11 @@ import { AuthGuard } from '../auth/auth.guard'
 export class GameController {
   constructor(private gameService: GameService) {}
 
-  // Endpoint to fetch all games
   @Get()
   async getAllGames() {
     return this.gameService.getAllGames();
   }
 
-  // Endpoint to fetch games of a specific user
   @UseGuards(AuthGuard)
   @Get('/:userId')
   async getUserGames(@Param('userId') userId: string) {

@@ -96,8 +96,6 @@ const fetchUserList = async () => {
        console.error('Error fetching user list:', error);
        userListError.value = 'Error fetching user list';
     }
-
-    // Check if the response is successful
 };
 
 
