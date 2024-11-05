@@ -283,8 +283,7 @@ const declineRequest = async (requestId) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        requestId,
-        userId: currentUser.value.id,
+        targetId: requestId,
       }),
     });
     if (!response.ok) {
