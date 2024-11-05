@@ -23,7 +23,6 @@ import { useStore } from 'vuex';
 import * as THREE from 'three';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer';
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass';
-import { AfterimagePass } from 'three/examples/jsm/postprocessing/AfterimagePass';
 import PongGameAgainstAI from './PongGameAgainstAI.vue';
 
 const store = useStore();
@@ -38,20 +37,11 @@ const waitingForOpponent = ref(false);
 const gameStarted = ref(false);
 const player1Score = ref(0);
 const player2Score = ref(0);
-const gameMode = ref('classic');
 const showEnd = ref(false);
 const endScreenMessage = ref('xd');
 
-// Particle system variables
-let particleGeometry, particleMaterial, particles;
-const particleCount = 100;
-let particlePositions = [];
-let particleLifetimes = [];
-let particleVelocities = [];
-
 const initGame = () => {
   initThreeJS();
-  initParticleSystem();
   window.addEventListener('keydown', handlePlayerMove);
   window.addEventListener('keyup', handleStopPlayerMove);
 };
@@ -75,12 +65,6 @@ const initThreeJS = () => {
 
   composer = new EffectComposer(renderer);
   composer.addPass(new RenderPass(scene, camera));
-  if (gameMode.value === 'flashy') {
-    const afterimagePass = new AfterimagePass(0.9);
-    composer.addPass(afterimagePass);
-  }
-  // const afterimagePass = new AfterimagePass(0.9);
-  // composer.addPass(afterimagePass);
 
   const ambientLight = new THREE.AmbientLight(0x404040);
   scene.add(ambientLight);
@@ -92,8 +76,8 @@ const initThreeJS = () => {
   // Initialize game objects
   const paddleGeometry = new THREE.BoxGeometry(1, 4, 1);
   const paddleMaterial = new THREE.MeshPhongMaterial({
-    color: (gameMode.value === 'flashy') ? 0xFFA500 : 0xFFFFFF,
-    emissive: (gameMode.value === 'flashy') ? 0x0077ff: 0xFFFFFF,
+    color:  0xFFFFFF,
+    emissive: 0xFFFFFF,
     emissiveIntensity: 1,
     shininess: 100
   });
@@ -108,8 +92,8 @@ const initThreeJS = () => {
 
   const ballGeometry = new THREE.SphereGeometry(0.5, 32, 32);
   const ballMaterial = new THREE.MeshPhongMaterial({
-    color: (gameMode.value === 'flashy') ? 0xff00ff : 0xFFFFFF,
-    emissive: (gameMode.value === 'flashy') ? 0x550055 : 0xFFFFFF,
+    color: 0xFFFFFF,
+    emissive: 0xFFFFFF,
     emissiveIntensity: 1,
     shininess: 100
   });
@@ -153,72 +137,6 @@ const initThreeJS = () => {
   animate();
 };
 
-const initParticleSystem = () => {
-  if (!scene) {
-    console.error('Scene is not initialized');
-    return;
-  }
-
-  if (gameMode.value != 'flashy')
-    return;
-  particleGeometry = new THREE.BufferGeometry();
-  particleMaterial = new THREE.PointsMaterial({
-    color: 0xff00ff,
-    size: 0.3,
-    transparent: true,
-    opacity: 1.0,
-  });
-
-  particlePositions = new Float32Array(particleCount * 3);
-  particleLifetimes = new Float32Array(particleCount);
-  particleVelocities = new Float32Array(particleCount * 3);
-
-  particleGeometry.setAttribute('position', new THREE.BufferAttribute(particlePositions, 3));
-  particles = new THREE.Points(particleGeometry, particleMaterial);
-  scene.add(particles);
-
-  for (let i = 0; i < particleCount; i++) {
-    particleLifetimes[i] = 0;
-    particleVelocities[i * 3] = (Math.random() - 0.5) * 0.1;
-    particleVelocities[i * 3 + 1] = (Math.random() - 0.5) * 0.1;
-    particleVelocities[i * 3 + 2] = -0.1;
-  }
-};
-
-const updateParticles = () => {
-  if (gameMode.value != 'flashy')
-    return;
-
-  for (let i = 0; i < particleCount; i++) {
-    if (particleLifetimes[i] > 0) {
-      particleLifetimes[i] -= 0.02;
-      particlePositions[i * 3] += particleVelocities[i * 3];
-      particlePositions[i * 3 + 1] += particleVelocities[i * 3 + 1];
-      particlePositions[i * 3 + 2] += particleVelocities[i * 3 + 2];
-      particleMaterial.opacity = Math.max(0, particleLifetimes[i]);
-    }
-  }
-  particles.geometry.attributes.position.needsUpdate = true;
-};
-
-const emitParticle = (x, y) => {
-  if (gameMode.value != 'flashy')
-    return;
-
-  for (let i = 0; i < particleCount; i++) {
-    if (particleLifetimes[i] <= 0) {
-      particlePositions[i * 3] = x;
-      particlePositions[i * 3 + 1] = y;
-      particlePositions[i * 3 + 2] = 0;
-      particleLifetimes[i] = 1.0;
-      particleVelocities[i * 3] = (Math.random() - 0.5) * 0.2;
-      particleVelocities[i * 3 + 1] = (Math.random() - 0.5) * 0.2;
-      particleVelocities[i * 3 + 2] = -0.1;
-      break;
-    }
-  }
-};
-
 const animate = () => {
   requestAnimationFrame(animate);
   composer.render();
@@ -228,18 +146,12 @@ const onWindowResize = () => {
   const windowWidth = window.innerWidth;
   const windowHeight = window.innerHeight;
 
-  // Calculate 60% of the window dimensions
   const newWidth = windowWidth * 0.6;
   const newHeight = windowHeight * 0.5;
 
-  // Set the renderer size and camera aspect
   renderer.setSize(newWidth, newHeight);
   camera.aspect = newWidth / newHeight;
   camera.updateProjectionMatrix();
-
-  // renderer.setSize(800, 600);
-  // camera.aspect = 800 / 600;
-  // camera.updateProjectionMatrix();
 };
 
 const updateGameObjects = (gameState) => {
@@ -255,9 +167,6 @@ const updateGameObjects = (gameState) => {
   
   if (player1Score.value + player2Score.value != gameState.score.playerOne + gameState.score.playerTwo) {
     console.log("player1Score:", player1Score.value, "player2Score:", player2Score.value, "gameState.score.playerOne:", gameState.score.playerOne, "gameState.score.PlayerTwo:", gameState.score.PlayerTwo);
-    for (let i = 0; i < 50; i++) {
-      emitParticle(ball.position.x, ball.position.y);
-    }
   }
   paddle1.position.y = gameState.paddle1.y;
   paddle1.position.x = gameState.paddle1.x;
@@ -274,9 +183,6 @@ const updateGameObjects = (gameState) => {
 
   player1Score.value = gameState.score.playerOne;
   player2Score.value = gameState.score.playerTwo;
-
-  // emitParticle(ball.position.x, ball.position.y);
-  updateParticles();
 };
 
 const initSocket = () => {
@@ -351,7 +257,6 @@ const stopGame = () => {
   }
   if (gameStarted.value) {
     gameStarted.value = false;
-    // window.removeEventListener('mousemove', handleMouseMove);
   }
   exitGame();
 };
@@ -360,22 +265,18 @@ let moving = false;
 
 const handlePlayerMove = (event) => {
   if ((event.key === 'w' || event.key === 'ArrowUp') && moving == false) {
-    // console.log('moving up');
     moving = true;
     socket.value.emit('playerMoveKBM', { dy: 1 });
   } else if ((event.key === 's' || event.key === 'ArrowDown') && moving == false) {
-    // console.log('moving down');
     moving = true;
     socket.value.emit('playerMoveKBM', { dy: -1 });
   }
 }
 const handleStopPlayerMove = (event) => {
   if ((event.key === 'w' || event.key === 'ArrowUp') && moving == true) {
-    // console.log('stopped moving up');
     moving = false;
     socket.value.emit('playerMoveKBM', { dy: 0 });
   } else if ((event.key === 's' || event.key === 'ArrowDown') && moving == true) {
-    // console.log('stopped moving down');
     moving = false;
     socket.value.emit('playerMoveKBM', { dy: 0 });
   }
