@@ -26,7 +26,7 @@
           />
         </div>
         <h2>{{ userProfile.username }}</h2>
-        <div class="buttons">
+        <div class="buttons" v-if="!isCurrentUserProfile">
           <button class="button" @click="sendMessage(selectedUser)">Send Message</button>
           <button class="button" v-if="!props.isFriend" @click="addAsFriend(selectedUser)">Add as Friend</button>
           <button class="button" v-if="props.isFriend" @click="inviteToPlay(selectedUser)">Invite to Play</button>
@@ -106,11 +106,15 @@
 </template>
 
 <script setup>
-import { ref, watch, defineEmits, defineProps } from 'vue';
+import { ref, watch, defineEmits, defineProps, computed } from 'vue';
+import { useStore } from 'vuex';
 
+const store = useStore();
+const currentUser = store.state.currentUser;
 const userProfile = ref({});
 const loading = ref(false);
 const matchHistory = ref([]);
+const isCurrentUserProfile = computed(() => currentUser.id === userProfile.value.id);
 const emit = defineEmits(['close', 'friendRemoved', 'invite', 'directMessage', 'blockUser', 'unblockUser']);
 const props = defineProps({
   selectedUser: {
