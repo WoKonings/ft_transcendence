@@ -497,22 +497,12 @@ const joinNewChannel = async () => {
 };
 
 const leaveChat = () => {
-  //todo: refactor
-  if (selectedChat.value && selectedChat.value.isDM == true){
-    const channelName = selectedChat.value.name;
-    console.log('leaving DM!: ', selectedChat.value.name);
-    chats.value = chats.value.filter(chat => chat.name !== channelName);
-    if (chats.value.length > 0) {
-      selectedChat.value = chats.value[0];
-    } else {
-      selectedChat.value = null;
-    }
-    // userList.value = [];
-  }
   if (selectedChat.value && selectedChat.value.name !== 'General') {
     const channelName = selectedChat.value.name;
     console.log(`leaving ${selectedChat.value.name}`);
-    socket.emit('leaveChannel', { channelName: channelName });
+    if (!selectedChat.value.isDM) {
+      socket.emit('leaveChannel', { channelName: channelName });
+    }
     
     chats.value = chats.value.filter(chat => chat.name !== channelName);
     if (chats.value.length > 0) {
@@ -756,8 +746,8 @@ body {
 
 .chat-container {
   display: flex;
-  width: 100%; /* Percentage of the parent width */
-  height: 100%; /* 80% of the viewport height */
+  width: 100%;
+  height: 100%;
   font-family: Arial, sans-serif;
   color: #333;
   border: 1px solid #e0e0e0;
@@ -767,7 +757,7 @@ body {
 }
 
 .sidebar {
-  width: 25%; /* Percentage of the chat container width */
+  width: 25%;
   background-color: #2c2c2c;
   color: #fff;
   padding: 2%;
@@ -958,8 +948,8 @@ input {
 }
 
 .user-list-window {
-  width: 25%; /* Percentage of the chat container width */
-  min-width: 40px; /* Minimum width to ensure readability */
+  width: 25%;
+  min-width: 40px;
   background-color: #2c2c2c;
   color: #fff;
   padding: 0.5%;
@@ -1011,7 +1001,7 @@ input {
 }
 
 .user-item:hover .user-name {
-  color: #e47d29; /* Change text color on hover */
+  color: #e47d29;
 }
 
 .admin-item {
