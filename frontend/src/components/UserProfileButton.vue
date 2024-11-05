@@ -1,6 +1,5 @@
 <template>
   <div class="user-profile-badge" @click="goToProfile">
-    <!-- <img :src="userProfilePicture" alt="User Avatar" class="profile-picture" /> -->
      <div class="profile-picture">
        <img :src="currentUser.avatar ? `http://localhost:3000${currentUser.avatar}` : `https://robohash.org/${currentUser.username}?set=set4`" :alt="`${currentUser.username}`" />
      </div>
@@ -17,9 +16,6 @@ const store = useStore();
 const router = useRouter();
 
 const currentUser = computed(() => store.state.currentUser);
-
-// Placeholder for profile picture; replace with real URL later
-// const userProfilePicture = computed(() => store.state.currentUser.profilePicture || 'default-avatar.png');
 
 const goToProfile = () => {
   router.push('/profile');

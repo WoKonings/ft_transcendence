@@ -300,7 +300,6 @@ const declineRequest = async (requestId) => {
 };
 
 const acceptGameInvite = async (invite) => {
-  // Handle invite acceptance logic
   console.log('Accepted invite:', invite);
   socket.value.emit('acceptInvite', {
     gameId: invite.gameId,
@@ -392,7 +391,6 @@ const unblockUser = async (friend) => {
 };
 
 const removeFriend = async (friend) => {
-  console.log (`removing friend: ${friend}` );
   try {
     const response = await fetch('http://localhost:3000/user/remove', {
       method: 'POST',

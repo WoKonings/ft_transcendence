@@ -126,17 +126,14 @@ const sendMessage = () => {
 
     console.log(`Sending message to chat: ${selectedChat.value.name}`);
     
-    // Emit the message via the socket
     socket.emit('sendMessage', {
       senderId: currentUser.id,
       channelName: selectedChat.value.name,
       message: newMessage.value,
     });
-    
-    // Clear the input field after sending the message
+  
     newMessage.value = '';
 
-    // Scroll to the bottom to display the latest message
     scrollToBottom();
   }
 };
@@ -170,7 +167,7 @@ const joinNewChannel = async () => {
         });
       }
       else {
-        alert(response.message); // Display error message if joining fails
+        alert(response.message);
       }
     });
   } 
