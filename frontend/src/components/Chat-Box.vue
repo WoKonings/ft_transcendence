@@ -150,6 +150,8 @@ const viewProfile = (user) => {
   selectedUser.value = user;
   if (selectedUser.value.id && blocked.value.some(user => user.id === selectedUser.value.id)) {
     isBlocked.value = true;
+   if (selectedUser.value.username == currentUser.value.username)
+    isProfileVisible.value == false
   } else {
     isBlocked.value = false;
   }
@@ -161,14 +163,10 @@ const openUserOptions = (user, event) => {
   selectedUser.value = user;
   event.preventDefault(); //only here to remove error.
 
-  console.log("Right-clicked user:", user); 
-  console.log(`${currentUser.username} is ${currentRole.value}`);
-
   modalPosition.value = {
 		x: event.clientX,
 		y: event.clientY,
 	};
-  console.log('opened modal at: ', modalPosition.value);
  // modalPosition.value = { x: event.clientX, y: event.clientY };
   if (currentRole.value != 'ADMIN' && currentRole.value != 'OWNER') {
     showUserOptions.value = false;
@@ -187,7 +185,6 @@ const closeUserOptions = () => {
 }
 
 const assignRole = (role) => {
-  console.log(`assigning ${selectedUser.value.username} to ${role} in ${selectedChat.value.name}`)
   if (selectedUser.value) {
     socket.emit('updateUserRole', {
       channelName: selectedChat.value.name,
@@ -202,7 +199,6 @@ const assignRole = (role) => {
 
 const kickUser = () => {
   if (currentRole.value === 'ADMIN' || currentRole.value === 'OWNER') {
-    console.log(`kicking ${selectedUser.value.id} from ${selectedChat.value.name}`);
     socket.emit('kickUser', { channelName: selectedChat.value.name, targetId: selectedUser.value.id }, (response) => {
       if (response.success) {
         console.log(response.message);
@@ -233,7 +229,6 @@ const banUser = () => {
 
 const timeoutUser = () => {
   if (currentRole.value === 'ADMIN' || currentRole.value === 'OWNER') {
-    console.log(`timing out ${selectedUser.value.id} from ${selectedChat.value.name}`);
     socket.emit('timeoutUser', { channelName: selectedChat.value.name, targetId: selectedUser.value.id }, (response) => {
       if (response.success) {
         console.log(response.message);
@@ -255,7 +250,6 @@ document.addEventListener('click', (event) => {
 
 const fetchInitialChat = async () => {
   try {
-    console.log(`fetching general for ${currentUser.username}`)
     const generalChat = { name: 'General', messages: [] };
     chats.value.push(generalChat);
     selectedChat.value = generalChat;
@@ -288,7 +282,6 @@ const fetchBlocked = async () => {
 
 
 const blockUser = async (friend) => {
-  console.log (`blocking user: ${friend}` );
   try {
     const response = await fetch('http://localhost:3000/user/block', {
       method: 'POST',
@@ -314,7 +307,6 @@ const blockUser = async (friend) => {
 };
 
 const unblockUser = async (friend) => {
-  console.log (`blocking user: ${friend}` );
   try {
     const response = await fetch('http://localhost:3000/user/unblock', {
       method: 'POST',
@@ -371,14 +363,12 @@ watch(() => selectedChat.value, (newChat) => {
 
 watch(userList, (newUserList) => {
   try {
-    // const oldRole = currentRole.value;
     const curUser = newUserList.find(user => user.username === currentUser.username);
     if (curUser) {
       currentRole.value = curUser.role;
     } else {
       currentRole.value = 'MEMBER'
     }
-    //console.log(`${currentUser.username} 's role updated from ${oldRole} to ${currentRole.value}`);
   }
   catch(error){
     console.error('Failed to update userlist', error);
@@ -437,15 +427,6 @@ const directMessageInternal = (directMessage) => {
 
 const sendMessage = () => {
   if (newMessage.value.trim() !== '' && selectedChat.value) {
-    // const message = { 
-    //   sender: currentUser.username, 
-    //   text: newMessage.value,
-    //   timestamp: new Date()
-    // };
-
-
-    // selectedChat.value.messages.push(message);
-
     if (selectedChat.value.isDM && selectedChat.value.userId) {
       socket.emit('directMessage', {
         targetId: selectedChat.value.userId,
@@ -456,10 +437,8 @@ const sendMessage = () => {
         text: newMessage.value,
         timestamp: new Date()
       });
-      console.log(`DMing: ${newMessage.value}`);
     }
     else if (socket) {
-      console.log(`sending message [${newMessage.value}] from ${currentUser.username}`);
       socket.emit('sendMessage', {
         senderId: currentUser.id,
         channelName: selectedChat.value.name,
@@ -477,15 +456,12 @@ const joinNewChannel = async () => {
     const channelName = prompt("Enter Channel name to join:");
 
     if (!channelName) return;
-    console.log(`input: ${channelName}`);
-    
     socket.emit('joinChannel', { channelName: channelName, userId: currentUser.id, password: null }, (response) => {
       console.log(response);
       if (response.success === true) {
         const newChat = { name: channelName, messages: [] };
         chats.value.push(newChat);
         selectChat(channelName);
-        //alert(response.message);
         socket.emit('getUserList', { channel: channelName });
       } else if (response.success === false && response.passwordRequired) {
         const password = prompt("Enter password");
@@ -636,7 +612,6 @@ onMounted(async () => {
   });
 
   socket.on('directMessage', (data) => {
-    console.log(`surely DM: ${data.userId}: ${data.message}`);
     if (blocked.value.some(friend => friend.id === data.userId)) {
       console.log ('blocked message receieved');
       return;
@@ -683,18 +658,11 @@ onMounted(async () => {
   });
 
   socket.on('userRoleUpdated', ({ username, newRole, message }) => {
-    console.log(`userRoleUpdated event called: User ${username} role updated to ${newRole}`);
-
     const user = userList.value.find((user) => user.username === username);
     if (user) {
       user.role = newRole;
     }
-    // selectedChat.value = chats.value.find(chat => chat.name === name);
-    // const curUser = userList.value.find(user => user.username === currentUser.username);
-    // currentRole.value = curUser.role;
-    console.log(`${username} is now ${newRole}. ${message}`);
-
-
+    message; // error prevention
   });
   
   socket.on('userKicked', ({targetId, channelName}) => {
@@ -713,7 +681,7 @@ onMounted(async () => {
 
   socket.on('userTimeout', ({userId, channelName, timeoutEnd}) => {
     if (userId === currentUser.id && selectedChat.value.name === channelName) {
-      console.log(`time test: ${timeoutEnd}`);
+      // console.log(`time test: ${timeoutEnd}`);
       selectedChat.value.timeout = new Date(timeoutEnd);
     } else {
       console.log('timeout for someone else')
