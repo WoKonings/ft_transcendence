@@ -113,15 +113,6 @@ const initThreeJS = () => {
   const midline = new THREE.Mesh(midlineGeometry, midlineMaterial);
   midline.position.set(0, 0, -1);
   scene.add(midline);
-  
-  // Todo: remove
-  // temporary line geo 
-  // const endline1 = new THREE.Mesh(midlineGeometry, midlineMaterial);
-  // endline1.position.set(20, 0, -1);
-  // const endline2 = new THREE.Mesh(midlineGeometry, midlineMaterial);
-  // endline2.position.set(-20, 0, -1);  
-  // scene.add(endline1);
-  // scene.add(endline2);
 
   // Create the top and bottom lines
   const topLineGeometry = new THREE.BoxGeometry(48, 0.2, 1);
