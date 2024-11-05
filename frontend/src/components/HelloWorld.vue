@@ -310,8 +310,6 @@ const logoutUser = () => {
   });
   
   socket.value.on('disconnected', (message) => {
-    console.log(`$jerror ${message}`);
-    console.log('BIG DISCONECTATION!!');
     socket.value.disconnect();
     socket.value = null;
     logoutUser();
@@ -340,7 +338,7 @@ onMounted(() => {
     fetchMe();
     initializeSocket();
     if (!isLoggedIn.value) {
-      // sessionStorage.removeItem('access_token');
+      sessionStorage.removeItem('access_token');
       console.log('WIPED ACCESS TOKEN!');
       logoutUser();
     }

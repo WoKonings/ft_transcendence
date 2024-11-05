@@ -98,7 +98,6 @@ export class UserService {
         isInQueue: targetUser.isInQueue,
       };
 
-      console.log("SECURITY CONCERN CHECK: ", minimalTargetUser, minimalUser)
       this.userGateway.emitToSocketByUserId(userId, 'newFriend', minimalTargetUser);
       this.userGateway.emitToSocketByUserId(targetId, 'newFriend', minimalUser);
       return { message: `You are now friends with ${targetUser.username} ` };

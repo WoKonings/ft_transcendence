@@ -156,7 +156,7 @@ const viewProfile = (user) => {
     isBlocked.value = false;
   }
   isProfileVisible.value = true;
-  console.log(`viewing ${user.username}`); 
+  // console.log(`viewing ${user.username}`); 
 };
 
 const openUserOptions = (user, event) => {
@@ -177,7 +177,7 @@ const openUserOptions = (user, event) => {
     return;
   }
   showUserOptions.value = true;
-  console.log("Modal should be visible:", showUserOptions.value);
+  // console.log("Modal should be visible:", showUserOptions.value);
 };
 
 const closeUserOptions = () => {
@@ -379,11 +379,9 @@ watch(() => props.directMessage, (directMessage) => {
   if (directMessage) {
     if (!chats.value.find(chat => chat.id === directMessage.id)) {
       const directChat = { name: directMessage.username, isDM: true, userId: directMessage.id, messages: [] };
-      console.log(`ya: ${directMessage.id}`);
       chats.value.push(directChat);
       socket.emit('getDMUserList', { userId: directChat.userId });
       selectChat(directChat.name);
-      console.log('Received direct message:', newMessage);
     }
   }
 });
@@ -412,16 +410,12 @@ const setPrivate= async () => {
 };
 
 const directMessageInternal = (directMessage) => {
-  console.log('INTERNAL DM SENTED');
   if (!chats.value.find(chat => chat.id === directMessage.id)) {
 
     const directChat = { name: directMessage.username, isDM: true, userId: directMessage.id, messages: [] };
-    console.log(`ya: ${directMessage.id}`);
     chats.value.push(directChat);
     socket.emit('getDMUserList', { userId: directChat.userId });
     selectChat(directChat.name);
-    // Handle the direct message
-    console.log('Received direct message FROM WITHIN:', newMessage);
   }
 };
 

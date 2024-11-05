@@ -173,14 +173,12 @@ const fetchUserProfile = async () => {
     // Ensure players are not scrambled.
     matchHistory.value.forEach(game => {
       if (game.players[0].id !== game.winner.id) {
-        console.log('switching invalid game');
         [game.players[0], game.players[1]] = [game.players[1], game.players[0]];
       }
       if (game.playerScores[0] < game.playerScores[1]) {
         [game.playerScores[0], game.playerScores[1]] = [game.playerScores[1], game.playerScores[0]];
       }
     });
-    console.log("history?: ", matchHistory);
   } catch (error) {
     console.error(error);
   } finally {

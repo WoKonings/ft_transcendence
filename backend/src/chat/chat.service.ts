@@ -430,7 +430,7 @@ export class ChatService {
           role: newRole, // Use the newRole as ChannelRole
         },
       });
-      console.log(`returning ${updatedUserChannel.role}`)
+      // console.log(`returning ${updatedUserChannel.role}`)
       return updatedUserChannel;
     } catch (error) {
       console.error('Failed to update user role:', error.message);

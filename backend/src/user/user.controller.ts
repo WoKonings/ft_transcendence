@@ -20,7 +20,7 @@ export class UserController {
   @Post('add')
   async addUserAsFriend(@Body() addFriendDto: AddFriendDto, @Req() req: Request) {
     const userId = req['user']?.id
-    console.log(`user id?: ${userId}`);
+    // console.log(`user id?: ${userId}`);
 
     return this.userService.addUserAsFriend(addFriendDto.targetId, userId);
   }
@@ -28,7 +28,7 @@ export class UserController {
   @Post('remove')
   async removeFriend(@Body() addFriendDto: AddFriendDto, @Req() req: Request) {
     const userId = req['user']?.id
-    console.log(`user id?: ${userId}`);
+    // console.log(`user id?: ${userId}`);
 
     return this.userService.removeFriend(addFriendDto.targetId, userId);
   }
@@ -36,7 +36,7 @@ export class UserController {
   @Post('block')
   async addBlocked(@Body() addFriendDto: AddFriendDto, @Req() req: Request) {
     const userId = req['user']?.id
-    console.log(`blocking id?: ${userId}`);
+    // console.log(`blocking id?: ${userId}`);
 
     return this.userService.blockUser(addFriendDto.targetId, userId)
   }
@@ -44,7 +44,7 @@ export class UserController {
   @Post('unblock')
   async removeBlocked(@Body() addFriendDto: AddFriendDto, @Req() req: Request) {
     const userId = req['user']?.id
-    console.log(`unblocking id?: ${userId}`);
+    // console.log(`unblocking id?: ${userId}`);
 
     return this.userService.unblockUser(addFriendDto.targetId, userId)
   }
@@ -150,7 +150,7 @@ export class UserController {
       }
     }
 
-    console.log(`CHANGING AVATAR FOR ${user.id} / ${user.username}`);
+    // console.log(`CHANGING AVATAR FOR ${user.id} / ${user.username}`);
     await this.userService.updateAvatar(user.id, file.filename);
     return { message: 'Avatar uploaded successfully' };
   }

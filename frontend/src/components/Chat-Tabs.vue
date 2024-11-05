@@ -84,12 +84,10 @@ const fetchUserList = async () => {
       const data = response.json();
       console.log(`error: ${data.message}`);
       if (data.success) {
-      console.log("SUCCESSSSSSSS!!!");
       userList.value = Object.values(data.users);
       console.log(`userlist; ${userList.value}`);
       userListError.value = null; // Clear any previous errors
     } else {
-      console.log("not successsss!!!");
       userListError.value = 'Failed to fetch user list';
     }
     });

@@ -177,7 +177,6 @@ const initializeSocketListeners = () => {
 
   socket.value.on('gameInvite', (data) => {
     invites.value.push(data);
-    console.log(`${data.sender} IS NOW AN INVITE SENDER`);
     inviteSenders.value.add(data.sender);
   });
 
@@ -321,7 +320,6 @@ const closeOptions = () => {
 };
 
 const inviteToPlay = (friend) => {
-  console.log(`friend?: ${friend} ??:`, friend);
   socket.value.emit('sendGameInvite', {
     targetName: friend.username,
   });
@@ -330,8 +328,6 @@ const inviteToPlay = (friend) => {
 
 const directMessage = (user) => {
   emit('directMessage', user);
-  console.log('FRIENDSLIST LAYER');
-  console.log(`DM CHECK?: ${user} ??:`);
 };
 
 const blockUser = async (friend) => {

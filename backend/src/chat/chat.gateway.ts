@@ -60,7 +60,6 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   @SubscribeMessage('getChannels')
   async getChannels(client: Socket) {
-    console.log('REQUESTED CHANNELS!');
     const userId = client['user']?.id;
     const channels = await this.chatService.getAllUserChannels(userId);
 
@@ -86,7 +85,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   @SubscribeMessage('setChannelPrivacy')
   async setChannelPrivacy(client: Socket, payload: { channelName: string }) {
-    console.log(`trying to change privacy for ${payload.channelName}`);
+    // console.log(`trying to change privacy for ${payload.channelName}`);
 
     const channel = await this.chatService.getChannelByName(payload.channelName);
     if (!channel) {
@@ -170,7 +169,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   @SubscribeMessage('kickUser')
   async handleKickUser(client: Socket, payload: { channelName: string, targetId: number }) {
-    console.log(`KICK: ${payload.channelName}, ${payload.targetId}`)
+    // console.log(`KICK: ${payload.channelName}, ${payload.targetId}`)
     const channel = await this.chatService.getChannelByName(payload.channelName);
     const target = await this.userService.getUserById(payload.targetId);
     const callerId = client['user']?.id
@@ -237,7 +236,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   //todo: check for admin
   @SubscribeMessage('timeoutUser')
   async handleTimeoutUser(client: Socket, payload: { channelName: string, targetId: number }) {
-    console.log(`TIMEOUT: ${payload.channelName}, ${payload.targetId}`)
+    // console.log(`TIMEOUT: ${payload.channelName}, ${payload.targetId}`)
 
     const channel = await this.chatService.getChannelByName(payload.channelName);
     const target = await this.userService.getUserById(payload.targetId);
@@ -279,7 +278,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   async handleJoinChannel(client: Socket, payload: { channelName: string; password: string }) {
     if (payload.channelName.length > 10)
       payload.channelName.slice(0, 10);
-    console.log(`trying to join ${payload.channelName} [Gateway]`);
+    // console.log(`trying to join ${payload.channelName} [Gateway]`);
 
     const userId = client['user']?.id;
     const channelExists = await this.chatService.getChannelByName(payload.channelName);
@@ -296,7 +295,6 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         });
 
         if (!channelExists) {
-          console.log(" emitting role event to front end");
           await this.chatService.updateUserRole(payload.channelName, user.id, ChannelRole.OWNER);
           this.server.to(payload.channelName).emit('userRoleUpdated', {
             username: user.username,
@@ -307,7 +305,6 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
           console.log(`${user.username} is now Admin of ${payload.channelName}`)
         }
         else {
-          console.log("making user default role");
           await this.chatService.updateUserRole(payload.channelName, user.id, ChannelRole.MEMBER);
           this.server.to(payload.channelName).emit('userRoleUpdated', {
             username: user.username,
@@ -343,7 +340,6 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   async handleDirectMessage(client: Socket, payload: { targetId: number, message: string }) {
     const senderId = client['user']?.id;
     const senderName = client['user']?.username;
-    console.log(`trying to message ${payload.targetId}`);
     const target = await this.userService.getUserById(payload.targetId);
     if (!target) {
       console.log('target userId for DM does not exist');
@@ -394,9 +390,9 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     }
 
     console.log('Updating role for target:', target.id, 'in channel:', channel.id);
-    const userChannelRecord = await this.chatService.getUserChannel(channel.id, target.id);
+    // const userChannelRecord = await this.chatService.getUserChannel(channel.id, target.id);
 
-    console.log('UserChannel Record:', userChannelRecord);
+    // console.log('UserChannel Record:', userChannelRecord);
 
     const newRoleEnumValue = ChannelRole[payload.role as keyof typeof ChannelRole];
     // Update the target's role in the specified channel

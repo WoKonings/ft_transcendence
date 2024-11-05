@@ -84,7 +84,6 @@ export class GameState {
         this.ball.radius += 0.1;
         this.ball.radius = parseFloat(this.ball.radius.toFixed(1));
         // this.ball.radius = Math.round(this.ball.radius);
-        console.log(`ball grows: ${this.ball.radius}`);
       }
       
       // Adjust ball position to prevent sticking
@@ -111,7 +110,6 @@ export class GameState {
       if (this.bigPong && this.ball.radius < 4) {
         this.ball.radius += 0.1;
         this.ball.radius = parseFloat(this.ball.radius.toFixed(1));
-        console.log(`ball grows: ${this.ball.radius}`);
       }
       // Adjust ball position to prevent sticking
       // this.ball.x = this.paddle2.x - this.ball.radius;
@@ -140,10 +138,6 @@ export class GameState {
 	}
 
   resetBall() {
-    // if (this.bigPong) {
-    //   console.log('ball size reset');
-    //   this.ball.radius = 0.5;
-    // }
     this.ball = { x: 0, y: 0, dx: 0, dy: 0, radius: 0.5};
     this.ball.x = 0;
     this.ball.y = 0;

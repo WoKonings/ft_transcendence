@@ -70,7 +70,6 @@ export class GameGateway {
       console.log(`user: ${username} is not in a game to leave.`);
       return;
     }
-    console.log(`removed paddle from user: ${username}`);
     this.userService.setIsInGame(Number(userId), false);
     client.broadcast.emit('userStatusUpdate', {
       username: username,
@@ -80,18 +79,14 @@ export class GameGateway {
     })
 
     if (game.player_one && game.player_one.userId === userId) {
-      console.log('player one bailed');
       game.gameState.score.playerTwo = 7;
-      console.log('updated score to 7 for p2');
       this.handleGameOver(game.player_two, game.player_one, game);
       if (game.player_two)
         game.player_two.socket.emit('opponentLeft', game.player_one.username);
       game.player_one = null;
       game.gameState.playerOne = null;
     } else if (game.player_two && game.player_two.userId === userId) {
-      console.log('player two bailed');
       game.gameState.score.playerOne = 7;
-      console.log('updated score to 7 for p1');
       this.handleGameOver(game.player_one, game.player_two, game);
       if (game.player_one)
         game.player_one.socket.emit('opponentLeft', game.player_two.username);
@@ -125,11 +120,6 @@ export class GameGateway {
       console.log('No username provided for join_game');
       return;
     }
-    // if (!bigPong) {
-    //   console.log('Did not specify gamemode');
-    //   return;
-    // }
-    // if (!isPrivate)
 
     this.assignUserToRoom(client, userId, username, isPrivate, bigPong);
     const session = this.getGameSessionForUser(userId);
@@ -285,7 +275,7 @@ async handleInviteGame(client: Socket, data: InviteGameDto): Promise<void> {
       console.log('joining session!');
       // Notify the existing player about the new opponent
       if (session.player_one == null) {
-        session.player_one = { userId, socket: client, username }; //todo: maybe add more data?
+        session.player_one = { userId, socket: client, username };
         session.gameState.playerOne = userId;
         console.log(`${username} joined lobby as player one`);
       }
@@ -330,22 +320,7 @@ async handleInviteGame(client: Socket, data: InviteGameDto): Promise<void> {
     console.log('no session found');
     return undefined;
   }
-        
-  // @SubscribeMessage('playerMove')
-  // handlePlayerMove(client: Socket, data: PlayerMoveDto): void {
-  //   const { userId, y } = data;
-  //   if (!userId) {
-  //     console.log('No userId provided for playerMove');
-  //     return;
-  //   }
 
-  //   const gameSession = this.getGameSessionForUser(userId);
-  //   if (!gameSession) {
-  //     return;
-  //   }
-  //   gameSession.gameState.updatePlayerPosition(userId, y);
-  // }
-  
   @SubscribeMessage('playerMoveKBM')
   handlePlayerMoveUp(client: Socket, data: PlayerMoveDto): void {
     const userId = client['user']?.sub;
@@ -495,7 +470,7 @@ async handleInviteGame(client: Socket, data: InviteGameDto): Promise<void> {
   }
 
   calculateEloChange(winnerElo: number, loserElo: number): number {
-    const kFactor = 32; // You can adjust the K-factor based on your system
+    const kFactor = 32;
   
     // Expected scores
     const expectedScoreWinner = 1 / (1 + Math.pow(10, (loserElo - winnerElo) / 400));
@@ -505,7 +480,7 @@ async handleInviteGame(client: Socket, data: InviteGameDto): Promise<void> {
     const eloChangeWinner = Math.round(kFactor * (1 - expectedScoreWinner));
     const eloChangeLoser = Math.round(kFactor * (0 - expectedScoreLoser));
   
-    return eloChangeWinner; // Return Elo change for winner (positive)
+    return eloChangeWinner;
   }
 
   async handleDisconnect(client: Socket) {

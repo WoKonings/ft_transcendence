@@ -32,7 +32,6 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @Post('login')
   async signIn(@Body() signInDto: SignInDto) {
-    console.log(`Attempting to log in: password = ${signInDto.password} && username = ${signInDto.username}`); // debug log, remove later
     return this.authService.signIn(signInDto.username, signInDto.password, false);
   }
 
@@ -134,7 +133,6 @@ export class AuthController {
       throw new UnauthorizedException('Invalid credentials');
     }
     
-    console.log ('authing frfr 2fa');
     if (user.twoFactorEnabled) {
       const isValid = await this.authService.verifyToken(user.id, body.token);
       if (!isValid) {
@@ -142,7 +140,7 @@ export class AuthController {
         throw new UnauthorizedException('Invalid 2FA token');
       }
     }
-    console.log('2FA AUTH SUCCESS!!');
+    console.log('2fa success');
     return this.authService.signIn(user.username, body.password, true);
   }
 }

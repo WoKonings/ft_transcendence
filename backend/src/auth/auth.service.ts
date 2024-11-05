@@ -103,8 +103,6 @@ export class AuthService {
           email: profile.email,
           intraId: profile.id,
         })
-        // console.log('returning intra user');
-        // return { access_token: intra_access_token };
         user = await this.userService.getUserByIntraId(profile.id);
         if (!user) {
           console.log ("MAJOR ERROR WHEN CREATING USER!!");
@@ -121,7 +119,6 @@ export class AuthService {
   }
 
   async newNameNewToken(user: any) {
-    console.log('user?: ', user);
     return (await this.generateToken(user, false));
   }
 
@@ -175,7 +172,7 @@ export class AuthService {
     });
 
     const otpauthUrl = `otpauth://totp/${appName}:${encodedUsername}?secret=${secret.base32}&issuer=${appName}&algorithm=SHA1&digits=6&period=30`;
-    console.log(otpauthUrl);
+    // console.log(otpauthUrl);
     return {
       otpauthUrl,
       base32: secret.base32,

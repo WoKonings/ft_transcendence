@@ -235,8 +235,6 @@ const changeUsername = async () => {
       sessionStorage.setItem('access_token', data.access_token);
       router.push('/login');
 
-      console.log(`TEST: ${data.access_token}`);
-
     } else {
       throw new Error('Failed to update username');
     }
@@ -324,9 +322,9 @@ onMounted(async () => {
     router.push('/login');
     return;
   }
-  console.log('current user!: ', currentUser.value);
-  console.log('current username: ', currentUser.value.username);
-  console.log('current avatar: ', currentUser.value.avatar);
+  // console.log('current user!: ', currentUser.value);
+  // console.log('current username: ', currentUser.value.username);
+  // console.log('current avatar: ', currentUser.value.avatar);
   try {
     // Fetch the user profile
     const userResponse = await fetch(`http://localhost:3000/user/search/${currentUser.value.username}`, {
@@ -358,7 +356,6 @@ onMounted(async () => {
 
     matchHistory.value.forEach(game => {
       if (game.players[0].id !== game.winner.id) {
-        console.log('switching invalid game');
         [game.players[0], game.players[1]] = [game.players[1], game.players[0]];
       }
       if (game.playerScores[0] < game.playerScores[1]) {
@@ -382,7 +379,7 @@ onMounted(async () => {
 
   socket.value.on('userStatusUpdate', (data) => {
     for (let match of matchHistory.value) {
-      console.log(`id1: ${match.players[0].id} ChID: ${data.userId}`)
+      // console.log(`id1: ${match.players[0].id} ChID: ${data.userId}`)
       if (match.players[0].id == data.id) {
         if (data.username != null)
           match.players[0].username = data.username;

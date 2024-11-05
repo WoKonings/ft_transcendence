@@ -98,7 +98,6 @@ const animate = () => {
 
 onMounted(() => {
   if (isLoggedIn.value == true) {
-    console.log('ALREADY LGOGGEGED IN !');
     router.push('/');
   } else {
     console.log(`loginstatus: ${isLoggedIn.value}`)
