@@ -330,7 +330,7 @@ const unblockUser = async (friend) => {
   }
 };
 
-console.log('Socket in chat:', socket);
+// console.log('Socket in chat:', socket);
 
 const selectChat = (name) => {
   selectedChat.value = chats.value.find(chat => chat.name === name);
@@ -636,7 +636,6 @@ onMounted(async () => {
   socket.on('userStatusUpdate', (data) => {
     const user = userList.value.find((user) => user.id === data.userId);
     if (user) {
-      console.log("FOUND CORRECT USER!");
       if (data.username != null)
         user.username = data.username;
       if (data.avatar != null)
