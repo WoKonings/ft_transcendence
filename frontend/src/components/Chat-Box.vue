@@ -15,7 +15,7 @@
         </div>
       </div>
       <button @click="joinNewChannel" class="join-button">
-        <i class="fas fa-plus"></i> Join New Channel
+        <i class="join"></i> Join New Channel
       </button>
     </div>
 
@@ -60,7 +60,7 @@
             maxlength="300"
           />
           <button type="submit" class="send-button">
-            <i class="fas fa-paper-plane"></i>
+            <i class="send"> send </i>
           </button>
         </form>
       </div>
@@ -936,19 +936,6 @@ input {
   margin-top: 5px;
   margin-bottom: 10px;
 }
-
-/*.user-item {
-  display: flex;
-  align-items: center;
-  padding: 2% 0;
-  cursor: pointer;
-  font-size: 0.9em;
-  transition: background-color 0.2s ease;
-}
-
-.user-item:hover {
-  background-color: #f0f0f0;
-}*/
 
 .user-item {
   display: flex;
