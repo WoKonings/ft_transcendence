@@ -1,5 +1,6 @@
 services:
   backend:
+    user: "1100:1100"
     build:
       context: ./backend
     container_name: backend
@@ -14,9 +15,9 @@ services:
       DATABASE_URL: ${DATABASE_URL}
     restart: on-failure
     mem_limit: 1.5g
-    user: "1100:1100"
 
   postgres:
+    user: "1000:1000"
     image: postgres:15
     container_name: postgres
     ports:
@@ -28,9 +29,9 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
     mem_limit: 1.5g
-    user: "1000:1000"
 
   frontend:
+    user: "1200:1200"
     build:
       context: ./frontend
     container_name: frontend
@@ -42,7 +43,6 @@ services:
     depends_on:
       - backend
     mem_limit: 1.5g
-    user: "1200:1200"
 
 volumes:
   pgdata:
