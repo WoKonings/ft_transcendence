@@ -68,7 +68,6 @@ import { useStore } from 'vuex';
 import ViewProfile from './ViewProfile.vue';
 
 const store = useStore();
-const currentUser = computed(() => store.state.currentUser);
 const socket = computed(() => store.state.socket);
 
 const emit = defineEmits(['directMessage']);
@@ -305,8 +304,6 @@ const acceptGameInvite = async (invite) => {
   console.log('Accepted invite:', invite);
   socket.value.emit('acceptInvite', {
     gameId: invite.gameId,
-    // username: currentUser.value.username,
-    // userId: currentUser.value.id,
   })
   invites.value = invites.value.filter(i => i.gameId !== invite.gameId);
   closeInvites();
@@ -319,10 +316,6 @@ const declineGameInvite = async (invite) => {
   invites.value = invites.value.filter(i => i.gameId !== invite.gameId);
   inviteSenders.value.delete(invite.sender);
 };
-
-// const selectUser = (user) => {
-//   selectedUser.value = user;
-// };
 
 const closeOptions = () => {
   selectedUser.value = null;

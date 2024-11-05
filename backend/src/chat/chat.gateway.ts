@@ -277,10 +277,14 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
   @SubscribeMessage('joinChannel')
   async handleJoinChannel(client: Socket, payload: { channelName: string; password: string }) {
+    if (payload.channelName.length > 10)
+      payload.channelName.slice(0, 10);
     console.log(`trying to join ${payload.channelName} [Gateway]`);
+
     const userId = client['user']?.id;
     const channelExists = await this.chatService.getChannelByName(payload.channelName);
     const result = await this.chatService.joinChannel(payload.channelName, userId, payload.password);
+
 
     if (result.success) {
       const user = await this.userService.getUserById(userId);
