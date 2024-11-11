@@ -5,12 +5,12 @@
       <button v-if="pendingFriendRequests.length > 0" class="notification" @click="viewPendingRequests">
         {{ pendingFriendRequests.length }} Pending Requests
       </button>
-      <button v-if="invites.length > 0" class="notification" @click="viewInvites">
+      <button v-if="invites.length > 0 && ingame == false" class="notification" @click="viewInvites">
         {{ invites.length }} Game Invites
       </button>
     </div>
     <div v-for="friend in sortedFriends" :key="friend.id" class="user"
-      @click="viewProfile(friend)" :class="{ 'highlight': isInviteSender(friend.id) }">
+      @click="viewProfile(friend)">
       <div class="avatar">
         <img :src="friend.avatar ? `http://localhost:3000${friend.avatar}` : `https://robohash.org/${friend.username}?set=set4`" :alt="`${friend.username}`" />
       </div>
@@ -80,9 +80,9 @@ const error = ref('');
 const showPendingRequestsModal = ref(false);
 const showInvitesModal = ref(false);
 const selectedUser = ref(null);
-const inviteSenders = ref(new Set()); // To keep track of users who sent invites
 const isProfileVisible = ref(false); // State to manage profile visibility
 const isBlocked = ref(false);
+const ingame = ref(false);
 
 
 const fetchFriends = async () => {
@@ -177,7 +177,35 @@ const initializeSocketListeners = () => {
 
   socket.value.on('gameInvite', (data) => {
     invites.value.push(data);
-    inviteSenders.value.add(data.sender);
+  });
+
+  socket.value.on('gameJoined', () => {
+    console.log('FRIEND LIST GAME JOINED!');
+    ingame.value = true;
+  });
+
+  socket.value.on('gameWon', () => {
+    console.log('FRIEND LIST GAME WON!');
+
+    ingame.value = false;
+  });
+
+  socket.value.on('gameLost', () => {
+    console.log('FRIEND LIST GAME LOST!');
+
+    ingame.value = false;
+  });
+
+  socket.value.on('opponentLeft', () => {
+    console.log('FRIEND LIST OPPONENT LEFT!');
+
+    ingame.value = false;
+  });
+
+  socket.value.on('opponentJoined', () => {
+    console.log('FRIEND LIST OPPONENT JOINED!');
+
+    ingame.value = true;
   });
 
   socket.value.on('userStatusUpdate', (data) => {
@@ -305,14 +333,12 @@ const acceptGameInvite = async (invite) => {
   })
   invites.value = invites.value.filter(i => i.gameId !== invite.gameId);
   closeInvites();
-  inviteSenders.value.delete(invite.sender);
 };
 
 const declineGameInvite = async (invite) => {
   // Handle invite decline logic
   console.log('Declined invite for game:', invite.gameId);
   invites.value = invites.value.filter(i => i.gameId !== invite.gameId);
-  inviteSenders.value.delete(invite.sender);
 };
 
 const closeOptions = () => {
@@ -414,10 +440,6 @@ const removeFriend = async (friend) => {
   }
 };
 
-const isInviteSender = (friendId) => {
-  return inviteSenders.value.has(friends.value.find(f => f.id === friendId)?.username);
-};
-
 const getStatusClass = (friend) => {
   if (friend.isOnline == false) return 'status-offline';
   if (friend.isInGame) return 'status-in-game';
@@ -476,13 +498,7 @@ onMounted(() => {
 	border-bottom: 1px solid #ddd;
 	cursor: pointer;
 	transition: background-color 0.2s;
-	position: relative; /* Allow absolute positioning of status indicator */
-  border-radius: 10px;
-}
-
-.user.highlight {
-  background-color: #077a2c;
-  animation: blink 1s step-start infinite;
+	position: relative;
   border-radius: 10px;
 }
 
@@ -507,9 +523,9 @@ onMounted(() => {
 .username {
   font-size: 14px;
   font-weight: bold;
-  overflow: hidden; /* Hide overflow text */
+  overflow: hidden;
   text-overflow: ellipsis; /* Show ellipsis for truncated text */
-  max-width: 90px; /* Set a maximum width for the username */
+  max-width: 90px;
 }
 
 .actions {
