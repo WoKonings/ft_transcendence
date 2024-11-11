@@ -158,8 +158,9 @@ const initializeSocketListeners = () => {
   socket.value.on('newFriendRequest', (data) => {
     pendingFriendRequests.value.push(data);
   });
-
+  
   socket.value.on('newFriend', (data) => {
+    pendingFriendRequests.value = pendingFriendRequests.value.filter(request => request.id !== data.id);
     friends.value.push(data);
   });
 
@@ -336,7 +337,6 @@ const acceptGameInvite = async (invite) => {
 };
 
 const declineGameInvite = async (invite) => {
-  // Handle invite decline logic
   console.log('Declined invite for game:', invite.gameId);
   invites.value = invites.value.filter(i => i.gameId !== invite.gameId);
 };
@@ -346,6 +346,14 @@ const closeOptions = () => {
 };
 
 const inviteToPlay = (friend) => {
+  const existingInvite = invites.value.find((invite) => invite.id === friend.id);
+
+  if (existingInvite) {
+    console.log('Already have an invite, accepting instead of creating another invite!')
+    acceptGameInvite(existingInvite);
+    return;
+  }
+
   socket.value.emit('sendGameInvite', {
     targetName: friend.username,
   });

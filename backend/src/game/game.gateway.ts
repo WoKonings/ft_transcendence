@@ -16,6 +16,7 @@ interface Player {
   username: string;
 	userId: string;
 	socket: Socket;
+  elo: number;
 }
 
 interface GameSession {
@@ -103,11 +104,10 @@ export class GameGateway {
         
   // Handle "joinGame" event from client
   @SubscribeMessage('joinGame')
-  handleJoinGame(client: Socket, data: JoinGameDto): void {
+  async handleJoinGame(client: Socket, data: JoinGameDto) {
     const { isPrivate = false, bigPong} = data;
-    const userId = client['user']?.sub;
+    const userId = client['user']?.id;
     const username = client['user']?.username;
-
     if (!client) {
       console.log('No socket');
       return;
@@ -120,9 +120,19 @@ export class GameGateway {
       console.log('No username provided for join_game');
       return;
     }
+    const user = await this.userService.getUserById(userId);
 
-    this.assignUserToRoom(client, userId, username, isPrivate, bigPong);
-    const session = this.getGameSessionForUser(userId);
+    if (!user) {
+      console.log(`Wrong userId to join game`);
+      return;
+    }
+    let session = this.getGameSessionForUser(userId); //ensure user ISNT already in a room
+    if (session) {
+      console.log('already in a session');
+      return;
+    }
+    this.assignUserToRoom(client, userId, username, isPrivate, bigPong, user.elo);
+    session = this.getGameSessionForUser(userId); //check that user joined a room
     if (!session) {
       console.log('joining session failed');
       return;
@@ -158,10 +168,10 @@ export class GameGateway {
   }
 
 @SubscribeMessage('sendGameInvite')
-async handleInviteGame(client: Socket, data: InviteGameDto): Promise<void> {
+async handleInviteGame(client: Socket, data: InviteGameDto) {
 	try {
 		const { targetName } = data;
-    const senderId = client['user']?.sub;
+    const senderId = client['user']?.id;
     const senderName = client['user']?.username;
 
 		if (!client) {
@@ -194,7 +204,7 @@ async handleInviteGame(client: Socket, data: InviteGameDto): Promise<void> {
 
     let session = this.getGameSessionForUser(senderId);
     if (!session) {
-      this.handleJoinGame(client, {
+      await this.handleJoinGame(client, {
         isPrivate: true,
         bigPong: false,
       });
@@ -223,21 +233,26 @@ async handleInviteGame(client: Socket, data: InviteGameDto): Promise<void> {
     console.log ('accepting data: ', data)
     const { gameId } = data;
     const session = this.gameSessions.get(gameId);
-    const userId = client['user']?.sub;
+    const userId = client['user']?.id;
     const username = client['user']?.username;
+    const user = await this.userService.getUserById(userId);
 
+    if (!user) {
+      console.log(`Wrong userId to accept invite`);
+      return;
+    }
     if (!session) {
       console.log(`No game session found for gameId: ${gameId}`);
-      client.emit('inviteError', { message: 'Game session not found.' }); //todo implement frontend
+      // client.emit('inviteError', { message: 'Game session not found.' });
       return;
     }
     if (session.player_one == null) {
-      session.player_one = { userId, socket: client, username };
+      session.player_one = { userId, socket: client, username, elo: user.elo };
       session.gameState.playerOne = userId;
       console.log(`${username} joined lobby as player one`);
     }
     else if (session.player_two == null) {
-      session.player_two = { userId, socket: client, username };
+      session.player_two = { userId, socket: client, username, elo: user.elo };
       session.gameState.playerTwo = userId;
       console.log(`${username} joined lobby as player two`);
     }
@@ -248,14 +263,14 @@ async handleInviteGame(client: Socket, data: InviteGameDto): Promise<void> {
       session.player_one.socket.emit('opponentJoined', session.player_two.username);
       session.player_two.socket.emit('opponentJoined', session.player_one.username);
       session.paused = false;
-      this.userService.setIsInGame(Number(session.player_one.userId), true);
+      await this.userService.setIsInGame(Number(session.player_one.userId), true);
       session.player_one.socket.broadcast.emit('userStatusUpdate', {
         username: session.player_one.username,
         userId: session.player_one.userId,
         isInGame: true,
         isInQueue: false,
       });
-      this.userService.setIsInGame(Number(session.player_two.userId), true);
+      await this.userService.setIsInGame(Number(session.player_two.userId), true);
       session.player_two.socket.broadcast.emit('userStatusUpdate', {
         username: session.player_two.username,
         userId: session.player_two.userId,
@@ -267,20 +282,18 @@ async handleInviteGame(client: Socket, data: InviteGameDto): Promise<void> {
   }
 
   // Assign user to a game room or create a new one
-  assignUserToRoom(client: Socket, userId: string, username: string, isPrivate: boolean, bigPong: boolean) {
-    
-    
+  assignUserToRoom(client: Socket, userId: string, username: string, isPrivate: boolean, bigPong: boolean, elo: number) {
     const session = this.findAvailableSession(bigPong);
     if (session) {
       console.log('joining session!');
       // Notify the existing player about the new opponent
       if (session.player_one == null) {
-        session.player_one = { userId, socket: client, username };
+        session.player_one = { userId, socket: client, username, elo };
         session.gameState.playerOne = userId;
         console.log(`${username} joined lobby as player one`);
       }
       else if (session.player_two == null) {
-        session.player_two = { userId, socket: client, username };
+        session.player_two = { userId, socket: client, username, elo };
         session.gameState.playerTwo = userId;
         console.log(`${username} joined lobby as player two`);
       }
@@ -289,7 +302,7 @@ async handleInviteGame(client: Socket, data: InviteGameDto): Promise<void> {
       newGameState.playerOne = userId;
       newGameState.bigPong = bigPong;
       const newSession: GameSession = {
-        player_one: { userId, socket: client, username },
+        player_one: { userId, socket: client, username, elo },
         player_two: null,
         gameState: newGameState,
         isPrivate: isPrivate,
@@ -307,7 +320,7 @@ async handleInviteGame(client: Socket, data: InviteGameDto): Promise<void> {
     }
   }
   
-  // Find an available publicda session that isn't full
+  // Find an available public session that isn't full
   private findAvailableSession(bigPong: boolean): GameSession | undefined {
     console.log('searching available session');
     for (const session of this.gameSessions.values()) {
@@ -352,8 +365,7 @@ async handleInviteGame(client: Socket, data: InviteGameDto): Promise<void> {
   // finds if the userId (as a string) is in a game, and returns the session if they are.
   private getGameSessionForUser(userId: string): GameSession | undefined {
     const user_Id = userId;
-    if (!user_Id)
-    {
+    if (!user_Id) {
       console.log('No userId provided for getGameSessionForUser')
       return undefined;
     }
@@ -403,8 +415,8 @@ async handleInviteGame(client: Socket, data: InviteGameDto): Promise<void> {
       return;
     }
     try {
-      // const eloChange = this.calculateEloChange(winner, loser);
-      const eloChange = 69;
+      const eloChange = this.calculateEloChange(winner.elo, loser.elo);
+      // const eloChange = 69;
       
       // Update winner's stats
       await this.prisma.user.update({

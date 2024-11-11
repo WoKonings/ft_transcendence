@@ -174,12 +174,8 @@ const updateGameObjects = (gameState) => {
   paddle2.position.x = gameState.paddle2.x;
   ball.position.x = gameState.ball.x;
   ball.position.y = gameState.ball.y;
-  // ball.radius = gameState.ball.radius;
-  // console.log(`ball radius: ${gameState.ball.radius * 2}`);
-  // if (gameState.ball.radius != 0.5)
+
   ball.scale.set(gameState.ball.radius / 0.5, gameState.ball.radius / 0.5, gameState.ball.radius / 0.5);
-  // if (gameState.ball.radius != 0.5)
-    // ball.scale.set(2, 2, 2);
 
   player1Score.value = gameState.score.playerOne;
   player2Score.value = gameState.score.playerTwo;
@@ -196,8 +192,10 @@ const initSocket = () => {
     showEnd.value = false;
     if (whichPlayer == 1) {
       player1 = currentUser.value.username;
+      player2 = null;
     } else if (whichPlayer == 2) {
       player2 = currentUser.value.username;
+      player1 = null;
     }
   });
 
@@ -287,6 +285,8 @@ const exitGame = () => {
   endScreenMessage.value = null;
   gameStarted.value = false;
   waitingForOpponent.value = false;
+  player1 = null;
+  player2 = null;
 }
 
 onMounted(() => {
