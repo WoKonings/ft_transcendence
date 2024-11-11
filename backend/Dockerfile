@@ -5,18 +5,20 @@ FROM node:19-alpine
 WORKDIR /usr/src/app
 RUN adduser -D -u 1100 appuser && chown appuser:appuser /usr/src/app
 
-# Switch to the non-root user
-USER appuser
-
 # Copy package files and install dependencies
 COPY --chown=appuser:appuser package*.json ./
+# COPY package*.json ./
 RUN npm ci
 
 COPY . .
 
 # Setup Prisma
 RUN npx prisma generate
-RUN npx prisma
+RUN mkdir -p /usr/src/app/dist && chown -R appuser:appuser /usr/src/app/dist
+RUN chown -R appuser:appuser /usr/src/app/node_modules/.prisma
+
+# Switch to the non-root user
+USER appuser
 
 # Expose port 3000 to the world outside the container
 EXPOSE 3000
