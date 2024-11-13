@@ -188,7 +188,7 @@ const fetchUserProfile = async () => {
 
 // Close profile function
 const closeProfile = () => {
-  console.log('test: ', userProfile.value.gamesWon);
+  // console.log('test: ', userProfile.value.gamesWon);
   emit('close');
 };
 

@@ -117,7 +117,6 @@ onBeforeUnmount(() => {
   }
 });
 
-//todo: switch logic
 const loginUser = async () => {
   console.log('Login clicked');
   window.location.href = 'http://localhost:3000/auth/42';

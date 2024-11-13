@@ -266,7 +266,7 @@ export class UserService {
       console.log ('not found by Username')
       return null;
     }
-    console.log(`found ${user.username}, sock: ${user.socket}`);
+    // console.log(`found ${user.username}, sock: ${user.socket}`);
     return user;
   }
 
@@ -413,7 +413,7 @@ export class UserService {
       data: { isInGame: bool, isInQueue: false },
     });
   
-    console.log(`${user.username} is ingame?: ${user.isInGame}`);
+    // console.log(`${user.username} is ingame?: ${user.isInGame}`);
   }
 
   async setIsInQueue(userId: number, bool: boolean): Promise<void> {
@@ -422,7 +422,7 @@ export class UserService {
       data: { isInQueue: bool },
     });
   
-    console.log(`${user.username} is inqueue?: ${user.isInQueue}`);
+    // console.log(`${user.username} is inqueue?: ${user.isInQueue}`);
   }
 
 
@@ -505,7 +505,6 @@ export class UserService {
     user = await this.prisma.user.findUnique({
       where: { username: newUsername }
     });
-    console.log('user check: ', user);
     //generate new token?
     const newToken = this.authService.newNameNewToken(user);
     return (newToken);

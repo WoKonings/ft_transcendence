@@ -233,7 +233,6 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     console.log(`target with ID ${payload.targetId} has been banned from channel ${payload.channelName}`);
   }
 
-  //todo: check for admin
   @SubscribeMessage('timeoutUser')
   async handleTimeoutUser(client: Socket, payload: { channelName: string, targetId: number }) {
     // console.log(`TIMEOUT: ${payload.channelName}, ${payload.targetId}`)
@@ -314,7 +313,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
           });
         }
         client.join(payload.channelName);
-        console.log(`${user.username} joined channel: ${payload.channelName} \n and is now in ${client.rooms}`);
+        console.log(`${user.username} joined channel: ${payload.channelName}`);
         await this.updateUserList(payload.channelName);
       }
     }

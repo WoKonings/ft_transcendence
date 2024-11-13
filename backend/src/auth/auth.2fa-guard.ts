@@ -16,7 +16,7 @@ export class TwoFAuthGuard implements CanActivate {
 	async canActivate(context: ExecutionContext): Promise<boolean> {
 		// Check if the request is HTTP or WebSocket
 		if (context.getType() === 'http') {
-			// For HTTP requests
+			// for HTTP requests
 			const request = context.switchToHttp().getRequest<Request>();
 			const token = this.extractTokenFromHeader(request);
 			if (!token) {
@@ -32,7 +32,7 @@ export class TwoFAuthGuard implements CanActivate {
 			}
 			return true;
 		} else if (context.getType() === 'ws') {
-			// For WebSocket connections
+			// for WebSocket connections
 			const client = context.switchToWs().getClient();
 			const token = this.extractTokenFromSocket(client);
 			if (!token) {
@@ -42,7 +42,7 @@ export class TwoFAuthGuard implements CanActivate {
 				const payload = await this.jwtService.verifyAsync(token, {
 					secret: jwtConstants.secret,
 				});
-				client['user'] = payload; // Attach the user to the WebSocket client object
+				client['user'] = payload; // attach the user to the WebSocket client
 			} catch {
 				throw new WsException('Unauthorized');
 			}
@@ -50,13 +50,13 @@ export class TwoFAuthGuard implements CanActivate {
 		}
 	}
 
-	// Extract JWT token from HTTP request headers
+	// extract JWT token from HTTP request headers
 	private extractTokenFromHeader(request: Request): string | undefined {
 		const [type, token] = request.headers.authorization?.split(' ') ?? [];
 		return type === 'Bearer' ? token : undefined;
 	}
 
-	// Extract JWT token from WebSocket handshake auth
+	// extract JWT token from WebSocket handshake auth
 	private extractTokenFromSocket(client: any): string | undefined {
 		return client.handshake?.auth?.token;
 	}

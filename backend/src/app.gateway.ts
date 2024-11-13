@@ -41,7 +41,7 @@ export class AppGateway implements OnGatewayInit, OnGatewayConnection, OnGateway
         console.log (`User: ${decoded.username} is already online!`);
         const userSocket = this.server.sockets.sockets.get(userAlreadyLoggedIn.socket);
         if (userSocket) {
-          console.log('found old socket, disconnecting');
+          // console.log('found old socket, disconnecting');
           userSocket.emit('disconnected', { message: 'You have logged in on another instance. You are being logged out here.'});
           userSocket.disconnect();
         } else {
@@ -77,7 +77,7 @@ export class AppGateway implements OnGatewayInit, OnGatewayConnection, OnGateway
         where: { socket: client.id},
       });
       if (!user) {
-        console.log('juicer not found');
+        // console.log('user not found');
         return;
       }
       

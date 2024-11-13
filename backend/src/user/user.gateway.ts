@@ -31,10 +31,10 @@ export class UserGateway {
       where: { id: userId },
       // include: { channels: true},
     });
-    const userSocket = this.server.sockets.sockets.get(user.socket);  // Fetch user's socket
+    const userSocket = this.server.sockets.sockets.get(user.socket);
     if (userSocket) {
-      console.log (`emitting to ${user.username}: ${event}: ${data}`);
-      userSocket.emit(event, data);  // Emit to the socket
+      // console.log (`emitting to ${user.username}: ${event}: ${data}`);
+      userSocket.emit(event, data);
     }
   }
 

@@ -113,7 +113,6 @@ export class AuthController {
     }
     console.log ('failed to enable 2fa');
     throw new UnauthorizedException('invalid token');
-    return { message: 'Invalid token' };
   }
 
   @UseGuards(AuthGuard)

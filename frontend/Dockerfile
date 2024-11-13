@@ -18,16 +18,17 @@ USER appuser
 
 # Copy package files and install dependencies as the non-root user
 COPY --chown=appuser:appuser package*.json ./
-RUN npm ci
+RUN npm install
 
 # Copy application files with correct ownership
 COPY --chown=appuser:appuser . .
 
+# todo: make it do npm run build for final product
+RUN npm run build
+
 # Expose port 8080 to the host
 EXPOSE 8080
 
-# todo: make it do npm run build for final product
-# RUN npm run build
-
 # Run the command to start the application
-CMD ["npm", "run", "serve"]
+# CMD ["npm", "serve", "-s", "dist"]
+CMD ["npm", "run", "start"]

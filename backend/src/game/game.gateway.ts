@@ -68,7 +68,7 @@ export class GameGateway {
 
     const game = this.getGameSessionForUser(userId);
     if (!game) {
-      console.log(`user: ${username} is not in a game to leave.`);
+      // console.log(`user: ${username} is not in a game to leave.`);
       return;
     }
     this.userService.setIsInGame(Number(userId), false);
@@ -218,7 +218,7 @@ async handleInviteGame(client: Socket, data: InviteGameDto) {
     console.log(`TEST: ${session.gameId}`)
 		targetSocket.emit('gameInvite', {
 			sender: senderName,
-			target: targetName, //todo: probably remove this, shouldnt be needed?
+			target: targetName,
       gameId: session.gameId, 
 			message: `You have been invited to a game by ${senderName}!`,
 		});
