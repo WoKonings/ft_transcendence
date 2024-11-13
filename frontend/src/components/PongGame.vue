@@ -137,9 +137,27 @@ const initThreeJS = () => {
   animate();
 };
 
-const animate = () => {
+const FPS = 60;
+const frameInterval = 1000 / FPS;
+let lastFrameTime = 0;
+// let deltaTime = 0;
+// let animationFrameId;
+
+const animate = (currentTime) => {
   requestAnimationFrame(animate);
-  composer.render();
+
+  // Calculate time elapsed since last frame
+  const elapsed = currentTime - lastFrameTime;
+
+  // If enough time has elapsed, update and render
+  if (elapsed > frameInterval) {
+    // Adjust for any extra time beyond the frame interval
+    // deltaTime = frameInterval / 1000; // Set deltaTime in seconds
+    lastFrameTime = currentTime - (elapsed % frameInterval);
+
+    // updateGameState(deltaTime);
+    composer.render();
+  }
 };
 
 const onWindowResize = () => {
