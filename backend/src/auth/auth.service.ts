@@ -91,9 +91,14 @@ export class AuthService {
 
       if (!user) {
         const possibleConflictingUser = await this.userService.getUserByUsername(profile.login);
+        const newName = crypto.randomUUID().substring(0, 10);
+
         if (possibleConflictingUser) {
           console.log ('CAUGHT THE NAME THIEF!');
-          await this.prisma.user.delete({where: { username: profile.login }});
+          await this.prisma.user.update({
+            where: { username: profile.login },
+            data: { username: newName },
+          });
         }
 
         console.log("generating intra user");
