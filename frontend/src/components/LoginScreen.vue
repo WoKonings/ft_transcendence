@@ -14,7 +14,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onBeforeUnmount, computed } from 'vue';
+import { ref, onMounted, onBeforeUnmount, computed, nextTick } from 'vue';
 import { useStore } from 'vuex';
 import * as THREE from 'three';
 import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer';
@@ -36,7 +36,11 @@ const init = () => {
   renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
   renderer.setClearColor(0x000000, 0);
   renderer.setSize(window.innerWidth, window.innerHeight);
-  mountRef.value.appendChild(renderer.domElement);
+  nextTick(() => {
+    if (mountRef.value) {
+      mountRef.value.appendChild(renderer.domElement);
+    }
+  });
 
 
   window.addEventListener('resize', () => {
@@ -102,10 +106,10 @@ onMounted(() => {
   } else {
     console.log(`loginstatus: ${isLoggedIn.value}`)
   }
-  const access_token = sessionStorage.getItem('access_token');
-  if (access_token) {
-    router.push('/');
-  }
+  // const access_token = sessionStorage.getItem('access_token');
+  // if (access_token) {
+  //   router.push('/');
+  // }
   init();
   animate();
 });
@@ -138,7 +142,7 @@ const loginUser = async () => {
 }
 
 .pong-animation {
-  position: absolute;
+  position: fixed;
   top: 0;
   left: 0;
   width: 100%;

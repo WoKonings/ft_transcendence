@@ -48,10 +48,10 @@ export class AuthController {
   }
 
   //todo: make this impossible, but easy to switch back on
-  @Post('register')
-  async register(@Body() createUserDto: CreateUserDto) {
-    return this.authService.register(createUserDto);
-  }
+  // @Post('register')
+  // async register(@Body() createUserDto: CreateUserDto) {
+  //   return this.authService.register(createUserDto);
+  // }
 
   @Get('42')
   async redirectTo42(@Res() res: Response) {

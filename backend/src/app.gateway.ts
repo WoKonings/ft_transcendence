@@ -41,9 +41,15 @@ export class AppGateway implements OnGatewayInit, OnGatewayConnection, OnGateway
         console.log (`User: ${decoded.username} is already online!`);
         const userSocket = this.server.sockets.sockets.get(userAlreadyLoggedIn.socket);
         if (userSocket) {
-          // console.log('found old socket, disconnecting');
+          console.log('found old socket, disconnecting');
           userSocket.emit('disconnected', { message: 'You have logged in on another instance. You are being logged out here.'});
-          userSocket.disconnect();
+          await userSocket.disconnect();
+          setTimeout(async () => {
+            await this.prisma.user.update({
+              where: { username: decoded.username },
+              data: { socket: client.id, isOnline: true },
+            });
+          }, 100)
         } else {
           console.log('could not find old socket');
         }

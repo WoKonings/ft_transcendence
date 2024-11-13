@@ -1,6 +1,6 @@
 <template>
   <div>
-    <div v-if="!show2FAInput"> 
+    <!-- <div v-if="!show2FAInput"> 
       <form v-if="!isLoggedIn" @submit.prevent="createUser">
         <h2>Create Account</h2>
         <input v-model="newUser.username" placeholder="Username" required />
@@ -17,7 +17,7 @@
       </form>
   
       <button @click="login42" v-if="!isLoggedIn">Login with 42</button>
-    </div>
+    </div> -->
 
     <div v-if="show2FAInput" class="twofa-container">
       <label for="twofa-code">Enter 2FA Code:</label>
@@ -68,11 +68,11 @@ import router from '@/router/router';
 
 const store = useStore();
 
-const newUser = ref({
-  username: '',
-  email: '',
-  password: ''
-});
+// const newUser = ref({
+//   username: '',
+//   email: '',
+//   password: ''
+// });
 const loginDetails = ref({
   username: '',
   password: ''
@@ -89,33 +89,33 @@ const show2FAInput = ref(false);
 
 const directMessager = ref(null);
 
-const createUser = async () => {
-  error.value = '';
-  try {
-    const response = await fetch('http://localhost:3000/auth/register', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(newUser.value)
-    });
+// const createUser = async () => {
+//   error.value = '';
+//   try {
+//     const response = await fetch('http://localhost:3000/auth/register', {
+//       method: 'POST',
+//       headers: {
+//         'Content-Type': 'application/json'
+//       },
+//       body: JSON.stringify(newUser.value)
+//     });
 
-    if (!response.ok) {
-      const err = await response.json();
-      throw new Error(err.error);
-    }
+//     if (!response.ok) {
+//       const err = await response.json();
+//       throw new Error(err.error);
+//     }
 
-    const data = await response.json();
-    sessionStorage.setItem('access_token', data.access_token);
-    console.log(`Received access token: ${data.access_token}`);
-    store.dispatch('logIn', data.user);
-    fetchMe();
-    initializeSocket();
-  } catch (error) {
-    console.error('Error creating user:', error);
-    error.value = error.message;
-  }
-};
+//     const data = await response.json();
+//     sessionStorage.setItem('access_token', data.access_token);
+//     console.log(`Received access token: ${data.access_token}`);
+//     store.dispatch('logIn', data.user);
+//     fetchMe();
+//     initializeSocket();
+//   } catch (error) {
+//     console.error('Error creating user:', error);
+//     error.value = error.message;
+//   }
+// };
 
 
 const handle2FA = async () => {
@@ -161,9 +161,9 @@ const handle2FA = async () => {
   }
 };
 
-const login42 = () => {
-  window.location.href = 'http://localhost:3000/auth/42';
-};
+// const login42 = () => {
+//   window.location.href = 'http://localhost:3000/auth/42';
+// };
 
 const handleCallback = async () => {
   const route = router.currentRoute.value;
@@ -187,40 +187,39 @@ const handleCallback = async () => {
   }
 };
 
+// const loginUser = async () => {
+//   error.value = '';
+//   try {
+//     const response = await fetch('http://localhost:3000/auth/login', {
+//       method: 'POST',
+//       headers: {
+//         'Content-Type': 'application/json'
+//       },
+//       body: JSON.stringify(loginDetails.value)
+//     });
 
-const loginUser = async () => {
-  error.value = '';
-  try {
-    const response = await fetch('http://localhost:3000/auth/login', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(loginDetails.value)
-    });
+//     if (!response.ok) {
+//       const err = await response.json();
+//       throw new Error(err.error);
+//     }
 
-    if (!response.ok) {
-      const err = await response.json();
-      throw new Error(err.error);
-    }
-
-    const data = await response.json();
-    sessionStorage.setItem('access_token', data.access_token);
+//     const data = await response.json();
+//     sessionStorage.setItem('access_token', data.access_token);
     
-    const decodedToken = JSON.parse(atob(data.access_token.split('.')[1])); // Decoding the JWT payload
-    if (decodedToken.pre_auth == true) {
-      console.log ('uh oh 2FA !!!!');
-      show2FAInput.value = true;
-    } else {      
-      console.log(`Received access token: ${data.access_token}`);
-      fetchMe();
-      initializeSocket();
-    }
-  } catch (error) {
-    console.error('Error logging in!');
-    error.value = error.message;
-  }
-};
+//     const decodedToken = JSON.parse(atob(data.access_token.split('.')[1])); // Decoding the JWT payload
+//     if (decodedToken.pre_auth == true) {
+//       console.log ('uh oh 2FA !!!!');
+//       show2FAInput.value = true;
+//     } else {      
+//       console.log(`Received access token: ${data.access_token}`);
+//       fetchMe();
+//       initializeSocket();
+//     }
+//   } catch (error) {
+//     console.error('Error logging in!');
+//     error.value = error.message;
+//   }
+// };
 
 const fetchMe = async () => {
   console.log ('fetching my profile!');
@@ -246,6 +245,8 @@ const fetchMe = async () => {
     store.dispatch('logIn', data.user);
   } catch {
     console.error('error fetching user profile');
+    store.dispatch('logOut');
+    router.push('/login');
   }
 }
 
@@ -261,7 +262,9 @@ const logoutUser = () => {
 
     router.push('/login');
   } else {
-    console.log('NOT LOGGED IN TRYING TO LOGGIN OUT!!');
+    router.push('/login');
+    store.dispatch('logOut');
+    sessionStorage.removeItem('access_token');
   }
 };
 
@@ -288,23 +291,27 @@ const logoutUser = () => {
   //   }
   // };
   
-  const initializeSocket = async () => {
-    const token = sessionStorage.getItem('access_token');
-    if (!token) return;
+const initializeSocket = async () => {
+  const token = sessionStorage.getItem('access_token');
+  if (!token) return;
     
-    if (socket.value == null) {
-      console.log('requesting new socket');
-      socket.value = await io('http://localhost:3000', {
-        reconnectionDelay: 5000,
-        reconnectionAttemps: 5,
-        auth: { token },
-      }); 
-      store.commit('SET_SOCKET', socket.value);
-    console.log('established socket');
+  if (socket.value == null) {
+    console.log('requesting new socket');
+    socket.value = await io('http://localhost:3000', {
+      reconnectionDelay: 5000,
+      reconnectionAttemps: 5,
+      auth: { token },
+    }); 
+    store.commit('SET_SOCKET', socket.value);
+
+    console.log('established socket: ', socket.value);
   }
   
-  if (socket.value == null)
-  return;
+  if (socket.value == null) {
+      sessionStorage.removeItem('access_token');
+      logoutUser();
+  }
+
   socket.value.on('connected', (message) => {
     error.value = '';
     disconnected_error.value = '';
@@ -338,12 +345,15 @@ onMounted(() => {
     console.log("should request re-login");
     fetchMe();
     initializeSocket();
-    if (!isLoggedIn.value && !socket.value) {
-      // sessionStorage.removeItem('access_token');
-      // console.log('WIPED ACCESS TOKEN!');
-      logoutUser();
-    }
+    // if (!isLoggedIn.value && !socket.value) {
+    //   sessionStorage.removeItem('access_token');
+    //   // console.log('WIPED ACCESS TOKEN!');
+    //   logoutUser();
+    // }
     console.log('RELOGGED!');
+  }
+  if (!access_token) {
+    logoutUser();
   }
 
   handleCallback();

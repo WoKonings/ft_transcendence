@@ -282,13 +282,14 @@ const uploadAvatar = async (event) => {
 const logoutUser = () => {
   if (currentUser.value){
 
-    sessionStorage.removeItem('access_token');
+    // sessionStorage.removeItem('access_token');
 
     store.dispatch('logOut');
     socket.value = null;
 
-    router.push('/');
   }
+  sessionStorage.removeItem('access_token');
+  router.push('/login');
 };
 
 // Function to handle account deletion
