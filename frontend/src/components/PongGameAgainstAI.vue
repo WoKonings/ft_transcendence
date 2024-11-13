@@ -155,7 +155,7 @@ const animate = (currentTime) => {
     deltaTime = frameInterval / 1000; // Set deltaTime in seconds
     lastFrameTime = currentTime - (elapsed % frameInterval);
 
-    updateGameState(deltaTime); // Convert to seconds
+    updateGameState(deltaTime);
     composer.render();
   }
 };
